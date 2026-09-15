@@ -10,6 +10,8 @@ class ProjectSetupTest {
     void applicationMetadataContainsInitialIdentity() {
         assertEquals("Finders Keepers", AppMetadata.NAME);
         assertEquals("0.1.0", AppMetadata.VERSION);
+        assertEquals("Student", AppMetadata.STUDENT_ROLE);
+        assertEquals("Desk Officer", AppMetadata.DESK_OFFICER_ROLE);
         assertFalse(AppMetadata.NAME.isBlank());
     }
 

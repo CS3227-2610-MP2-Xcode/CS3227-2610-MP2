@@ -1,8 +1,8 @@
 # Finders Keepers
 
-Finders Keepers is a planned lost-and-found desktop application for a community help desk. This initial milestone provides a working JavaFX shell, automated checks, cross-platform packaging, and documentation so both developers can begin feature work from the same baseline.
+Finders Keepers is a planned lost-and-found desktop application for primary schools. It will help students report missing or found belongings and help school staff manage safe item returns. This initial milestone provides a working JavaFX shell, automated checks, cross-platform packaging, and documentation so both developers can begin feature work from the same baseline.
 
-The Community Member and Desk Officer workflows are planned but not implemented yet.
+The Student and Desk Officer workflows are planned but not implemented yet.
 
 ## Requirements
 
@@ -37,8 +37,8 @@ java -jar release/FindersKeepers.jar
 
 ## Planned roles
 
-- **Community Member** — will report lost or found items and follow up on possible matches.
-- **Desk Officer** — will review reports, manage item status, and coordinate claims.
+- **Student** — a primary-school student who will report a lost or found item and check for updates.
+- **Desk Officer** — a school staff member who will review reports, manage item status, and coordinate safe collection.
 
 These descriptions define the intended responsibility boundary only; neither role is available in this scaffold.
 

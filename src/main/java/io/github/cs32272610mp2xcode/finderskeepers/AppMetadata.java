@@ -8,6 +8,12 @@ public final class AppMetadata {
     /** Version of the initial project scaffold. */
     public static final String VERSION = "0.1.0";
 
+    /** Name of the child-facing role. */
+    public static final String STUDENT_ROLE = "Student";
+
+    /** Name of the school staff role. */
+    public static final String DESK_OFFICER_ROLE = "Desk Officer";
+
     private AppMetadata() {
     }
 }

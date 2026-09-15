@@ -2,7 +2,7 @@
 
 ## Current status
 
-This guide describes the initial scaffold only. Finders Keepers opens a placeholder window that confirms the project is ready. It does not yet implement the planned lost-and-found workflows.
+This guide describes the initial scaffold only. Finders Keepers is intended for a primary school's lost-and-found desk. It opens a placeholder window that confirms the project is ready, but it does not yet implement the planned student or staff workflows.
 
 ## Requirements
 
@@ -52,13 +52,13 @@ Run `./gradlew test` on macOS/Linux or `gradlew.bat test` on Windows. Run `check
 
 ## Planned roles (not yet implemented)
 
-### Community Member
+### Student
 
-This role is intended for people who lose or find items in the community. Planned responsibilities include submitting an item report, reviewing possible matches, and following up on a claim. These are requirements for later sprints, not current features.
+This role is intended for primary-school students. Planned responsibilities include reporting a lost or found belonging, checking the status of a report, reviewing suitable possible matches, and following the school's collection instructions. The interface and language should remain simple and age-appropriate. These are requirements for later sprints, not current features.
 
 ### Desk Officer
 
-This role is intended for help-desk staff. Planned responsibilities include reviewing reports, updating item status, and coordinating a safe handover. These are requirements for later sprints, not current features.
+This role is intended for the school staff member responsible for the lost-and-found desk. Planned responsibilities include reviewing student reports, updating item status, checking collection details, and coordinating a safe handover. These are requirements for later sprints, not current features.
 
 ## Troubleshooting
 

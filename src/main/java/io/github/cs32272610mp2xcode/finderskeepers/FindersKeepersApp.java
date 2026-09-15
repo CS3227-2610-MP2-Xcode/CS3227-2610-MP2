@@ -35,7 +35,8 @@ public final class FindersKeepersApp extends Application {
         status.getStyleClass().add("status-label");
 
         Label message = new Label(
-                "Community Member and Desk Officer features will be added in upcoming sprints.");
+                "Student and Desk Officer features for the school lost-and-found desk "
+                        + "will be added in upcoming sprints.");
         message.setWrapText(true);
 
         VBox content = new VBox(12, title, status, message);

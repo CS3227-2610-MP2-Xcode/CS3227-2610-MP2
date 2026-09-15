@@ -2,7 +2,7 @@
 
 ## Scope
 
-This guide describes the implemented S1-D1-01 project baseline. Feature architecture will be added as the Community Member and Desk Officer workflows are implemented.
+This guide describes the implemented S1-D1-01 project baseline for a primary-school lost-and-found application. Feature architecture will be added as the Student and Desk Officer workflows are implemented.
 
 ## Development prerequisites
 
@@ -18,7 +18,7 @@ The current source tree is intentionally small:
 - `AppMetadata` is the single source of truth for the application name and version.
 - `app.css` keeps presentation rules separate from the Java scene construction.
 
-`Launcher` delegates to `FindersKeepersApp`; there is no role, domain, storage, or authentication layer yet. Future features should keep shared services independent of the role-specific user interfaces.
+`Launcher` delegates to `FindersKeepersApp`; there is no role, domain, storage, or authentication layer yet. Future features should use simple, age-appropriate language for students and keep shared services independent of the role-specific user interfaces.
 
 ## Useful commands
 
@@ -62,8 +62,8 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 
 ## Planned areas
 
-- Community Member workflows — to be designed and implemented.
-- Desk Officer workflows — to be designed and implemented.
+- Student workflows for reporting belongings and checking updates — to be designed and implemented.
+- Desk Officer workflows for reviewing reports and coordinating collection — to be designed and implemented.
 - Shared domain and storage services — to be designed before both role features depend on them.
 - Role-specific JavaFX views and navigation — to be documented with the feature implementation.
 
@@ -83,7 +83,7 @@ baseline. Branch names use this format:
 Examples:
 
 ```text
-alex/feat-community-item-report
+alex/feat-student-item-report
 mei/bug-duplicate-claim-check
 alex/doc-testing-guide
 ```

@@ -1,6 +1,6 @@
 # Finders Keepers Reflections
 
-This document records observations about using agentic software engineering while building Finders Keepers. Draft entries are marked until a developer verifies them. It will be expanded to cover at least three substantial skills before submission.
+This document records observations about using agentic software engineering while building Finders Keepers for primary schools. Draft entries are marked until a developer verifies them. It will be expanded to cover at least three substantial skills before submission.
 
 ## 2026-09-15 — S1-D1-01 project setup (draft for human review)
 
