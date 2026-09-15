@@ -1,0 +1,17 @@
+.app-root {
+    -fx-background-color: linear-gradient(to bottom right, #f7fbf8, #e9f4ee);
+    -fx-font-family: "System";
+}
+
+.app-title {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f5136;
+}
+
+.status-label {
+    -fx-background-color: #d9eddf;
+    -fx-background-radius: 12px;
+    -fx-padding: 7px 14px;
+    -fx-text-fill: #245c3d;
+}
