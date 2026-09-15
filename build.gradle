@@ -1,0 +1,145 @@
+plugins {
+    id 'application'
+    id 'checkstyle'
+    id 'jacoco'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+group = 'io.github.cs32272610mp2xcode'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+javafx {
+    version = '25.0.4'
+    modules = ['javafx.controls']
+}
+
+dependencies {
+    // Include JavaFX native runtimes for every platform supported by the release JAR.
+    runtimeOnly 'org.openjfx:javafx-graphics:25.0.4:win'
+    runtimeOnly 'org.openjfx:javafx-graphics:25.0.4:linux'
+    runtimeOnly 'org.openjfx:javafx-graphics:25.0.4:mac-aarch64'
+
+    testImplementation platform('org.junit:junit-bom:5.14.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+application {
+    mainClass = 'io.github.cs32272610mp2xcode.finderskeepers.Launcher'
+    applicationDefaultJvmArgs = ['--enable-native-access=javafx.graphics,ALL-UNNAMED']
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs.addAll(['-Xlint:all', '-Werror'])
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.addBooleanOption('Werror', true)
+}
+
+test {
+    useJUnitPlatform()
+    enableAssertions = true
+    finalizedBy jacocoTestReport
+
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat = 'full'
+    }
+}
+
+jacoco {
+    toolVersion = '0.8.15'
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        html.required = true
+        xml.required = true
+        csv.required = false
+    }
+}
+
+checkstyle {
+    toolVersion = '14.0.0'
+    configFile = file('config/checkstyle/checkstyle.xml')
+    maxWarnings = 0
+}
+
+tasks.named('check') {
+    dependsOn javadoc
+}
+
+tasks.register('fatJar', Jar) {
+    group = 'build'
+    description = 'Builds a runnable JAR for Windows x64, Linux x64, and macOS ARM64.'
+    archiveFileName = 'FindersKeepers.jar'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes(
+                'Main-Class': application.mainClass.get(),
+                'Enable-Native-Access': 'ALL-UNNAMED'
+        )
+    }
+
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { dependency ->
+            dependency.isDirectory() ? dependency : zipTree(dependency)
+        }
+    }
+}
+
+tasks.register('verifyUniversalJar') {
+    group = 'verification'
+    description = 'Verifies that the runnable JAR contains every supported JavaFX runtime.'
+    dependsOn tasks.named('fatJar')
+
+    doLast {
+        def jarFile = tasks.named('fatJar').get().archiveFile.get().asFile
+        def requiredEntries = [
+                'glass.dll',
+                'libglass.so',
+                'libglass.dylib',
+                'com/sun/glass/ui/win/WinApplication.class',
+                'com/sun/glass/ui/gtk/GtkApplication.class',
+                'com/sun/glass/ui/mac/MacApplication.class'
+        ]
+
+        requiredEntries.each { requiredEntry ->
+            if (zipTree(jarFile).matching { include requiredEntry }.isEmpty()) {
+                throw new GradleException("Runnable JAR is missing ${requiredEntry}")
+            }
+        }
+    }
+}
+
+tasks.register('release', Copy) {
+    group = 'distribution'
+    description = 'Copies the verified runnable JAR into release/.'
+    dependsOn tasks.named('verifyUniversalJar')
+    from tasks.named('fatJar').flatMap { it.archiveFile }
+    into layout.projectDirectory.dir('release')
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('release')
+}
+
+run {
+    enableAssertions = true
+}
