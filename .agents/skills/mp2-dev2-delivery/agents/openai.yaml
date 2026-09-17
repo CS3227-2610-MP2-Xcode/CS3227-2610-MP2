@@ -1,0 +1,4 @@
+interface:
+  display_name: "MP2 Dev 2 Delivery"
+  short_description: "Deliver approved MP2 Developer 2 features"
+  default_prompt: "Use $mp2-dev2-delivery to implement an approved Developer 2 MP2 feature."
