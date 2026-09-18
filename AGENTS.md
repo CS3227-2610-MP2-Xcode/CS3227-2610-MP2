@@ -64,13 +64,16 @@ Do not duplicate another developer's types or features to avoid an integration d
 
 ## Output and privacy guardrails
 
-- Never expose real passwords or credentials, secrets, access tokens, password
-  hashes, salts, or private report-identifying details in logs, documentation,
-  screenshots, test output, or handoff summaries.
+- Never expose credential material belonging to real accounts, including
+  passwords, password hashes, and salts. Never expose secrets, access tokens,
+  or private report-identifying details in logs, documentation, screenshots,
+  test output, or handoff summaries.
 - Clearly labelled public synthetic demo usernames and passwords may appear in
   documentation only when explicitly approved. Do not repeat them in logs,
-  screenshots, test output, or handoff summaries. Password hashes and salts
-  must never be published, including for demo accounts.
+  screenshots, test output, or handoff summaries.
+- Password hashes and salts may be published only when they belong to clearly
+  labelled synthetic demo accounts and publication is explicitly approved.
+  Never publish hashes or salts belonging to real accounts.
 - Never store plaintext passwords. Persisted authentication credentials must use a unique salt and an appropriate password-hashing function.
 - Keep private identifying details separate from public report descriptions.
 - Report failed, skipped, or unverified checks accurately. Do not claim completion when required verification has not passed.
