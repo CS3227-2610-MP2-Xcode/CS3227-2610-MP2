@@ -9,7 +9,9 @@ Use these role names consistently:
 - `Student`: reports lost or found belongings and checks updates.
 - `Desk Officer`: reviews reports and coordinates item collection.
 
-Treat older references to `Community Member` as unresolved terminology and confirm the intended name before changing code or documentation.
+`Student` is the canonical child-facing role name. Treat older references to
+`Community Member` as stale terminology and update them to `Student` when they
+refer to this role.
 
 ## Ownership
 
@@ -35,6 +37,10 @@ Developer 2 owns:
 - Desk Officer report queue, filtering, details, and review workflow
 - Architecture, storage, authentication, and officer-review documentation
 
+Developer 2 delivery work must follow the repository's
+`.agents/skills/mp2-dev2-delivery/SKILL.md` workflow and stop when one of its
+required planning or approval gates is missing.
+
 ### Shared integration
 
 Application startup, dependencies, report-status contracts, shared interfaces, and end-to-end integration can affect both developers.
@@ -58,7 +64,13 @@ Do not duplicate another developer's types or features to avoid an integration d
 
 ## Output and privacy guardrails
 
-- Never expose passwords, credentials, secrets, access tokens, password hashes, salts, or private report-identifying details in logs, documentation, screenshots, test output, or handoff summaries.
+- Never expose real passwords or credentials, secrets, access tokens, password
+  hashes, salts, or private report-identifying details in logs, documentation,
+  screenshots, test output, or handoff summaries.
+- Clearly labelled public synthetic demo usernames and passwords may appear in
+  documentation only when explicitly approved. Do not repeat them in logs,
+  screenshots, test output, or handoff summaries. Password hashes and salts
+  must never be published, including for demo accounts.
 - Never store plaintext passwords. Persisted authentication credentials must use a unique salt and an appropriate password-hashing function.
 - Keep private identifying details separate from public report descriptions.
 - Report failed, skipped, or unverified checks accurately. Do not claim completion when required verification has not passed.

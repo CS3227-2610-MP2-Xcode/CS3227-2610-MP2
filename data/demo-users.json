@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "accounts": [
+    {
+      "userId": "demo-student",
+      "username": "demo.student",
+      "role": "STUDENT",
+      "algorithm": "PBKDF2WithHmacSHA256",
+      "iterations": 210000,
+      "keyLength": 256,
+      "salt": "LqYJ/aY/xWrZD7X67iQE9Q==",
+      "passwordHash": "D2IXNU6mUyX7eK1dqNkMis8liU/4b2wfoyutl7ol2qU="
+    },
+    {
+      "userId": "demo-officer",
+      "username": "demo.officer",
+      "role": "DESK_OFFICER",
+      "algorithm": "PBKDF2WithHmacSHA256",
+      "iterations": 210000,
+      "keyLength": 256,
+      "salt": "Tb3ZxFhqAdDVIPdk248MZA==",
+      "passwordHash": "6DjpygDWQ2L9MX5GooGN0gn3MtDEupSgdPCIOAP0Kgg="
+    }
+  ]
+}
