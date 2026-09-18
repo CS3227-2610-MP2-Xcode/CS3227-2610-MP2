@@ -2,7 +2,7 @@
 
 ## Current status
 
-Finders Keepers is intended for a primary school's lost-and-found desk. The local login, Student and Desk Officer routing, and logout components are implemented, but the current application startup still opens the placeholder window until the Developer 1-owned shell is approved for integration.
+Finders Keepers is intended for a primary school's lost-and-found desk. Application startup now opens the local login, with Student and Desk Officer routing and logout available after authentication.
 
 ## Requirements
 
@@ -28,7 +28,7 @@ On Windows PowerShell or Command Prompt:
 gradlew.bat run
 ```
 
-Until authentication integration is approved, both `gradlew run` and the current committed release JAR show **Finders Keepers** and **Project scaffold ready**. The login interface will replace this placeholder after the shared shell change and release refresh are approved.
+Both `gradlew run` and the current release JAR open the **Finders Keepers** login interface when launched from the repository root.
 
 ## Synthetic demonstration accounts
 
@@ -39,11 +39,11 @@ The project-local `data/demo-users.json` store contains two public, synthetic de
 | Student | `demo.student` | `Student-Demo-27!` |
 | Desk Officer | `demo.officer` | `Officer-Demo-42!` |
 
-These accounts and passwords are clearly labelled public synthetic test data. Do not reuse them for a real person, school, or system. The credential store contains salted password hashes rather than these plaintext passwords. The store is project-local; wiring it into application startup or packaging it with the release remains pending shared integration work.
+These accounts and passwords are clearly labelled public synthetic test data. Do not reuse them for a real person, school, or system. The credential store contains salted password hashes rather than these plaintext passwords. Application startup reads the project-local store from `data/demo-users.json`. The store is not embedded in the JAR, so launch the JAR from the repository root unless a different store layout is configured later.
 
 ## Login behavior
 
-After startup integration, enter one of the usernames and passwords above and select **Log in**. Usernames ignore capitalization and surrounding spaces. Passwords are case-sensitive and are not trimmed: meaningful leading or trailing spaces are part of the password, while an empty or entirely whitespace password is rejected. Temporary password arrays used by the authentication module are cleared after each attempt. The stored account role determines which interface opens; there is no role selector.
+Enter one of the usernames and passwords above and select **Log in**. Usernames ignore capitalization and surrounding spaces. Passwords are case-sensitive and are not trimmed: meaningful leading or trailing spaces are part of the password, while an empty or entirely whitespace password is rejected. Temporary password arrays used by the authentication module are cleared after each attempt. The stored account role determines which interface opens; there is no role selector.
 
 Blank or incorrect details show `Invalid username or password.` without identifying which entry was wrong. After a failed login, the masked password field remains populated so the user can correct the attempt. A successful login clears it. **Clear** removes both fields and the message. **Log out** clears the in-memory session and returns to login.
 

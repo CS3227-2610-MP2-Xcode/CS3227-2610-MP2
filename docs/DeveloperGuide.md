@@ -2,7 +2,7 @@
 
 ## Scope
 
-This guide describes the project baseline and the Developer 2 local-authentication module for a primary-school lost-and-found application. The authentication module is ready for application-shell integration; changing the Developer 1-owned startup shell requires separate approval.
+This guide describes the project baseline and the integrated Developer 2 local-authentication module for a primary-school lost-and-found application. The approved application-shell integration now opens authentication at startup.
 
 ## Development prerequisites
 
@@ -14,11 +14,11 @@ This guide describes the project baseline and the Developer 2 local-authenticati
 The current source tree is intentionally small:
 
 - `Launcher` is the plain Java entry point used by Gradle and the packaged JAR.
-- `FindersKeepersApp` owns the JavaFX lifecycle and creates the placeholder scene.
+- `FindersKeepersApp` owns the JavaFX lifecycle and creates the authentication scene.
 - `AppMetadata` is the single source of truth for the application name and version.
 - `app.css` keeps presentation rules separate from the Java scene construction.
 
-`Launcher` delegates to `FindersKeepersApp`. The current Developer 1-owned shell still displays its placeholder scene. The independent authentication pane described below is not connected to that shell pending cross-owner approval. Future features should use simple, age-appropriate language for students and keep shared services independent of the role-specific user interfaces.
+`Launcher` delegates to `FindersKeepersApp`, which composes the authentication coordinator for `data/demo-users.json` and displays `AuthenticationPane`. Future features should use simple, age-appropriate language for students and keep shared services independent of the role-specific user interfaces.
 
 ## Local authentication design
 
@@ -115,7 +115,7 @@ java -cp build\classes\java\main io.github.cs32272610mp2xcode.finderskeepers.aut
 
 Use `DESK_OFFICER` for a Desk Officer. The utility permits only the two canonical roles, masks password entry, rejects empty and whitespace-only passwords without trimming valid passwords, clears its temporary password array, does not print credential material, and refuses duplicate identifiers or usernames. It creates credentials using the 600,000-iteration default and does not offer replacement; account administration is outside this feature.
 
-`data/demo-users.json` retains the version 1 schema and contains the two explicitly synthetic accounts listed in the User Guide. Never use that public store or those demonstration passwords for real users. Connecting that store to application startup or packaging it in the release JAR is deferred to shared integration work.
+`data/demo-users.json` retains the version 1 schema and contains the two explicitly synthetic accounts listed in the User Guide. Never use that public store or those demonstration passwords for real users. Application startup resolves this external file relative to the working directory. It is not embedded in the release JAR, so launch from the repository root until a shared distribution layout is approved.
 
 ## Useful commands
 
@@ -167,9 +167,8 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 - Student workflows for reporting belongings and checking updates — to be designed and implemented.
 - Desk Officer workflows for reviewing reports and coordinating collection — to be designed and implemented.
 - Shared domain and storage services — to be designed before both role features depend on them.
-- Connecting the completed `AuthenticationPane` to the Developer 1-owned application shell — pending cross-owner approval.
-- Refreshing the release JAR and deciding how the demo credential store is
-  supplied at runtime — pending shared integration approval.
+- Deciding how the external demo credential store is supplied with a
+  distributable release — pending shared integration approval.
 
 ## Contribution notes
 

@@ -1,8 +1,8 @@
 # Finders Keepers
 
-Finders Keepers is a planned lost-and-found desktop application for primary schools. It will help students report missing or found belongings and help school staff manage safe item returns. The project currently provides a JavaFX shell, an independent local-authentication module, automated checks, cross-platform packaging, and developer documentation.
+Finders Keepers is a planned lost-and-found desktop application for primary schools. It will help students report missing or found belongings and help school staff manage safe item returns. The project currently provides a JavaFX application with integrated local authentication, automated checks, cross-platform packaging, and developer documentation.
 
-Local login, role routing, and logout are implemented but are not yet connected to the Developer 1-owned application shell. The Student and Desk Officer feature workflows remain planned.
+Application startup now opens local login, with role routing and logout available after authentication. The Student and Desk Officer lost-and-found workflows remain planned.
 
 ## Requirements
 
@@ -41,8 +41,8 @@ java -jar release/FindersKeepers.jar
 - **Desk Officer** — a school staff member who will review reports, manage item status, and coordinate safe collection.
 
 These descriptions define the intended responsibility boundary. Authentication
-can route to both role destinations after shell integration, but neither role's
-lost-and-found workflow is implemented yet.
+routes to visibly separate role destinations, but neither role's lost-and-found
+workflow is implemented yet.
 
 ## Local authentication status
 
@@ -68,9 +68,10 @@ After compiling classes, local accounts can be provisioned through
 See the [Developer Guide](docs/DeveloperGuide.md) for the full command and
 safety constraints.
 
-Application-shell wiring, release-JAR refresh, and demo-store packaging remain
-pending shared integration work. The current startup and committed release JAR
-continue to show the placeholder shell.
+Application startup and the refreshed release JAR show the login interface. Run
+them from the repository root so the external `data/demo-users.json` store is
+available. The JAR does not embed that store, so distributing a standalone JAR
+with usable demo accounts still requires a shared packaging decision.
 
 ## Documentation
 

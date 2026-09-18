@@ -31,16 +31,17 @@ missing or contradictory.
 
 ## Verification
 
-- Verifier: pending human review
-- Verification: pending
-- Status: needs follow-up
+- Verifier: automated repository checks completed; human UI review pending
+- Verification: startup and packaged-JAR smoke checks passed; manual UI checks pending
+- Status: integrated; needs manual UI follow-up
 - Automated implementation checks: 54 focused authentication test invocations,
   production and test Checkstyle, and Javadoc passed on 2026-09-18. The final
   clean repository check and delivery-skill validation are reported in the
   implementation handoff; they do not replace the pending human review.
-- Manual UI checks: pending shell integration; coordinator tests are not UI
-  coverage. Verify password masking, **Clear**, failed-password retention, role
-  route titles and descriptions, and logout rendering after integration.
-- Follow-up: review the implementation and documentation, confirm the recorded
-  automated checks, and complete the separately approved shell/release
-  integration when ready.
+- Shell integration, the full repository check, release packaging, and the
+  packaged-JAR smoke launch passed on 2026-09-18. Coordinator tests are not UI
+  coverage.
+- Manual UI checks remain: verify password masking, **Clear**, failed-password
+  retention, both role route titles and descriptions, and logout rendering.
+- Follow-up: complete and record the human UI review, then decide how the
+  external demo credential store is supplied with a distributable release.
