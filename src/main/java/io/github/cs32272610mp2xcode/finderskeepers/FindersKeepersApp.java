@@ -1,15 +1,14 @@
 package io.github.cs32272610mp2xcode.finderskeepers;
 
+import java.nio.file.Path;
 import java.util.Objects;
 
+import io.github.cs32272610mp2xcode.finderskeepers.auth.bootstrap.AuthenticationFactory;
+import io.github.cs32272610mp2xcode.finderskeepers.auth.ui.AuthenticationPane;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -28,22 +27,9 @@ public final class FindersKeepersApp extends Application {
     /** Creates and displays the initial project window. */
     @Override
     public void start(Stage stage) {
-        Label title = new Label(AppMetadata.NAME);
-        title.getStyleClass().add("app-title");
-
-        Label status = new Label("Project scaffold ready");
-        status.getStyleClass().add("status-label");
-
-        Label message = new Label(
-                "Student and Desk Officer features for the school lost-and-found desk "
-                        + "will be added in upcoming sprints.");
-        message.setWrapText(true);
-
-        VBox content = new VBox(12, title, status, message);
-        content.setAlignment(Pos.CENTER);
-        content.setPadding(new Insets(32));
-        content.getStyleClass().add("app-root");
-
+        AuthenticationPane content = new AuthenticationPane(
+                AuthenticationFactory.createCoordinator(
+                        Path.of("data", "demo-users.json")));
         Scene scene = new Scene(content, 720, 420);
         scene.getStylesheets().add(Objects.requireNonNull(
                 FindersKeepersApp.class.getResource("app.css")).toExternalForm());
