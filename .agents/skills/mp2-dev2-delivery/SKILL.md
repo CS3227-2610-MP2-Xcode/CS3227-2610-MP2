@@ -1,26 +1,67 @@
 ---
 name: mp2-dev2-delivery
-description: Deliver an approved Developer 2 feature in the Finders Keepers CS3227 MP2 repository, including authentication, role navigation, persistence, or Desk Officer review. Use only for implementation tasks that deliver Dev 2-owned MP2 changes; do not use for explanation or code-reading requests, Dev 1 implementation, unrelated Java work, or non-delivery requests.
+description: Deliver a fully planned, approved, and separately authorized Developer 2 feature in the Finders Keepers CS3227 MP2 repository, including authentication, role navigation, persistence, or Desk Officer review. Use only for implementation tasks that deliver Dev 2-owned MP2 changes; do not use for planning, explanation, code-reading requests, Dev 1 implementation, unrelated Java work, or non-delivery requests.
 metadata:
-  short-description: Deliver approved MP2 Dev 2 features
+  short-description: Deliver fully approved MP2 Dev 2 features
 ---
 
 # MP2 Developer 2 Delivery
 
 Deliver only the approved Developer 2 feature scope.
 
-## Establish scope
+## Verify delivery gates
 
-Before implementation:
+Before changing implementation files:
 
 1. Read and obey the repository-root `AGENTS.md`.
-2. Locate and read the relevant mission brief under `docs/mission-briefs/`.
-3. If the applicable mission brief is missing, ambiguous, or not approved for implementation, stop and request clarification or approval.
-4. Inspect the relevant existing code and tests.
+2. Identify the mission ID and read its mission brief under
+   `docs/mission-briefs/`.
+3. Read these feature-planning artifacts under `docs/features/<mission-id>/`:
+   - `GrillingDecisions.md`
+   - `PRD.md`
+   - `TDD.md`, meaning Technical Design Document
+   - `RequirementsToTests.md`
+4. Verify every gate in this exact order:
+   1. the mission brief is approved;
+   2. `GrillingDecisions.md` is complete and contains no unresolved decision;
+   3. `PRD.md` is approved and records its approver and approval date;
+   4. `TDD.md` is approved;
+   5. `RequirementsToTests.md` is approved and completely traces the approved
+      requirements to automated or explicitly manual verification; and
+   6. the repository owner has separately authorized implementation.
+5. Check the artifacts for contradictions with each other, `AGENTS.md`, and the
+   current implementation request.
+6. Inspect the relevant existing code and tests only after the gates pass.
+
+Approval of a planning artifact is not implementation authorization. Do not
+infer approval from a draft, file presence, mission-brief approval, or a prior
+implementation request for different scope.
+
+If any artifact is missing, incomplete, unapproved, unresolved, ambiguous, or
+contradictory, stop before implementation. Report the exact failed gate and ask
+the owner to complete or reconcile it. Do not create, backfill, reinterpret, or
+invent planning artifacts or approvals while running this delivery skill.
+
+### Named transition exception
+
+Only the S1-D2-01 authentication cleanup recorded in
+`logs/2026-09-18-s1-d2-01-auth-cleanup.md` may proceed without retrospective
+grilling, PRD, TDD, or requirements-to-tests artifacts. It is grandfathered
+only when all of these are present:
+
+- the approved `S1-D2-01-auth-login.md` mission brief;
+- the owner-approved Authentication Cleanup and Delivery-Gate Hardening plan;
+- an explicit request to implement that cleanup; and
+- the dated cleanup log that truthfully records the original gate deviation.
+
+Do not fabricate retrospective artifacts for this exception. The exception
+does not authorize later authentication features, shell or release integration,
+or any other Developer 2 delivery.
 
 Begin the response with a concise preflight summary covering:
 
 - requested outcome;
+- the status of every required delivery gate or the named exception;
 - Developer 2-owned implementation scope;
 - possible ownership-boundary conflicts;
 - planned tests;
