@@ -1,0 +1,20 @@
+{
+  "files": [
+    {
+      "path": "README.md",
+      "description": "Project purpose, planned role boundaries, Java 25 requirement, and developer commands."
+    },
+    {
+      "path": "docs/DeveloperGuide.md",
+      "description": "Current baseline architecture, testing gates, release packaging, and cross-platform CI contract."
+    },
+    {
+      "path": "build.gradle",
+      "description": "Authoritative Gradle tasks, Java 25 and JavaFX 25.0.4 toolchain, tests, checks, and release packaging."
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "description": "Cross-platform CI on Ubuntu, macOS, and Windows, including the clean check release gate."
+    }
+  ]
+}

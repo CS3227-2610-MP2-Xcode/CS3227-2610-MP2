@@ -1,0 +1,23 @@
+{
+  "autoReview": [
+    "open",
+    "push",
+    "rebase"
+  ],
+  "statusCheck": true,
+  "summarySection": {
+    "included": true,
+    "collapsible": true,
+    "defaultOpen": true
+  },
+  "confidenceScoreSection": {
+    "included": true
+  },
+  "strictness": 2,
+  "commentTypes": [
+    "logic",
+    "syntax"
+  ],
+  "ignorePatterns": "build/**\n.gradle/**\nrelease/*.jar\n.DS_Store",
+  "instructions": "Finders Keepers is a Java 25 and JavaFX 25.0.4 desktop application for a primary-school lost-and-found workflow. Use the Gradle Wrapper. Treat ./gradlew clean check release as the authoritative quality gate. The repository validates the release on Ubuntu, macOS, and Windows."
+}
