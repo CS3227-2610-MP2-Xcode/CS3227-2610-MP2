@@ -13,4 +13,12 @@ public interface ReportRepository {
      * @throws ReportStoreException when storage cannot be read safely
      */
     List<ItemReport> loadAll() throws ReportStoreException;
+
+    /**
+     * Inserts one report at the end of the stable report order.
+     *
+     * @param report canonical report to insert
+     * @throws ReportStoreException when the identifier is duplicated or storage cannot be changed safely
+     */
+    void insert(ItemReport report) throws ReportStoreException;
 }
