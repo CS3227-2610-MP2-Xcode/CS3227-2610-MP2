@@ -2,7 +2,7 @@
 
 ## Scope
 
-This guide describes the implemented S1-D1-01 project baseline for a primary-school lost-and-found application. Feature architecture will be added as the Student and Desk Officer workflows are implemented.
+This guide describes the implemented S1-D1-01 project baseline and S1-D2-02 report-persistence foundation for a primary-school lost-and-found application. Student and Desk Officer workflow architecture will be added as those features are implemented.
 
 ## Development prerequisites
 
@@ -11,14 +11,18 @@ This guide describes the implemented S1-D1-01 project baseline for a primary-sch
 
 ## Current design
 
-The current source tree is intentionally small:
+The current source tree keeps application startup separate from the shared report foundation:
 
 - `Launcher` is the plain Java entry point used by Gradle and the packaged JAR.
 - `FindersKeepersApp` owns the JavaFX lifecycle and creates the placeholder scene.
 - `AppMetadata` is the single source of truth for the application name and version.
 - `app.css` keeps presentation rules separate from the Java scene construction.
+- `report.model` contains the canonical immutable `ItemReport` and its persisted enums.
+- `report.persistence` exposes `ReportRepository` and its strict, ordered, versioned JSON implementation.
 
-`Launcher` delegates to `FindersKeepersApp`; there is no role, domain, storage, or authentication layer yet. Future features should use simple, age-appropriate language for students and keep shared services independent of the role-specific user interfaces.
+`Launcher` delegates to `FindersKeepersApp`. Report persistence is deliberately repository-only: application startup does not yet construct or wire a repository, and the JavaFX placeholder remains unchanged on this branch. Future features should use simple, age-appropriate language for students and keep shared services independent of the role-specific user interfaces.
+
+The repository stores all canonical report fields in a caller-selected file and preserves insertion order across reconstruction. It performs bounded strict reads and all-or-nothing atomic replacement with no unsafe fallback. See [S1-D2-02 Report Storage Format](features/S1-D2-02/StorageFormat.md) for the public boundary, JSON contract, failure behavior, privacy limits, and operating assumptions.
 
 ## Useful commands
 
@@ -44,7 +48,7 @@ gradlew.bat release
 
 ## Testing and quality gates
 
-- JUnit 5 provides automated tests. The baseline tests verify the application identity and Java 25 runtime.
+- JUnit 5 provides automated tests. In addition to the application baseline, domain and persistence tests cover report invariants, reconstruction, ordering, replacement conflicts, strict JSON and Unicode handling, resource bounds, atomic-write failures, recovery behavior, and supported shared-instance concurrency.
 - Java compilation enables all lint warnings and treats warnings as errors.
 - Checkstyle runs against production and test sources.
 - Javadoc warnings fail the build.
@@ -64,7 +68,8 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 
 - Student workflows for reporting belongings and checking updates — to be designed and implemented.
 - Desk Officer workflows for reviewing reports and coordinating collection — to be designed and implemented.
-- Shared domain and storage services — to be designed before both role features depend on them.
+- Repository construction and startup wiring — to be integrated once the owning application workflow selects its store path and lifetime.
+- Richer category and status vocabularies, submission validation, and report creation — to be extended through the shared canonical model without introducing a competing report type.
 - Role-specific JavaFX views and navigation — to be documented with the feature implementation.
 
 ## Contribution notes

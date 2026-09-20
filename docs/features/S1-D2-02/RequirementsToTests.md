@@ -1,6 +1,6 @@
 # S1-D2-02 Requirements-to-Tests Mapping
 
-- Status: Approved
+- Status: Implemented - verification passing
 - Draft date: 2026-09-19
 - Revision date: 2026-09-20
 - Previous conditional approver: Repository owner, 2026-09-19
@@ -16,7 +16,7 @@
 
 This checklist maps every revised PRD requirement, acceptance criterion,
 scenario, and extension to stable behavior-level evidence. The repository owner
-approved the mapping and separately authorized writing the tests on 2026-09-20.
+approved the mapping and separately authorized implementation on 2026-09-20.
 
 A `Deferred` or `Pending` row is not complete. The repository owner confirmed
 TS-01 through TS-05 on 2026-09-19 and approved the shared canonical model,
@@ -25,8 +25,8 @@ authorization on 2026-09-20.
 
 ## Status vocabulary
 
-- **Planned:** behavior and evidence are defined but implementation is not yet
-  authorized.
+- **Planned:** behavior and evidence are defined but have not yet been observed
+  passing.
 - **Passing:** the approved test or review has been implemented or performed and
   observed passing.
 - **Deferred - owner:** required input owned outside the active workstream is
@@ -42,7 +42,7 @@ authorization on 2026-09-20.
 
 The repository owner confirmed the persistence seams on 2026-09-19. TS-06 is
 added for the approved shared canonical record and is part of this final approval
-request.
+approval.
 
 | Seam | Evidence boundary | Policy | Status |
 | --- | --- | --- | --- |
@@ -71,41 +71,41 @@ isolated temporary directory.
   Unicode values.
 - No test reads or writes the application's real configured data location.
 
-## Planned evidence catalog
+## Implementation evidence catalog
 
 ### Shared canonical report behavior
 
 | ID | Stable behavior name | Seam | Evidence | Status |
 | --- | --- | --- | --- | --- |
-| RT-030 | `canonicalReportRequiresEveryFieldAndPreservesAcceptedValuesExactly` | TS-06 | Each field rejects `null`; bounded text rejects zero and maximum-plus-one code points, accepts one and maximum code points including supplementary scalars, and accessors return the exact unnormalized values | Planned |
-| RT-031 | `canonicalReportUsesApprovedIdentityEnumsAndMillisecondPrecision` | TS-06 | UUID and exact Reporter-ID equality, all approved enum constants, accepted millisecond instants, and rejected sub-millisecond instants are covered without a clock-dependent occurrence-date assertion | Planned |
-| RT-032 | `canonicalReportStringRepresentationDisclosesNoFieldValues` | TS-06 | A report containing distinct synthetic canaries produces exactly `ItemReport[redacted]` and contains none of them | Planned |
+| RT-030 | `canonicalReportRequiresEveryFieldAndPreservesAcceptedValuesExactly` | TS-06 | Each field rejects `null`; bounded text rejects zero and maximum-plus-one code points, accepts one and maximum code points including supplementary scalars, and accessors return the exact unnormalized values | Passing - 2026-09-20 |
+| RT-031 | `canonicalReportUsesApprovedIdentityEnumsAndMillisecondPrecision` | TS-06 | UUID and exact Reporter-ID equality, all approved enum constants, accepted millisecond instants, and rejected sub-millisecond instants are covered without a clock-dependent occurrence-date assertion | Passing - 2026-09-20 |
+| RT-032 | `canonicalReportStringRepresentationDisclosesNoFieldValues` | TS-06 | A report containing distinct synthetic canaries produces exactly `ItemReport[redacted]` and contains none of them | Passing - 2026-09-20 |
 
 ### Public repository and reconstruction behavior
 
 | ID | Stable behavior name | Seam | Evidence | Status |
 | --- | --- | --- | --- | --- |
-| RT-001 | `missingStoreLoadsEmptyWithoutCreatingFilesystemEntries` | TS-01 | Construct and load with missing parent/target; result is empty and both paths remain absent; a non-directory parent is separately a storage failure | Planned |
-| RT-002 | `insertedReportRoundTripsAllElevenValuesThroughFreshRepository` | TS-01 | First insert creates a store; a fresh instance restores field-by-field canonical equivalence without value-bearing assertions | Planned |
-| RT-003 | `requiredReportMembersRejectNullAndRoundTripWithoutNormalization` | TS-01, TS-02 | Every report member is present and string-valued; `null` or absence is corrupt, while required location and occurrence date round-trip exactly | Planned |
-| RT-004 | `insertionAndReplacementPreserveStableOrderAcrossReconstruction` | TS-01 | A multi-report fixture proves append order, middle replacement position, unaffected neighbors, and fresh-instance visibility | Planned |
-| RT-005 | `loadedReportsAreAnUnmodifiableStructuralSnapshot` | TS-01 | Caller cannot mutate the returned list; a later repository mutation does not alter the earlier list object | Planned |
-| RT-006 | `canonicalEnumAndTemporalRepresentationsRoundTripExactly` | TS-01, TS-02 | Every approved enum token, canonical `LocalDate` string, and exact three-digit UTC `createdAt` value reconstructs exactly; alternate offsets or precision are rejected | Planned |
-| RT-007 | `replacementPersistsEveryMutableFieldAndPreservesImmutableState` | TS-01 | Each of the eight mutable values changes alone and all change together; a fresh repository instance verifies the replacement, Report ID, Reporter ID, Created At, order, and unaffected reports; an identical replacement follows the same successful commit path | Planned |
-| RT-008 | `duplicateInsertReturnsDuplicateConflictAndPreservesBytes` | TS-01 | Canonically equal UUID is rejected with the exact typed reason and target bytes remain identical | Planned |
-| RT-009 | `missingReplacementReturnsMissingConflictWithoutCreatingOrChangingStorage` | TS-01 | Missing target is covered in a valid existing store and with a missing store; no file is created or changed | Planned |
-| RT-010 | `immutableMismatchOrRetargetAttemptFailsWithoutMutation` | TS-01 | Reporter-ID and Created-At mismatches plus explicit UUID target-ID mismatch are separate cases | Planned |
-| RT-011 | `nullArgumentsFailBeforeFilesystemAccess` | TS-01 | Null constructor path, insert report, replacement target, and replacement report fail as programmer errors without filesystem entries | Planned |
+| RT-001 | `missingStoreLoadsEmptyWithoutCreatingFilesystemEntries` | TS-01 | Construct and load with missing parent/target; result is empty and both paths remain absent; a non-directory parent is separately a storage failure | Passing - 2026-09-20 |
+| RT-002 | `insertedReportRoundTripsAllElevenValuesThroughFreshRepository` | TS-01 | First insert creates a store; a fresh instance restores field-by-field canonical equivalence without value-bearing assertions | Passing - 2026-09-20 |
+| RT-003 | `requiredReportMembersRejectNullAndRoundTripWithoutNormalization` | TS-01, TS-02 | Every report member is tested missing, `null`, and wrong-typed; required values including location and occurrence date reconstruct exactly without normalization | Passing - 2026-09-20 |
+| RT-004 | `insertionAndReplacementPreserveStableOrderAcrossReconstruction` | TS-01 | A multi-report fixture proves append order, middle replacement position, unaffected neighbors, and fresh-instance visibility | Passing - 2026-09-20 |
+| RT-005 | `loadedReportsAreAnUnmodifiableStructuralSnapshot` | TS-01 | Caller cannot mutate the returned list; a later repository mutation does not alter the earlier list object | Passing - 2026-09-20 |
+| RT-006 | `canonicalEnumAndTemporalRepresentationsRoundTripExactly` | TS-01, TS-02 | Every approved enum token, canonical `LocalDate` string, and exact three-digit UTC `createdAt` value reconstructs exactly; alternate offsets and one-, six-, or nine-digit precision are rejected | Passing - 2026-09-20 |
+| RT-007 | `replacementPersistsEachRepresentableMutableFieldAndPreservesImmutableState` | TS-01 | Each of the seven currently representable mutable values changes alone and all change together; a fresh repository instance verifies the replacement, Report ID, Reporter ID, Created At, order, and unaffected reports; an identical replacement follows the same successful commit path; category remains the approved singleton `OTHER` until a compatibility-reviewed domain expansion | Passing - 2026-09-20 |
+| RT-008 | `duplicateInsertReturnsDuplicateConflictAndPreservesBytes` | TS-01 | Canonically equal UUID is rejected with the exact typed reason and target bytes remain identical | Passing - 2026-09-20 |
+| RT-009 | `missingReplacementReturnsMissingConflictWithoutCreatingOrChangingStorage` | TS-01 | Missing target is covered in a valid existing store and with a missing store; no file is created or changed | Passing - 2026-09-20 |
+| RT-010 | `immutableMismatchOrRetargetAttemptFailsWithoutMutation` | TS-01 | Reporter-ID and Created-At mismatches plus explicit UUID target-ID mismatch are separate cases | Passing - 2026-09-20 |
+| RT-011 | `nullArgumentsFailBeforeFilesystemAccess` | TS-01 | Null constructor path, insert report, replacement target, and replacement report fail as programmer errors without filesystem entries | Passing - 2026-09-20 |
 
 ### Strict JSON, invalid storage, and compatibility
 
 | ID | Stable behavior name | Seam | Evidence | Status |
 | --- | --- | --- | --- | --- |
-| RT-012 | `invalidStoredDocumentBlocksEveryOperationAndPreservesExactBytes` | TS-01, TS-02 | Invalid-form by load/insert/replace matrix returns no partial result, uses the corrupt-store reason, and preserves exact target bytes | Planned |
-| RT-013 | `unsupportedSchemaVersionBlocksEveryOperationWithoutMigration` | TS-01, TS-02 | The exact integer token `1` is contrasted with lower/higher integers and alternate numeric spellings such as decimal or exponent forms; every unsupported form returns `CORRUPT_OR_UNSUPPORTED_STORE` and preserves bytes | Planned |
-| RT-014 | `unreadableOrNonRegularStoreBlocksEveryOperationWithoutAlteration` | TS-01, TS-03 | A real directory/non-regular target and a portable injected access failure cover load/insert/replace; the path is not followed, truncated, or replaced | Planned |
-| RT-015 | `versionOneLiteralFixturesLoadAndSuccessfulWritesUseCanonicalBytes` | TS-01, TS-02 | Independently authored empty/populated fixtures cover permitted leading/trailing whitespace, alternate member order, solidus escape, uppercase escape hex, and a valid surrogate pair; successful output matches fixed order, escaping, required members, UTF-8, indentation, and final-newline policy | Planned |
-| RT-016 | `duplicateCanonicalIdsInvalidateTheWholeStore` | TS-01, TS-02 | Two syntactically valid report objects with the same canonical UUID cause whole-store failure and block both mutations | Planned |
+| RT-012 | `invalidStoredDocumentBlocksEveryOperationAndPreservesExactBytes` | TS-01, TS-02 | Invalid-form by load/insert/replace matrix returns no partial result, uses the corrupt-store reason, and preserves exact target bytes | Passing - 2026-09-20 |
+| RT-013 | `unsupportedSchemaVersionBlocksEveryOperationWithoutMigration` | TS-01, TS-02 | The exact integer token `1` is contrasted with lower/higher integers and alternate numeric spellings including decimal and exponent forms; every unsupported form returns `CORRUPT_OR_UNSUPPORTED_STORE` and preserves bytes | Passing - 2026-09-20 |
+| RT-014 | `unreadableOrNonRegularStoreBlocksEveryOperationWithoutAlteration` | TS-01, TS-03 | A real directory/non-regular target and a portable injected access failure cover load/insert/replace; the path is not followed, truncated, or replaced | Passing - 2026-09-20 |
+| RT-015 | `versionOneLiteralFixturesLoadAndSuccessfulWritesUseCanonicalBytes` | TS-01, TS-02 | Independently authored empty/populated fixtures cover permitted leading/trailing whitespace, alternate root and report-member order, solidus escape, uppercase escape hex, and a valid surrogate pair; successful output matches fixed order, escaping, required members, UTF-8, indentation, and final-newline policy | Passing - 2026-09-20 |
+| RT-016 | `duplicateCanonicalIdsInvalidateTheWholeStore` | TS-01, TS-02 | Two syntactically valid report objects with the same canonical UUID cause whole-store failure and block both mutations | Passing - 2026-09-20 |
 
 `RT-012` covers each invalid form individually, with safe case-number display
 names:
@@ -132,10 +132,10 @@ direct evidence rather than being hidden inside the grammar matrix.
 
 | ID | Stable behavior name | Seam | Evidence | Status |
 | --- | --- | --- | --- | --- |
-| RT-017 | `fixedAttackCorpusRemainsOneValueInEveryCanonicalTextField` | TS-01 | Field-by-attack-class matrix covers JSON punctuation, delimiters, standard escaped controls, backslashes, and JSON/path-looking fragments accepted by the domain; fresh load restores the exact attacked value and preserves count, identities, status, neighbors, and configured path | Planned |
-| RT-018 | `deterministicallyGeneratedUnicodeRoundTripsInEveryCanonicalTextField` | TS-01 | A fixed-seed generator produces 256 valid Unicode-scalar cases within each canonical field limit, including BMP, combining, and supplementary characters; fresh loads restore exact values with report count, identity, status, and neighboring fields unchanged; generated values are never printed | Planned |
-| RT-019 | `unencodableTextFailsBeforeInsertOrReplacementMutation` | TS-01 | Unpaired high and low Java UTF-16 surrogates are separate insert/replace cases; first insert leaves target absent and replacement leaves existing bytes identical | Planned |
-| RT-020 | `adversarialReportDataCannotInfluenceTheConfiguredPath` | TS-01 | Every accepted path-looking text case changes only the configured target; no report-derived sibling or directory is created | Planned |
+| RT-017 | `fixedAttackCorpusRemainsOneValueInEveryCanonicalTextField` | TS-01 | Field-by-attack-class matrix covers JSON punctuation, delimiters, standard escaped controls, backslashes, and JSON/path-looking fragments accepted by the domain; fresh load restores the exact attacked value and preserves count, identities, status, neighbors, and configured path | Passing - 2026-09-20 |
+| RT-018 | `deterministicallyGeneratedUnicodeRoundTripsInEveryCanonicalTextField` | TS-01 | A fixed-seed generator produces 256 valid Unicode-scalar cases within each canonical field limit, including BMP, combining, and supplementary characters; fresh loads restore exact values with report count, identity, status, and neighboring fields unchanged; generated values are never printed | Passing - 2026-09-20 |
+| RT-019 | `unencodableTextFailsBeforeInsertOrReplacementMutation` | TS-01 | Unpaired high and low Java UTF-16 surrogates are separate insert/replace cases; first insert leaves target absent and replacement leaves existing bytes identical | Passing - 2026-09-20 |
+| RT-020 | `adversarialReportDataCannotInfluenceTheConfiguredPath` | TS-01 | Every accepted path-looking text case changes only the configured target; no report-derived sibling or directory is created | Passing - 2026-09-20 |
 
 The corpus and generator use the approved code-point limits. Invalid Unicode is
 tested at the repository seam because Java strings can contain unpaired UTF-16
@@ -145,33 +145,59 @@ surrogates even though they cannot be emitted as valid JSON UTF-8.
 
 | ID | Stable behavior name | Seam | Evidence | Status |
 | --- | --- | --- | --- | --- |
-| RT-021 | `storedDocumentByteBoundaryIsEnforcedWithoutPartialLoadOrMutation` | TS-01, TS-02 | Valid literal stores below and exactly at the 16 MiB production read limit load; one byte above fails and blocks both mutations without changing bytes | Planned |
-| RT-022 | `encodedMutationByteBoundaryIsEnforcedBeforeFilesystemMutation` | TS-01 | The same valid candidate succeeds when the injected bound equals its independent byte length and fails when the bound is one byte less; public-policy cases cover valid below-bound and over-bound insertion/replacement, preserving an existing target and leaving a first target absent on failure | Planned |
-| RT-023 | `filesystemMutationFaultsPreserveOldStoreOrAbsenceAndNeverReportSuccess` | TS-01, TS-03 | Deterministic cases cover parent creation, temporary creation, temporary write, force/close, unsupported atomic move, atomic move failure, and cleanup after a primary failure; the old target remains complete/readable or absent, while an empty newly created parent is an explicitly permitted first-insert residue | Planned |
-| RT-024 | `orphanTemporaryArtifactsNeverBecomeAuthoritativeStorage` | TS-01, TS-02 | Complete and partial orphan siblings beside a valid or missing target are neither loaded, promoted, nor automatically deleted | Planned |
-| RT-025 | `successfulMutationIsVisibleOnlyAsACompleteDocument` | TS-01, TS-03 | Controlled observations before and after commit see only the complete old or complete new target; a fresh repository reads the new document after success | Planned |
+| RT-021 | `storedDocumentByteBoundaryIsEnforcedWithoutPartialLoadOrMutation` | TS-01, TS-02 | Valid literal stores below and exactly at the 16 MiB production read limit load; one byte above fails and blocks both mutations without changing bytes | Passing - 2026-09-20 |
+| RT-022 | `encodedMutationByteBoundaryIsEnforcedBeforeFilesystemMutation` | TS-01 | The same valid candidate succeeds when the injected bound equals its independent byte length and fails when the bound is one byte less; public-policy cases cover valid below-bound and over-bound insertion/replacement while preserving existing bytes or target absence | Passing - 2026-09-20 |
+| RT-023 | `filesystemMutationFaultsPreserveOldStoreOrAbsenceAndNeverReportSuccess` | TS-01, TS-03 | Deterministic cases cover parent creation, temporary creation, temporary write, force/close, unsupported atomic move, atomic move failure, and cleanup after a primary failure; the old target remains complete/readable or absent, while an empty newly created parent is an explicitly permitted first-insert residue | Passing - 2026-09-20 |
+| RT-024 | `orphanTemporaryArtifactsNeverBecomeAuthoritativeStorage` | TS-01, TS-02 | Complete and partial orphan siblings beside a valid or missing target are neither loaded, promoted, nor automatically deleted | Passing - 2026-09-20 |
+| RT-025 | `successfulMutationIsVisibleOnlyAsACompleteDocument` | TS-01, TS-03 | Controlled observations before and after commit see only the complete old or complete new target; a fresh repository reads the new document after success | Passing - 2026-09-20 |
 
 ### Failure privacy and supported concurrency
 
 | ID | Stable behavior name | Seam | Evidence | Status |
 | --- | --- | --- | --- | --- |
-| RT-026 | `failureReasonsAreTypedAndDiagnosticsContainNoReportValues` | TS-01, TS-03 | All six public reasons are produced by representative cases; fixed message, cause/suppressed graph, captured output, and module logs omit per-fixture canary values | Planned |
-| RT-027 | `overlappingSharedRepositoryOperationsAreEquivalentToSerialExecution` | TS-04 | Controlled distinct inserts, same-ID inserts, load/mutation, and insert/replacement overlaps produce one permitted serial outcome with no lost report, duplicate effect, or partial document | Planned |
-| RT-028 | `everyOperationRereadsTheAuthoritativeTarget` | TS-01, TS-02 | After one repository instance has loaded successfully, external test setup replaces the target first with corrupt bytes and then with valid recovery bytes; later load/insert/replace calls observe the current target rather than cached state | Planned |
-| RT-029 | `failurePrecedenceIsDeterministicAndPreservesStorage` | TS-01, TS-02 | Combination cases prove corrupt store before conflict, missing target before immutable/candidate failure, duplicate before candidate failure, and immutable mismatch before candidate encoding/capacity failure; every case preserves bytes or absence | Planned |
+| RT-026 | `failureReasonsAreTypedAndDiagnosticsContainNoReportValues` | TS-01, TS-03 | All six public reasons are produced by representative cases; fixed message, cause/suppressed graph, and captured process output omit report values; structural review confirms the module has no logging path | Passing - 2026-09-20 |
+| RT-027 | `overlappingSharedRepositoryOperationsAreEquivalentToSerialExecution` | TS-04 | Controlled distinct inserts, same-ID inserts, load/mutation, and insert/replacement overlaps produce one permitted serial outcome with no lost report, duplicate effect, or partial document | Passing - 2026-09-20 |
+| RT-028 | `everyOperationRereadsTheAuthoritativeTarget` | TS-01, TS-02 | After one repository instance has loaded successfully, external test setup replaces the target first with corrupt bytes and then with valid recovery bytes; later load/insert/replace calls observe the current target rather than cached state | Passing - 2026-09-20 |
+| RT-029 | `failurePrecedenceIsDeterministicAndPreservesStorage` | TS-01, TS-02 | Combination cases prove corrupt store before conflict, missing target before immutable/candidate failure, duplicate before candidate failure, and immutable mismatch before candidate encoding/capacity failure; every case preserves bytes or absence | Passing - 2026-09-20 |
 
 ### Review and command evidence
 
 | ID | Stable evidence name | Seam | Evidence | Status |
 | --- | --- | --- | --- | --- |
-| RV-001 | `storageDocumentationStatesSchemaLimitRecoveryPrivacyAndConcurrency` | TS-05 | Review final storage format and operational documentation for version, 16 MiB bound, recovery, plaintext/orphan limitation, durability threshold, and unsupported writer model | Planned |
-| RV-002 | `repositoryUsesCanonicalDomainTypesAndDefinesNoShadowReportModel` | TS-05 | Inspect public signatures/imports and search production source for exactly one shared `ItemReport` definition and explicit UUID replacement target | Planned |
-| RV-003 | `persistenceTestsUseOnlySyntheticReportsTemporaryPathsAndPrivacySafeAssertions` | TS-05 | Review all fixture factories, parameter display names, assertion helpers, captured output, and target paths | Planned |
-| RV-004 | `resourceUseIsBoundedDuringReadDecodeAndEncode` | TS-05 | Review overflow-safe maximum-plus-one reads, schema-bounded parser depth/allocations, bounded encoder, the documented 1,000-report sizing calculation, and no unbounded whole-document fallback | Planned |
-| RV-005 | `changeSetStaysWithinApprovedOwnershipAndScope` | TS-05 | Diff review finds only the approved minimal shared model, persistence, tests, and documentation; no dependency, status-transition policy, workflow, UI, startup, release, or CI change | Planned |
-| RV-006 | `nioAdapterUsesTheApprovedSafeReplacementProtocol` | TS-05 | Inspect public-constructor delegation to production policy and the NIO adapter for final-target no-follow handling, a same-directory random temp, complete write, `force(true)`, close, one `ATOMIC_MOVE` attempt, no target pre-delete or non-atomic fallback, safe cleanup, and no report-derived path | Planned |
-| RV-007 | `documentationScreenshotsAndHandoffContainNoReportValues` | TS-05 | Review changed documentation, produced screenshots if any, command output retained for handoff, and the final handoff summary for report field values or private identifying detail | Planned |
-| VG-001 | `focusedPersistenceTestsAndRepositoryCheckPass` | TS-05 | Run the focused persistence suite followed by `gradlew.bat check`; no required test is skipped or quarantined | Planned |
+| RV-001 | `storageDocumentationStatesSchemaLimitRecoveryPrivacyAndConcurrency` | TS-05 | Review final storage format and operational documentation for version, 16 MiB bound, recovery, plaintext/orphan limitation, durability threshold, and unsupported writer model | Passed - 2026-09-20 |
+| RV-002 | `repositoryUsesCanonicalDomainTypesAndDefinesNoShadowReportModel` | TS-05 | Inspect public signatures/imports and search production source for exactly one shared `ItemReport` definition and explicit UUID replacement target | Passed - 2026-09-20 |
+| RV-003 | `persistenceTestsUseOnlySyntheticReportsTemporaryPathsAndPrivacySafeAssertions` | TS-05 | Review all fixture factories, parameter display names, assertion helpers, captured output, and target paths | Passed - 2026-09-20 |
+| RV-004 | `resourceUseIsBoundedDuringReadDecodeAndEncode` | TS-05 | Review overflow-safe maximum-plus-one reads, schema-bounded parser depth/allocations, bounded encoder, the documented 1,000-report sizing calculation, and no unbounded whole-document fallback | Passed - 2026-09-20 |
+| RV-005 | `changeSetStaysWithinApprovedOwnershipAndScope` | TS-05 | Diff review finds the approved minimal shared model, persistence, tests, documentation, and separately authorized delivery-skill alignment; no dependency, status-transition policy, workflow, UI, startup, release, or CI change | Passed - 2026-09-20 |
+| RV-006 | `nioAdapterUsesTheApprovedSafeReplacementProtocol` | TS-05 | Inspect public-constructor delegation to production policy and the NIO adapter for final-target no-follow handling, a same-directory random temp, complete write, `force(true)`, close, one `ATOMIC_MOVE` attempt, no target pre-delete or non-atomic fallback, safe cleanup, and no report-derived path | Passed - 2026-09-20 |
+| RV-007 | `documentationScreenshotsAndHandoffContainNoReportValues` | TS-05 | Review changed documentation, produced screenshots if any, command output retained for handoff, and the final handoff summary for report field values or private identifying detail | Passed - 2026-09-20; no screenshots produced |
+| VG-001 | `focusedPersistenceTestsAndRepositoryCheckPass` | TS-05 | Run the focused persistence suite followed by `gradlew.bat check`; no required test is skipped or quarantined | Passing - 2026-09-20 |
+
+## Observed implementation evidence
+
+Evidence was collected on 2026-09-20:
+
+- The focused domain and persistence suite passed with
+  `gradlew.bat test --tests "io.github.cs32272610mp2xcode.finderskeepers.report.model.*" --tests "io.github.cs32272610mp2xcode.finderskeepers.report.persistence.*"`.
+- The repository-wide `gradlew.bat check` gate passed, including compilation,
+  JUnit, Checkstyle, Javadoc, and JaCoCo report generation.
+- Production source contains one canonical `ItemReport` definition, and both
+  public repository implementations import that shared type with an explicit
+  UUID replacement target.
+- Persistence tests use synthetic values with `@TempDir` paths or in-memory
+  package-private filesystem fakes. Parameter names and assertions do not emit
+  report values.
+- Source review confirmed the maximum-plus-one read probe, schema-bounded
+  parser, bounded encoder, same-directory random staging file, `force(true)`,
+  one atomic replacement attempt, no target pre-delete, and no non-atomic
+  fallback.
+- Diff review from the branch base found only the approved report model,
+  persistence, tests, planning/operational documentation, and separately
+  authorized Dev 2 delivery-skill alignment. No dependency, workflow, UI,
+  startup, release, or CI file changed.
+- Documentation contains no complete report example or synthetic/real report
+  content values beyond required schema names and allowed tokens, and no
+  screenshots were produced.
 
 ## Equivalence partitions and boundary representatives
 
@@ -182,7 +208,7 @@ surrogates even though they cannot be emitted as valid JSON UTF-8.
 | Identity state | New ID; canonically equal duplicate ID; existing target; missing target; explicit target-ID mismatch where representable | RT-002, RT-008 through RT-010, RT-016 |
 | Replacement invariants | All immutables equal; Reporter-ID mismatch; Created-At mismatch; Report-ID retarget attempt | RT-007, RT-010, RV-002 |
 | Required values | Present value; missing member; explicit `null`; empty bounded text; maximum and maximum-plus-one code points | RT-003, RT-012, RT-030 |
-| Mutable fields | Each of eight mutable fields changed independently; all changed together; none changed | RT-007 |
+| Mutable fields | Each of seven currently representable mutable fields changed independently; all changed together; none changed; category is the approved singleton `OTHER` | RT-007 |
 | Enum and temporal values | Every enum constant; approved date/time boundary values; precision, offset, and timezone representatives | RT-006, RT-015 |
 | JSON grammar | Valid canonical; valid alternate member order; lexical/syntax failure; schema failure; canonical reconstruction failure | RT-012, RT-015 |
 | Schema version | Integer 1; lower and higher integers; wrong type/non-integer treated as corrupt | RT-012, RT-013, RT-015 |
@@ -200,17 +226,17 @@ surrogates even though they cannot be emitted as valid JSON UTF-8.
 
 | Scenario or extension | Evidence | Status |
 | --- | --- | --- |
-| SC-001 main path | RT-001, RT-002 | Planned |
-| SC-001 parent-directory or store creation failure | RT-023 | Planned |
-| SC-001 encoding failure | RT-019 | Planned |
-| SC-001 capacity failure | RT-022 | Planned |
-| SC-002 main replacement path | RT-004, RT-007 | Planned |
-| SC-002 missing target | RT-009 | Planned |
-| SC-002 immutable mismatch | RT-010 | Planned |
+| SC-001 main path | RT-001, RT-002 | Passing - 2026-09-20 |
+| SC-001 parent-directory or store creation failure | RT-023 | Passing - 2026-09-20 |
+| SC-001 encoding failure | RT-019 | Passing - 2026-09-20 |
+| SC-001 capacity failure | RT-022 | Passing - 2026-09-20 |
+| SC-002 main replacement path | RT-004, RT-007 | Passing - 2026-09-20 |
+| SC-002 missing target | RT-009 | Passing - 2026-09-20 |
+| SC-002 immutable mismatch | RT-010 | Passing - 2026-09-20 |
 | SC-002 application-invalid status transition | XW-001 | External - Developer 1/application workflow |
-| SC-003 invalid store | RT-012 through RT-014, RT-016, RT-021, RT-028 | Planned |
-| SC-004 adversarial text | RT-017 through RT-020 | Planned |
-| SC-005 safe replacement unavailable | RT-023 through RT-025 | Planned |
+| SC-003 invalid store | RT-012 through RT-014, RT-016, RT-021, RT-028 | Passing - 2026-09-20 |
+| SC-004 adversarial text | RT-017 through RT-020 | Passing - 2026-09-20 |
+| SC-005 safe replacement unavailable | RT-023 through RT-025 | Passing - 2026-09-20 |
 
 ## Functional and non-functional requirement mapping
 
@@ -238,22 +264,22 @@ surrogates even though they cannot be emitted as valid JSON UTF-8.
 
 | Criterion | Evidence | Status |
 | --- | --- | --- |
-| AC-001 | RT-001 | Planned |
-| AC-002 | RT-002, RT-004, RT-007 | Planned |
-| AC-003 | RT-003, RT-030 | Planned |
-| AC-004 | RT-004 | Planned |
-| AC-005 | RT-007 through RT-010, RV-002 | Planned |
-| AC-006 | RT-012 through RT-014, RT-016, RT-021, RT-028, RT-029 | Planned |
-| AC-007 | RT-017, RT-018 | Planned |
-| AC-008 | RT-026, RT-032, RV-007 | Planned |
-| AC-009 | RT-023 through RT-025, RV-006 | Planned |
-| AC-010 | RV-003 | Planned |
-| AC-011 | RV-001 | Planned |
-| AC-012 | VG-001 | Planned |
-| AC-013 | RT-027 | Planned |
-| AC-014 | RT-030 through RT-032, RV-002, RV-005 | Planned |
-| AC-015 | RT-019, RT-026 | Planned |
-| AC-016 | RT-021, RT-022 | Planned |
+| AC-001 | RT-001 | Passing - 2026-09-20 |
+| AC-002 | RT-002, RT-004, RT-007 | Passing - 2026-09-20 |
+| AC-003 | RT-003, RT-030 | Passing - 2026-09-20 |
+| AC-004 | RT-004 | Passing - 2026-09-20 |
+| AC-005 | RT-007 through RT-010, RV-002 | Passing - 2026-09-20 |
+| AC-006 | RT-012 through RT-014, RT-016, RT-021, RT-028, RT-029 | Passing - 2026-09-20 |
+| AC-007 | RT-017, RT-018 | Passing - 2026-09-20 |
+| AC-008 | RT-026, RT-032, RV-007 | Passing - 2026-09-20 |
+| AC-009 | RT-023 through RT-025, RV-006 | Passing - 2026-09-20 |
+| AC-010 | RV-003 | Passing - 2026-09-20 |
+| AC-011 | RV-001 | Passing - 2026-09-20 |
+| AC-012 | VG-001 | Passing - 2026-09-20 |
+| AC-013 | RT-027 | Passing - 2026-09-20 |
+| AC-014 | RT-030 through RT-032, RV-002, RV-005 | Passing - 2026-09-20 |
+| AC-015 | RT-019, RT-026 | Passing - 2026-09-20 |
+| AC-016 | RT-021, RT-022 | Passing - 2026-09-20 |
 
 ## Deferred blockers and external obligations
 
@@ -278,6 +304,11 @@ Before TDD approval and again before implementation completion:
    and verify that exactly one catalog or obligation row defines it.
 5. Treat any missing identifier, undefined evidence ID, `Deferred` row, skipped
    test, or failed review as incomplete.
+
+The completion audit on 2026-09-20 found all 17 PRD requirement IDs, all 16
+acceptance criteria, and all five scenarios represented. It found 41 evidence
+definitions (32 RT, seven RV, one VG, and one XW), with no undefined reference
+or duplicate definition.
 
 ## Completion gate
 
@@ -311,3 +342,6 @@ XW-001 remains traced but must not be misrepresented as repository behavior. It
 does not block S1-D2-02 completion; it remains the responsibility of the owning
 domain or later application workflow, while structural review verifies that the
 repository does not enforce transition policy.
+
+Completion result: satisfied on 2026-09-20 for the approved repository-only
+scope. Application wiring and XW-001 remain intentionally outside S1-D2-02.
