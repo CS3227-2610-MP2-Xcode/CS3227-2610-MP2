@@ -18,7 +18,10 @@
 
 .report-form-root,
 .report-form-scroll,
-.report-form-scroll > .viewport {
+.report-form-scroll > .viewport,
+.report-history-root,
+.report-history-scroll,
+.report-history-scroll > .viewport {
     -fx-background-color: transparent;
 }
 
@@ -76,4 +79,42 @@
     -fx-background-color: #1f6b45;
     -fx-text-fill: white;
     -fx-font-weight: bold;
+}
+
+.history-feedback {
+    -fx-padding: 10px 12px;
+    -fx-background-radius: 8px;
+    -fx-text-fill: #314f3e;
+}
+
+.history-empty {
+    -fx-background-color: #eef3ef;
+}
+
+.history-error {
+    -fx-background-color: #fbe3e3;
+    -fx-text-fill: #a12b2b;
+}
+
+.history-card {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-border-color: #c9ddd0;
+    -fx-border-radius: 10px;
+    -fx-padding: 16px;
+}
+
+.history-item-name {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f5136;
+}
+
+.history-item-details {
+    -fx-text-fill: #53685c;
+}
+
+.history-status {
+    -fx-font-weight: bold;
+    -fx-text-fill: #245c3d;
 }
