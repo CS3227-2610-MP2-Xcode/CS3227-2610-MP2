@@ -1,8 +1,8 @@
 # Finders Keepers
 
-Finders Keepers is a planned lost-and-found desktop application for primary schools. It will help students report missing or found belongings and help school staff manage safe item returns. This initial milestone provides a working JavaFX shell, automated checks, cross-platform packaging, and documentation so both developers can begin feature work from the same baseline.
+Finders Keepers is a planned lost-and-found desktop application for primary schools. It will help students report missing or found belongings and help school staff manage safe item returns. The project currently provides a JavaFX application with integrated local authentication, automated checks, cross-platform packaging, and developer documentation.
 
-The Student and Desk Officer workflows are planned but not implemented yet.
+Application startup now opens local login, with role routing and logout available after authentication. The Student and Desk Officer lost-and-found workflows remain planned.
 
 ## Requirements
 
@@ -40,7 +40,38 @@ java -jar release/FindersKeepers.jar
 - **Student** — a primary-school student who will report a lost or found item and check for updates.
 - **Desk Officer** — a school staff member who will review reports, manage item status, and coordinate safe collection.
 
-These descriptions define the intended responsibility boundary only; neither role is available in this scaffold.
+These descriptions define the intended responsibility boundary. Authentication
+routes to visibly separate role destinations, but neither role's lost-and-found
+workflow is implemented yet.
+
+## Local authentication status
+
+Authentication is separated by responsibility under `finderskeepers.auth`:
+`application`, `model`, `security`, `persistence`, `provisioning`, `ui`, and
+`bootstrap`. `AuthenticationCoordinator` owns login/session behavior, while
+`AuthenticationFactory.createCoordinator(Path)` is the production composition
+point. The JavaFX pane depends only on the coordinator.
+
+The version 1 JSON credential-store schema remains unchanged. It accepts only
+`PBKDF2WithHmacSHA256` credentials with 210,000 to 1,000,000 iterations, a
+256-bit key, a 16-byte salt, and a 32-byte hash. Newly provisioned credentials
+use 600,000 iterations. Stores are decoded as strict UTF-8 and are limited to
+1 MiB. The repository assumes a single writer.
+
+Passwords are not trimmed: meaningful surrounding spaces remain part of the
+password, while empty and whitespace-only passwords are rejected. Temporary
+password arrays are cleared after use. The masked password field remains
+populated after a failed login and is cleared after success or **Clear**.
+
+After compiling classes, local accounts can be provisioned through
+`io.github.cs32272610mp2xcode.finderskeepers.auth.provisioning.AccountProvisioningTool`.
+See the [Developer Guide](docs/DeveloperGuide.md) for the full command and
+safety constraints.
+
+Application startup and the refreshed release JAR show the login interface. Run
+them from the repository root so the external `data/demo-users.json` store is
+available. The JAR does not embed that store, so distributing a standalone JAR
+with usable demo accounts still requires a shared packaging decision.
 
 ## Documentation
 
