@@ -2,7 +2,7 @@
 
 ## Scope
 
-This guide describes the implemented S1-D1-01 project baseline for a primary-school lost-and-found application. Feature architecture will be added as the Student and Desk Officer workflows are implemented.
+This guide describes the project baseline and the integrated Developer 2 local-authentication module for a primary-school lost-and-found application. The approved application-shell integration now opens authentication at startup.
 
 ## Development prerequisites
 
@@ -14,11 +14,108 @@ This guide describes the implemented S1-D1-01 project baseline for a primary-sch
 The current source tree is intentionally small:
 
 - `Launcher` is the plain Java entry point used by Gradle and the packaged JAR.
-- `FindersKeepersApp` owns the JavaFX lifecycle and creates the placeholder scene.
+- `FindersKeepersApp` owns the JavaFX lifecycle and creates the authentication scene.
 - `AppMetadata` is the single source of truth for the application name and version.
 - `app.css` keeps presentation rules separate from the Java scene construction.
 
-`Launcher` delegates to `FindersKeepersApp`; there is no role, domain, storage, or authentication layer yet. Future features should use simple, age-appropriate language for students and keep shared services independent of the role-specific user interfaces.
+`Launcher` delegates to `FindersKeepersApp`, which composes the authentication coordinator for `data/demo-users.json` and displays `AuthenticationPane`. Future features should use simple, age-appropriate language for students and keep shared services independent of the role-specific user interfaces.
+
+## Local authentication design
+
+Authentication code is grouped by responsibility under `finderskeepers.auth`:
+
+- `application` contains `AuthenticationCoordinator`, `AuthenticationService`,
+  authentication results and statuses, and application routes.
+- `model` contains account, authenticated-user, and role values.
+- `security` contains the password policy, credential value, hashing interface,
+  algorithm enum, and PBKDF2 implementation.
+- `persistence` contains the repository interface, JSON repository, internal
+  JSON codec, and storage exception.
+- `provisioning` contains account-provisioning behavior and its command-line
+  tool.
+- `ui` contains `AuthenticationPane` and its internal route presentation.
+- `bootstrap` contains `AuthenticationFactory`, the production composition
+  root for this independent module.
+
+The dependencies flow in one direction:
+
+```text
+AuthenticationPane -> AuthenticationCoordinator -> AuthenticationService
+AuthenticationFactory -> AuthenticationCoordinator
+                      -> JsonUserRepository -> UserStoreJsonCodec
+                      -> Pbkdf2PasswordHasher
+AuthenticationService -> UserRepository
+AuthenticationService -> PasswordHasher
+```
+
+- `AuthenticationFactory.createCoordinator(Path)` owns production wiring for
+  the JSON repository, PBKDF2 hasher, authentication service, and coordinator.
+  The JavaFX pane accepts only an `AuthenticationCoordinator` and does not know
+  concrete persistence or hashing types.
+- `AuthenticationCoordinator` stores only the current authenticated user and a
+  validation message. It derives the route from the user's role. A failed login
+  preserves an existing authenticated session; logout clears it and returns to
+  the login route.
+- `JsonUserRepository` receives its storage path from the caller. An absent file
+  means that no accounts are configured. Unreadable, malformed,
+  unsupported-version, duplicate, incomplete, oversized, or invalid UTF-8 data
+  produces a safe storage failure and is never silently replaced.
+- Reads are bounded to detect files larger than 1 MiB, and JSON is decoded with
+  strict UTF-8 handling. Writes are rejected if their encoded form would exceed
+  the same limit. Successful writes add one account through a temporary file
+  and atomic move where the filesystem supports it. Existing user IDs and
+  case-insensitive usernames are not overwritten. The repository is designed
+  for a single writer; cross-process locking is deferred.
+- Version 1 credentials must name `PBKDF2WithHmacSHA256`, use 210,000 to
+  1,000,000 iterations inclusive, use a 256-bit derived key, decode to exactly
+  16 salt bytes, and decode to exactly 32 hash bytes. The repository rejects
+  invalid metadata before invoking cryptographic work.
+- `Pbkdf2PasswordHasher` creates new credentials with a cryptographically
+  random 16-byte salt, 600,000 iterations, and a 256-bit derived key. Existing
+  valid 210,000-iteration demo credentials remain readable.
+- `AuthenticationService` trims usernames and looks them up case-insensitively.
+  Passwords remain case-sensitive and are not trimmed. Empty and entirely
+  whitespace passwords are rejected, but meaningful leading or trailing
+  whitespace is preserved. Temporary password arrays are cleared after every
+  authentication and provisioning attempt.
+- Invalid credentials share one generic message. The masked JavaFX password
+  field remains populated after a failed login and is cleared only after a
+  successful login or the explicit **Clear** action.
+- Authenticated state contains only user ID, username, and role. Passwords,
+  hashes, and salts never enter it.
+
+The version 1 credential store has this shape; values below are descriptive placeholders, not credentials:
+
+```json
+{
+  "version": 1,
+  "accounts": [
+    {
+      "userId": "synthetic-id",
+      "username": "synthetic.username",
+      "role": "STUDENT",
+      "algorithm": "PBKDF2WithHmacSHA256",
+      "iterations": 210000,
+      "keyLength": 256,
+      "salt": "base64-encoded random bytes",
+      "passwordHash": "base64-encoded derived bytes"
+    }
+  ]
+}
+```
+
+### Provisioning local accounts
+
+Compile the project, then run the provisioning utility from the repository root. It accepts the store path, user ID, username, and canonical role as arguments and securely prompts for the password:
+
+```text
+gradlew.bat classes
+java -cp build\classes\java\main io.github.cs32272610mp2xcode.finderskeepers.auth.provisioning.AccountProvisioningTool data\users.json student-001 student.name STUDENT
+```
+
+Use `DESK_OFFICER` for a Desk Officer. The utility permits only the two canonical roles, masks password entry, rejects empty and whitespace-only passwords without trimming valid passwords, clears its temporary password array, does not print credential material, and refuses duplicate identifiers or usernames. It creates credentials using the 600,000-iteration default and does not offer replacement; account administration is outside this feature.
+
+`data/demo-users.json` retains the version 1 schema and contains the two explicitly synthetic accounts listed in the User Guide. Never use that public store or those demonstration passwords for real users. Application startup resolves this external file relative to the working directory. It is not embedded in the release JAR, so launch from the repository root until a shared distribution layout is approved.
 
 ## Useful commands
 
@@ -44,7 +141,12 @@ gradlew.bat release
 
 ## Testing and quality gates
 
-- JUnit 5 provides automated tests. The baseline tests verify the application identity and Java 25 runtime.
+- JUnit 5 provides automated tests. In addition to the baseline tests,
+  authentication tests cover the coordinator's login/session behavior,
+  credential whitespace and array clearing, both role routes, logout, factory
+  wiring, PBKDF2 verification and salt uniqueness, provisioning validation,
+  bounded JSON persistence, missing storage, corrupt metadata, and plaintext
+  exclusion. Persistence tests use JUnit temporary directories only.
 - Java compilation enables all lint warnings and treats warnings as errors.
 - Checkstyle runs against production and test sources.
 - Javadoc warnings fail the build.
@@ -65,7 +167,8 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 - Student workflows for reporting belongings and checking updates — to be designed and implemented.
 - Desk Officer workflows for reviewing reports and coordinating collection — to be designed and implemented.
 - Shared domain and storage services — to be designed before both role features depend on them.
-- Role-specific JavaFX views and navigation — to be documented with the feature implementation.
+- Deciding how the external demo credential store is supplied with a
+  distributable release — pending shared integration approval.
 
 ## Contribution notes
 

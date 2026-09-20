@@ -1,0 +1,4 @@
+interface:
+  display_name: "MP2 Dev 2 Delivery"
+  short_description: "Deliver fully approved MP2 Dev 2 features"
+  default_prompt: "Use $mp2-dev2-delivery to verify every planning and authorization gate, then implement the fully approved Developer 2 MP2 feature."
