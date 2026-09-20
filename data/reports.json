@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "reports": [
+    {
+      "reportId": "085b9d6e-6f46-4f82-a1b3-258ce4c57d34",
+      "reporterId": "demo-student",
+      "reportType": "FOUND",
+      "itemName": "pencil",
+      "category": "STATIONERY",
+      "location": "hall",
+      "occurrenceDate": "2026-09-20",
+      "publicDescription": "test description",
+      "privateIdentifyingDetail": "pls help me find this pencil",
+      "status": "SUBMITTED",
+      "createdAt": "2026-09-20T13:36:06.292Z"
+    }
+  ]
+}

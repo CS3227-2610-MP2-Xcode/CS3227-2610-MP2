@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import io.github.cs32272610mp2xcode.finderskeepers.auth.bootstrap.AuthenticationFactory;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.ui.AuthenticationPane;
+import io.github.cs32272610mp2xcode.finderskeepers.report.bootstrap.StudentReportWorkspaceFactory;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -29,7 +30,9 @@ public final class FindersKeepersApp extends Application {
     public void start(Stage stage) {
         AuthenticationPane content = new AuthenticationPane(
                 AuthenticationFactory.createCoordinator(
-                        Path.of("data", "demo-users.json")));
+                        Path.of("data", "demo-users.json")),
+                StudentReportWorkspaceFactory.create(
+                        Path.of("data", "reports.json")));
         Scene scene = new Scene(content, 720, 420);
         scene.getStylesheets().add(Objects.requireNonNull(
                 FindersKeepersApp.class.getResource("app.css")).toExternalForm());
