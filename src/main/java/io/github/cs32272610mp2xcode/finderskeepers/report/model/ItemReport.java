@@ -5,7 +5,21 @@ import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
 
-/** The canonical immutable state of one lost-or-found report. */
+/**
+ * The canonical immutable state of one lost-or-found report.
+ *
+ * @param reportId globally unique report identity
+ * @param reporterId exact identity of the Student who owns the report
+ * @param reportType whether the belonging was lost or found
+ * @param itemName Student-provided item name
+ * @param category broad item category
+ * @param location occurrence location
+ * @param occurrenceDate date on which the loss or find occurred
+ * @param publicDescription description suitable for ordinary report views
+ * @param privateIdentifyingDetail detail reserved for trusted workflows
+ * @param status current review status
+ * @param createdAt report creation instant at millisecond precision
+ */
 public record ItemReport(
         UUID reportId,
         String reporterId,

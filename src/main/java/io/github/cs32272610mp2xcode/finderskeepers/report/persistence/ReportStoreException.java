@@ -8,6 +8,7 @@ public final class ReportStoreException extends Exception {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /** Stable caller-visible failure category. */
     private final Reason reason;
 
     /**
