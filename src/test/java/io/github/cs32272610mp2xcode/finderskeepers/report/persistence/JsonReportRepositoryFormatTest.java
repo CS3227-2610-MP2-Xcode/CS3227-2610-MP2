@@ -118,6 +118,7 @@ class JsonReportRepositoryFormatTest {
         String valid = CANONICAL_DOCUMENT;
         String reportObject = valid.substring(valid.indexOf("    {"), valid.indexOf("\n    }\n") + 6);
         String duplicateReport = valid.replace("\n  ]", ",\n" + reportObject + "\n  ]");
+        String nonAsciiHexEscape = valid.replace("Item 1", "bad\\" + "u００４１");
         return Stream.of(
                 Arguments.of("C01", new byte[0]),
                 Arguments.of("C02", "{".getBytes(StandardCharsets.UTF_8)),
@@ -185,7 +186,8 @@ class JsonReportRepositoryFormatTest {
                         .getBytes(StandardCharsets.UTF_8)),
                 Arguments.of("C35", valid.replace("\"schemaVersion\": 1,",
                         "\"\\u0073chemaVersion\": 1,\n  \"schemaVersion\": 1,")
-                        .getBytes(StandardCharsets.UTF_8)));
+                        .getBytes(StandardCharsets.UTF_8)),
+                Arguments.of("C36", nonAsciiHexEscape.getBytes(StandardCharsets.UTF_8)));
     }
 
     private static void assertCorrupt(StoreAction action) {

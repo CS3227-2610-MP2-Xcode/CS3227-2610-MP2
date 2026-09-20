@@ -20,10 +20,17 @@ final class NioReportStoreFiles implements ReportStoreFiles {
 
     @Override
     public Optional<byte[]> readBounded(Path target, int maximumBytes) throws StoreFileFailure {
-        if (Files.notExists(target, NOFOLLOW_LINKS)) {
-            return Optional.empty();
-        }
-        if (!Files.isRegularFile(target, NOFOLLOW_LINKS)) {
+        try {
+            if (Files.notExists(target, NOFOLLOW_LINKS)) {
+                verifyMissingPathAncestors(target.getParent());
+                return Optional.empty();
+            }
+            if (!Files.exists(target, NOFOLLOW_LINKS) || !Files.isRegularFile(target, NOFOLLOW_LINKS)) {
+                throw new StoreFileFailure(StoreFileFailure.Kind.ACCESS);
+            }
+        } catch (StoreFileFailure failure) {
+            throw failure;
+        } catch (SecurityException failure) {
             throw new StoreFileFailure(StoreFileFailure.Kind.ACCESS);
         }
 
@@ -33,18 +40,35 @@ final class NioReportStoreFiles implements ReportStoreFiles {
             byte[] buffer = new byte[READ_BUFFER_BYTES];
             int total = 0;
             int count;
-            while ((count = input.read(buffer)) != -1) {
-                if (count > maximumBytes - total) {
+            while ((count = input.read(
+                    buffer, 0, Math.min(buffer.length, maximumBytes - total + 1))) != -1) {
+                total += count;
+                if (total > maximumBytes) {
                     throw new StoreFileFailure(StoreFileFailure.Kind.OVER_LIMIT);
                 }
                 output.write(buffer, 0, count);
-                total += count;
             }
             return Optional.of(output.toByteArray());
         } catch (StoreFileFailure failure) {
             throw failure;
         } catch (IOException | SecurityException failure) {
             throw new StoreFileFailure(StoreFileFailure.Kind.ACCESS);
+        }
+    }
+
+    private static void verifyMissingPathAncestors(Path parent) throws StoreFileFailure {
+        Path current = parent;
+        while (current != null) {
+            if (Files.exists(current, NOFOLLOW_LINKS)) {
+                if (!Files.isDirectory(current, NOFOLLOW_LINKS)) {
+                    throw new StoreFileFailure(StoreFileFailure.Kind.ACCESS);
+                }
+                return;
+            }
+            if (!Files.notExists(current, NOFOLLOW_LINKS)) {
+                throw new StoreFileFailure(StoreFileFailure.Kind.ACCESS);
+            }
+            current = current.getParent();
         }
     }
 

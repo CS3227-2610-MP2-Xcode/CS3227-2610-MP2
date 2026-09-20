@@ -404,13 +404,26 @@ final class ReportStoreJsonCodec {
             }
             int result = 0;
             for (int count = 0; count < 4; count++) {
-                int digit = Character.digit(json.charAt(index++), 16);
+                int digit = asciiHexValue(json.charAt(index++));
                 if (digit < 0) {
                     throw new InvalidStoreException();
                 }
                 result = result << 4 | digit;
             }
             return (char) result;
+        }
+
+        private static int asciiHexValue(char value) {
+            if (value >= '0' && value <= '9') {
+                return value - '0';
+            }
+            if (value >= 'a' && value <= 'f') {
+                return value - 'a' + 10;
+            }
+            if (value >= 'A' && value <= 'F') {
+                return value - 'A' + 10;
+            }
+            return -1;
         }
 
         private void expect(char expected) throws InvalidStoreException {
