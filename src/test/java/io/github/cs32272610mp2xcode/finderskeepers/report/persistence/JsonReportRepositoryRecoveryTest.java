@@ -3,7 +3,9 @@ package io.github.cs32272610mp2xcode.finderskeepers.report.persistence;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemCategory;
@@ -90,7 +93,38 @@ class JsonReportRepositoryRecoveryTest {
     }
 
     @Test
-    void failureReasonsHaveFixedPrivacySafeDiagnostics() {
+    void failureReasonsAreTypedAndDiagnosticsContainNoReportValues()
+            throws IOException, ReportStoreException {
+        ItemReport original = report(1);
+        Path duplicateStore = temporaryDirectory.resolve("privacy-duplicate.json");
+        ReportRepository duplicateRepository = new JsonReportRepository(duplicateStore);
+        duplicateRepository.insert(original);
+
+        Path corruptStore = temporaryDirectory.resolve("privacy-corrupt.json");
+        Files.writeString(corruptStore, "synthetic invalid document", StandardCharsets.UTF_8);
+
+        ReportStoreFiles inaccessibleFiles = new ReportStoreFiles() {
+            @Override
+            public Optional<byte[]> readBounded(Path target, int maximumBytes) throws StoreFileFailure {
+                throw new StoreFileFailure(StoreFileFailure.Kind.ACCESS);
+            }
+
+            @Override
+            public void replaceAtomically(Path target, byte[] completeDocument)
+                    throws StoreFileFailure {
+                throw new StoreFileFailure(StoreFileFailure.Kind.ACCESS);
+            }
+        };
+        ReportRepository inaccessibleRepository = new JsonReportRepository(
+                temporaryDirectory.resolve("privacy-inaccessible.json"),
+                inaccessibleFiles,
+                JsonReportRepository.MAX_STORE_BYTES);
+
+        ItemReport immutableMismatch = withIdentityAndText(
+                original, original.reportId(), "different-reporter", original.itemName());
+        ItemReport unencodable = withIdentityAndText(
+                original, new UUID(5L, 99L), original.reporterId(), "invalid-\ud800");
+
         List<FailureExpectation> expectations = List.of(
                 new FailureExpectation(
                         ReportStoreException.Reason.DUPLICATE_REPORT_ID,
@@ -111,8 +145,33 @@ class JsonReportRepositoryRecoveryTest {
                         ReportStoreException.Reason.UNENCODABLE_OR_OVER_LIMIT_RESULT,
                         "The requested report state is not encodable or exceeds the supported store limit."));
 
-        for (FailureExpectation expectation : expectations) {
-            ReportStoreException failure = new ReportStoreException(expectation.reason());
+        PrintStream originalOut = System.out;
+        PrintStream originalErr = System.err;
+        ByteArrayOutputStream capturedOutput = new ByteArrayOutputStream();
+        List<ReportStoreException> failures;
+        try (PrintStream capture = new PrintStream(capturedOutput, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            System.setErr(capture);
+            failures = List.of(
+                    captureFailure(() -> duplicateRepository.insert(original)),
+                    captureFailure(() -> new JsonReportRepository(
+                            temporaryDirectory.resolve("privacy-missing.json"))
+                            .replace(original.reportId(), original)),
+                    captureFailure(() -> duplicateRepository.replace(
+                            original.reportId(), immutableMismatch)),
+                    captureFailure(() -> new JsonReportRepository(corruptStore).loadAll()),
+                    captureFailure(() -> inaccessibleRepository.loadAll()),
+                    captureFailure(() -> new JsonReportRepository(
+                            temporaryDirectory.resolve("privacy-unencodable.json"))
+                            .insert(unencodable)));
+        } finally {
+            System.setOut(originalOut);
+            System.setErr(originalErr);
+        }
+
+        for (int index = 0; index < expectations.size(); index++) {
+            FailureExpectation expectation = expectations.get(index);
+            ReportStoreException failure = failures.get(index);
             assertTrue(failure.reason() == expectation.reason(), "The typed failure reason must be retained");
             assertTrue(failure.getMessage().equals(expectation.message()),
                     "Each reason must select its fixed generic diagnostic");
@@ -120,6 +179,8 @@ class JsonReportRepositoryRecoveryTest {
             assertTrue(failure.getSuppressed().length == 0,
                     "A public persistence failure must not expose suppressed details");
         }
+        assertTrue(capturedOutput.size() == 0,
+                "Persistence failures must not print report content or diagnostics");
     }
 
     private static void assertCorrupt(StoreAction action) {
@@ -130,6 +191,11 @@ class JsonReportRepositoryRecoveryTest {
         ReportStoreException failure = assertThrows(
                 ReportStoreException.class, action::run, "The operation must expose one typed failure");
         assertTrue(failure.reason() == reason, "Failure precedence must select the approved reason");
+    }
+
+    private static ReportStoreException captureFailure(StoreAction action) {
+        return assertThrows(
+                ReportStoreException.class, action::run, "The operation must expose one typed failure");
     }
 
     private static ItemReport report(int sequence) {

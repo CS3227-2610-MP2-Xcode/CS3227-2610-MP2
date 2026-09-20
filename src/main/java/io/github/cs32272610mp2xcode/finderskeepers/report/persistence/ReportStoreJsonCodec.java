@@ -74,15 +74,58 @@ final class ReportStoreJsonCodec {
             throws InvalidReportStateException {
         appendMember(output, "reportId", report.reportId().toString(), true);
         appendMember(output, "reporterId", report.reporterId(), false);
-        appendMember(output, "reportType", report.reportType().name(), false);
+        appendMember(output, "reportType", encodeReportType(report.reportType()), false);
         appendMember(output, "itemName", report.itemName(), false);
-        appendMember(output, "category", report.category().name(), false);
+        appendMember(output, "category", encodeCategory(report.category()), false);
         appendMember(output, "location", report.location(), false);
         appendMember(output, "occurrenceDate", report.occurrenceDate().toString(), false);
         appendMember(output, "publicDescription", report.publicDescription(), false);
         appendMember(output, "privateIdentifyingDetail", report.privateIdentifyingDetail(), false);
-        appendMember(output, "status", report.status().name(), false);
+        appendMember(output, "status", encodeStatus(report.status()), false);
         appendMember(output, "createdAt", INSTANT_MILLIS.format(report.createdAt()), false);
+    }
+
+    private static String encodeReportType(ReportType reportType) {
+        return switch (reportType) {
+            case LOST -> "LOST";
+            case FOUND -> "FOUND";
+        };
+    }
+
+    private static String encodeCategory(ItemCategory category) {
+        return switch (category) {
+            case OTHER -> "OTHER";
+        };
+    }
+
+    private static String encodeStatus(ReportStatus status) {
+        return switch (status) {
+            case SUBMITTED -> "SUBMITTED";
+            case UNDER_REVIEW -> "UNDER_REVIEW";
+        };
+    }
+
+    private static ReportType decodeReportType(String token) {
+        return switch (token) {
+            case "LOST" -> ReportType.LOST;
+            case "FOUND" -> ReportType.FOUND;
+            default -> throw new IllegalArgumentException("Unsupported report type token");
+        };
+    }
+
+    private static ItemCategory decodeCategory(String token) {
+        if ("OTHER".equals(token)) {
+            return ItemCategory.OTHER;
+        }
+        throw new IllegalArgumentException("Unsupported item category token");
+    }
+
+    private static ReportStatus decodeStatus(String token) {
+        return switch (token) {
+            case "SUBMITTED" -> ReportStatus.SUBMITTED;
+            case "UNDER_REVIEW" -> ReportStatus.UNDER_REVIEW;
+            default -> throw new IllegalArgumentException("Unsupported report status token");
+        };
     }
 
     private static void appendMember(BoundedUtf8 output, String name, String value, boolean first)
@@ -322,14 +365,14 @@ final class ReportStoreJsonCodec {
                 return new ItemReport(
                         identifier,
                         values.get("reporterId"),
-                        ReportType.valueOf(values.get("reportType")),
+                        decodeReportType(values.get("reportType")),
                         values.get("itemName"),
-                        ItemCategory.valueOf(values.get("category")),
+                        decodeCategory(values.get("category")),
                         values.get("location"),
                         date,
                         values.get("publicDescription"),
                         values.get("privateIdentifyingDetail"),
-                        ReportStatus.valueOf(values.get("status")),
+                        decodeStatus(values.get("status")),
                         instant);
             } catch (DateTimeException | IllegalArgumentException | NullPointerException failure) {
                 throw new InvalidStoreException();

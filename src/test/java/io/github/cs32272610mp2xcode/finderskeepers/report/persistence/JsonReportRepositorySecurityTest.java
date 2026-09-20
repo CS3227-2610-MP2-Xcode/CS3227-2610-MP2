@@ -37,19 +37,26 @@ class JsonReportRepositorySecurityTest {
             String caseId, int field, String attack) throws ReportStoreException, IOException {
         Path store = temporaryDirectory.resolve("case-" + caseId + ".json");
         ItemReport attacked = withTextField(report(), field, attack);
+        ItemReport before = neighbor(2);
+        ItemReport after = neighbor(3);
         ReportRepository repository = new JsonReportRepository(store);
 
+        repository.insert(before);
         repository.insert(attacked);
+        repository.insert(after);
         List<ItemReport> loaded = new JsonReportRepository(store).loadAll();
 
-        assertTrue(loaded.size() == 1, "An attacked field must not create or remove reports");
-        assertTrue(loaded.getFirst().equals(attacked), "An attacked field must round-trip as ordinary data");
-        assertTrue(loaded.getFirst().reportId().equals(attacked.reportId()),
+        assertTrue(loaded.size() == 3, "An attacked field must not create or remove reports");
+        assertTrue(loaded.get(0).equals(before), "Data before an attacked field must remain exact");
+        assertTrue(loaded.get(1).equals(attacked), "An attacked field must round-trip as ordinary data");
+        assertTrue(loaded.get(2).equals(after), "Data after an attacked field must remain exact");
+        assertTrue(loaded.get(1).reportId().equals(attacked.reportId()),
                 "An attacked field must not change report identity");
-        assertTrue(loaded.getFirst().status() == attacked.status(),
+        assertTrue(loaded.get(1).status() == attacked.status(),
                 "An attacked field must not change report status");
         try (Stream<Path> entries = Files.list(temporaryDirectory)) {
-            assertTrue(entries.count() == 1, "Report data must not create a derived path");
+            assertTrue(entries.toList().equals(List.of(store)),
+                    "Report data must write only to the configured store path");
         }
     }
 
@@ -163,6 +170,21 @@ class JsonReportRepositorySecurityTest {
                 "Public description base",
                 "Private detail base",
                 ReportStatus.SUBMITTED,
+                CREATED_AT);
+    }
+
+    private static ItemReport neighbor(long sequence) {
+        return new ItemReport(
+                new UUID(2L, sequence),
+                "neighbor-reporter-" + sequence,
+                ReportType.FOUND,
+                "Neighbor item " + sequence,
+                ItemCategory.OTHER,
+                "Neighbor location " + sequence,
+                LocalDate.of(2026, 9, 18),
+                "Neighbor public description " + sequence,
+                "Neighbor private detail " + sequence,
+                ReportStatus.UNDER_REVIEW,
                 CREATED_AT);
     }
 

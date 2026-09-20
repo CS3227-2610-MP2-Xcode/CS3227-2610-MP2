@@ -46,6 +46,20 @@ class JsonReportRepositoryFormatTest {
             }
             """;
 
+    private static final String[] REQUIRED_REPORT_MEMBERS = {
+        "reportId",
+        "reporterId",
+        "reportType",
+        "itemName",
+        "category",
+        "location",
+        "occurrenceDate",
+        "publicDescription",
+        "privateIdentifyingDetail",
+        "status",
+        "createdAt"
+    };
+
     @TempDir
     private Path temporaryDirectory;
 
@@ -72,6 +86,31 @@ class JsonReportRepositoryFormatTest {
         Files.writeString(alternateStore, " \n{\"reports\":[],\"schemaVersion\":1}\r\n", StandardCharsets.UTF_8);
         assertTrue(new JsonReportRepository(alternateStore).loadAll().isEmpty(),
                 "Permitted whitespace and member order must not change meaning");
+
+        Path reorderedReportStore = temporaryDirectory.resolve("reordered-report.json");
+        String reorderedReportDocument = """
+                {
+                  "reports": [
+                    {
+                      "createdAt": "2026-09-20T01:02:03.456Z",
+                      "status": "SUBMITTED",
+                      "privateIdentifyingDetail": "Private detail 1",
+                      "publicDescription": "Public description 1",
+                      "occurrenceDate": "2026-09-11",
+                      "location": "Location 1",
+                      "category": "OTHER",
+                      "itemName": "Item 1",
+                      "reportType": "LOST",
+                      "reporterId": "reporter-1",
+                      "reportId": "00000000-0000-0000-0000-000000000001"
+                    }
+                  ],
+                  "schemaVersion": 1
+                }
+                """;
+        Files.writeString(reorderedReportStore, reorderedReportDocument, StandardCharsets.UTF_8);
+        assertTrue(new JsonReportRepository(reorderedReportStore).loadAll().equals(List.of(expected)),
+                "Permitted report-member order must not change reconstruction");
     }
 
     @Test
@@ -97,6 +136,18 @@ class JsonReportRepositoryFormatTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidDocuments")
     void invalidStoredDocumentBlocksEveryOperationAndPreservesExactBytes(String caseId, byte[] invalidBytes)
+            throws IOException {
+        assertInvalidStoreBlocksEveryOperation(caseId, invalidBytes);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("invalidRequiredReportMembers")
+    void everyRequiredReportMemberRejectsMissingNullAndWrongTypes(String caseId, byte[] invalidBytes)
+            throws IOException {
+        assertInvalidStoreBlocksEveryOperation(caseId, invalidBytes);
+    }
+
+    private void assertInvalidStoreBlocksEveryOperation(String caseId, byte[] invalidBytes)
             throws IOException {
         Path store = temporaryDirectory.resolve(caseId + ".json");
         Files.write(store, invalidBytes);
@@ -187,7 +238,60 @@ class JsonReportRepositoryFormatTest {
                 Arguments.of("C35", valid.replace("\"schemaVersion\": 1,",
                         "\"\\u0073chemaVersion\": 1,\n  \"schemaVersion\": 1,")
                         .getBytes(StandardCharsets.UTF_8)),
-                Arguments.of("C36", nonAsciiHexEscape.getBytes(StandardCharsets.UTF_8)));
+                Arguments.of("C36", nonAsciiHexEscape.getBytes(StandardCharsets.UTF_8)),
+                Arguments.of("C37", valid.replace("2026-09-20T01:02:03.456Z",
+                        "2026-09-20T01:02:03.456+00:00").getBytes(StandardCharsets.UTF_8)),
+                Arguments.of("C38", valid.replace("2026-09-20T01:02:03.456Z",
+                        "2026-09-20T01:02:03.4Z").getBytes(StandardCharsets.UTF_8)),
+                Arguments.of("C39", valid.replace("2026-09-20T01:02:03.456Z",
+                        "2026-09-20T01:02:03.456000Z").getBytes(StandardCharsets.UTF_8)),
+                Arguments.of("C40", valid.replace("2026-09-20T01:02:03.456Z",
+                        "2026-09-20T01:02:03.456000000Z").getBytes(StandardCharsets.UTF_8)),
+                Arguments.of("C41", valid.replace("\"schemaVersion\": 1", "\"schemaVersion\": 1e0")
+                        .getBytes(StandardCharsets.UTF_8)),
+                Arguments.of("C42", valid.replace("\"reporterId\": \"reporter-1\"", "\"reporterId\": \"\"")
+                        .getBytes(StandardCharsets.UTF_8)),
+                Arguments.of("C43", valid.replace("\"itemName\": \"Item 1\"",
+                        "\"itemName\": \"" + "x".repeat(101) + "\"").getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static Stream<Arguments> invalidRequiredReportMembers() {
+        Stream.Builder<Arguments> cases = Stream.builder();
+        int caseNumber = 1;
+        for (String member : REQUIRED_REPORT_MEMBERS) {
+            cases.add(Arguments.of(
+                    String.format("M%02d-missing-%s", caseNumber++, member),
+                    removeRequiredMember(CANONICAL_DOCUMENT, member).getBytes(StandardCharsets.UTF_8)));
+            cases.add(Arguments.of(
+                    String.format("M%02d-null-%s", caseNumber++, member),
+                    replaceRequiredMemberValue(CANONICAL_DOCUMENT, member, "null")
+                            .getBytes(StandardCharsets.UTF_8)));
+            cases.add(Arguments.of(
+                    String.format("M%02d-wrong-type-%s", caseNumber++, member),
+                    replaceRequiredMemberValue(CANONICAL_DOCUMENT, member, "1")
+                            .getBytes(StandardCharsets.UTF_8)));
+        }
+        return cases.build();
+    }
+
+    private static String removeRequiredMember(String document, String member) {
+        String prefix = "      \"" + member + "\": ";
+        int memberStart = document.indexOf(prefix);
+        int lineEnd = document.indexOf('\n', memberStart);
+        String withoutMember = document.substring(0, memberStart) + document.substring(lineEnd + 1);
+        if (member.equals("createdAt")) {
+            return withoutMember.replace("      \"status\": \"SUBMITTED\",\n",
+                    "      \"status\": \"SUBMITTED\"\n");
+        }
+        return withoutMember;
+    }
+
+    private static String replaceRequiredMemberValue(String document, String member, String replacement) {
+        String prefix = "      \"" + member + "\": ";
+        int valueStart = document.indexOf(prefix) + prefix.length();
+        int lineEnd = document.indexOf('\n', valueStart);
+        int valueEnd = document.charAt(lineEnd - 1) == ',' ? lineEnd - 1 : lineEnd;
+        return document.substring(0, valueStart) + replacement + document.substring(valueEnd);
     }
 
     private static void assertCorrupt(StoreAction action) {

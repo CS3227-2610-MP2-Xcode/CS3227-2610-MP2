@@ -46,8 +46,11 @@ class ItemReportTest {
     void canonicalReportUsesApprovedIdentityEnumsAndMillisecondPrecision() {
         ItemReport first = report(UnaryOperator.identity());
         ItemReport equivalent = report(UnaryOperator.identity());
+        ItemReport differentReporterCase = reportWithReporterId(" REPORTER-01 ");
 
         assertTrue(first.equals(equivalent), "Equivalent canonical reports must compare equally");
+        assertTrue(!first.equals(differentReporterCase),
+                "Reporter-ID equality must remain exact and case-sensitive");
         assertTrue(first.reportId().equals(REPORT_ID), "Report identity must use the supplied UUID");
         assertTrue(Arrays.equals(ReportType.values(), new ReportType[] {ReportType.LOST, ReportType.FOUND}),
                 "Report types must match the approved storage tokens");
