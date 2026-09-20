@@ -49,6 +49,20 @@ class JsonReportRepositoryTest {
     }
 
     @Test
+    void loadedReportsAreAnUnmodifiableStructuralSnapshot() throws ReportStoreException {
+        Path store = temporaryDirectory.resolve("reports.json");
+        ReportRepository repository = new JsonReportRepository(store);
+        repository.insert(report(1, ReportStatus.SUBMITTED));
+        List<ItemReport> snapshot = repository.loadAll();
+
+        assertThrows(UnsupportedOperationException.class,
+                () -> snapshot.add(report(2, ReportStatus.SUBMITTED)),
+                "The loaded report list must be structurally unmodifiable");
+        repository.insert(report(2, ReportStatus.SUBMITTED));
+        assertTrue(snapshot.size() == 1, "A later mutation must not change an earlier snapshot");
+    }
+
+    @Test
     void duplicateInsertReturnsDuplicateConflictAndPreservesBytes() throws ReportStoreException, IOException {
         Path store = temporaryDirectory.resolve("reports.json");
         ItemReport original = report(1, ReportStatus.SUBMITTED);
