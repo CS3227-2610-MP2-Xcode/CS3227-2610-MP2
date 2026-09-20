@@ -80,6 +80,52 @@ Run `./gradlew test` on macOS/Linux or `gradlew.bat test` on Windows. Run `check
 
 Successful Student login reaches a distinct Student home. Report submission and status features remain planned for later sprints.
 
+## Report domain rules (Sprint 1)
+
+The report domain is the contract used by the later Student submission screen. The form itself is a separate S1-D1-03 feature and is not claimed to be available by this section.
+
+Every report has a generated UUID report ID, the case-sensitive reporter ID, a lost-or-found type, item name, category, location, occurrence date, public description, private identifying detail, status, and creation time. New reports start with status `SUBMITTED`. The creation time is recorded as a UTC `Instant` with millisecond precision.
+
+The public description is suitable for information that can help people recognise an item. The private identifying detail is kept separately for safe verification by a Desk Officer; it must not be copied into the public description, displayed in public summaries, or exposed in logs.
+
+### Accepted values and limits
+
+- Type: `LOST` or `FOUND`.
+- Category: `STATIONERY`, `BOOKS`, `CLOTHING`, `BAGS`, `WATER_BOTTLES`, `ELECTRONICS`, `SPORTS_EQUIPMENT`, `PERSONAL_ITEMS`, or `OTHER`.
+- Status: `SUBMITTED` or `UNDER_REVIEW`. Students do not choose this value;
+  every new report starts as `SUBMITTED`.
+- Reporter ID: 1–128 nonblank Unicode code points.
+- Item name: 1–100 nonblank Unicode code points.
+- Location: 1–120 nonblank Unicode code points.
+- Public description: 1–500 nonblank Unicode code points.
+- Private identifying detail: 1–500 nonblank Unicode code points.
+- Occurrence date: `yyyy-MM-dd` (for example, `2026-09-19`), today or earlier.
+
+All fields are required. Missing values and blank text are different validation errors, but both are rejected. Enum values are stored and parsed using their exact uppercase names; values such as `Lost` or `under_review` are invalid.
+
+### Examples
+
+Valid synthetic example:
+
+```text
+Type: LOST
+Item name: Blue pencil case
+Category: STATIONERY
+Location: Library, shelf 2
+Occurrence date: 2026-09-18
+Public description: Blue case with a white zipper.
+Private identifying detail: [entered privately; not reproduced in this guide]
+```
+
+Invalid examples:
+
+- Missing location: rejected because every report needs a location.
+- Item name `   `: rejected because blank text is not a name.
+- Occurrence date `2026-09-20` when today is `2026-09-19`: rejected because future dates are not allowed.
+- Type `STOLEN`: rejected because only `LOST` and `FOUND` are supported.
+- Category `VEHICLE`: rejected because it is not an accepted category.
+- A description longer than 500 code points: rejected with a field-specific length message.
+
 ### Desk Officer
 
 Successful Desk Officer login reaches a distinct Desk Officer home. Report review and collection features remain planned for later sprints.

@@ -170,6 +170,90 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 - Deciding how the external demo credential store is supplied with a
   distributable release — pending shared integration approval.
 
+## Report domain contract (S1-D1-02)
+
+The report domain is independent of JavaFX and persistence. It lives under
+`io.github.cs32272610mp2xcode.finderskeepers.report` and provides the shared
+contract used by Student submission and Desk Officer storage/review features.
+
+`ItemReport` is an immutable final value object with these eleven fields and
+accessors:
+
+```text
+UUID reportId()
+String reporterId()
+ReportType reportType()
+String itemName()
+ItemCategory category()
+String location()
+LocalDate occurrenceDate()
+String publicDescription()
+String privateIdentifyingDetail()
+ReportStatus status()
+Instant createdAt()
+```
+
+`ReportCreationRequest` contains the eight user-supplied values: reporter ID,
+report type, item name, category, location, occurrence date, public
+description, and private identifying detail. Report ID, status, and creation
+time are controlled by the domain.
+
+New reports are created with `ItemReport.create(UUID, ReportCreationRequest,
+Clock)`. The factory validates the request, always assigns `SUBMITTED`, and
+uses the supplied clock for `createdAt`, truncated to milliseconds. Storage
+reconstruction uses the clockless `ItemReport.restore(...)`, which validates a
+complete stored record while preserving its status, creation time, and text
+exactly. The clock-taking overload is for importing external records when a
+future-date check is also required. `withStatus(...)` returns a complete
+updated copy and never mutates the original. Equality is value-based across all
+eleven fields.
+
+### Validation and persistence-facing values
+
+All eleven fields are required. Null and blank text are separate validation
+cases. Creation strips surrounding whitespace before measuring text in Unicode
+code points. Restoration preserves surrounding whitespace, rejects entirely
+blank values, and measures the exact stored value so persistence can round-trip
+data without changing it. Reporter ID is limited to 128, item name to 100,
+location to 120, and each of the two descriptions to 500. Future occurrence
+dates are rejected when creating a report using the provided clock.
+`occurrenceDate` is a `LocalDate` stored strictly as
+`yyyy-MM-dd`. `createdAt` is an `Instant` stored in UTC with millisecond
+precision, such as `2026-09-19T07:15:30.123Z`.
+
+`reportId` is a UUID serialized using its canonical string form and compared by
+UUID value. `reporterId` is an opaque, case-sensitive string; it is not
+lowercased or treated as a display name. The persistence property names are
+`reportId`, `reporterId`, `reportType`, `itemName`, `category`, `location`,
+`occurrenceDate`, `publicDescription`, `privateIdentifyingDetail`, `status`,
+and `createdAt`.
+
+The enums have these exact stored names. Persistence must call `storedName()`
+when writing and `fromStoredName(...)` when reading rather than maintaining a
+second switch or duplicate enum:
+
+```text
+ReportType: LOST, FOUND
+ItemCategory: STATIONERY, BOOKS, CLOTHING, BAGS, WATER_BOTTLES,
+              ELECTRONICS, SPORTS_EQUIPMENT, PERSONAL_ITEMS, OTHER
+ReportStatus: SUBMITTED, UNDER_REVIEW
+```
+
+Enum parsing is strict and case-sensitive. Unknown, null, or blank stored names
+are invalid. The public and private descriptions are intentionally separate;
+`ItemReport.toString()` is always `ItemReport[redacted]`, and
+`ReportCreationRequest.toString()` exposes neither description.
+
+The repository must import these canonical types from the `report` package. It
+must not declare a parallel `report.model.ItemReport` or duplicate enums. The
+JSON decoder should pass the eleven decoded values to the clockless
+`ItemReport.restore(...)`; this keeps domain validation in one place and allows
+all supported categories to round-trip.
+
+The domain reports field-specific, readable validation errors through an
+immutable validation-error collection. JSON/file handling remains a storage
+responsibility and must not be added to this domain package.
+
 ## Contribution notes
 
 Keep future entries grounded in the current source tree. Add tests for observable behaviour, update both guides with each feature, and record design decisions when they become verifiable.
