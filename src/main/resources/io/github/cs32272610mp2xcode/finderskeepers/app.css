@@ -15,3 +15,65 @@
     -fx-padding: 7px 14px;
     -fx-text-fill: #245c3d;
 }
+
+.report-form-root,
+.report-form-scroll,
+.report-form-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.section-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f5136;
+}
+
+.field-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: #263d31;
+}
+
+.text-field,
+.combo-box,
+.date-picker,
+.text-area {
+    -fx-pref-width: 320px;
+}
+
+.text-area {
+    -fx-pref-height: 88px;
+}
+
+.field-error,
+.submission-error {
+    -fx-text-fill: #a12b2b;
+}
+
+.field-error {
+    -fx-min-height: 18px;
+}
+
+.privacy-note {
+    -fx-text-fill: #53685c;
+    -fx-font-style: italic;
+}
+
+.submission-feedback {
+    -fx-padding: 10px 12px;
+    -fx-background-radius: 8px;
+}
+
+.submission-success {
+    -fx-background-color: #d9eddf;
+    -fx-text-fill: #245c3d;
+}
+
+.submission-error {
+    -fx-background-color: #fbe3e3;
+}
+
+.primary-button {
+    -fx-background-color: #1f6b45;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}

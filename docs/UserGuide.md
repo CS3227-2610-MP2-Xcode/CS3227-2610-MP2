@@ -4,6 +4,12 @@
 
 Finders Keepers is intended for a primary school's lost-and-found desk. Application startup now opens the local login, with Student and Desk Officer routing and logout available after authentication.
 
+The Student report form and its validation/controller logic are implemented,
+but the current application does not yet open that form. Concrete report
+storage and authentication route wiring are still integration work. The steps
+below describe the implemented form behavior for the integrated build; they
+are not a claim that the current startup can reach it.
+
 ## Requirements
 
 Install Java 25 before running the project. Confirm the active version:
@@ -78,7 +84,36 @@ Run `./gradlew test` on macOS/Linux or `gradlew.bat test` on Windows. Run `check
 
 ### Student
 
-Successful Student login reaches a distinct Student home. Report submission and status features remain planned for later sprints.
+Successful Student login reaches a distinct Student home. Once the pending
+route and storage integration is complete, the planned submission flow is:
+
+1. Open **Report a lost or found item**.
+2. Choose **Lost** or **Found**, then enter the item name, category, location,
+   date, and a public description.
+3. Add a private identifying detail, such as a synthetic example of a unique
+   sticker or marking. This detail is for staff verification and should not be
+   copied into the public description.
+4. Select **Submit report**. A valid saved report shows a confirmation with a
+   report ID. The authenticated account supplies the reporter identity; there
+   is no reporter-ID input for the Student to edit.
+
+All fields are required. The date cannot be in the future. Validation messages
+appear beside the relevant fields, including missing report type, item name,
+category, location, date, public description, or private identifying detail.
+The item name can contain at most 100 characters, the location at most 120,
+and each description at most 500. Text containing only spaces is not accepted.
+If storage fails, the form shows a safe retry/help message and keeps the
+entered values so they can be submitted again. It does not show file paths or
+technical error details. **Clear** removes all editable values, validation
+messages, and feedback without submitting a report. A successful submission
+also clears the editable fields.
+
+The private identifying detail is not shown in the confirmation, and the
+reporter identity comes from the signed-in session rather than user-entered
+text. Use synthetic descriptions in demonstrations and do not enter real
+children's identifying information.
+
+Student status features remain planned for later sprints.
 
 ## Report domain rules (Sprint 1)
 
