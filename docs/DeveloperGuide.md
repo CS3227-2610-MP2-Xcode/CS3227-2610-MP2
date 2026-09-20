@@ -201,18 +201,23 @@ time are controlled by the domain.
 New reports are created with `ItemReport.create(UUID, ReportCreationRequest,
 Clock)`. The factory validates the request, always assigns `SUBMITTED`, and
 uses the supplied clock for `createdAt`, truncated to milliseconds. Storage
-reconstruction uses `ItemReport.restore(...)`, which validates a complete
-stored record while preserving its status and creation time. `withStatus(...)`
-returns a complete updated copy and never mutates the original. Equality is
-value-based across all eleven fields.
+reconstruction uses the clockless `ItemReport.restore(...)`, which validates a
+complete stored record while preserving its status, creation time, and text
+exactly. The clock-taking overload is for importing external records when a
+future-date check is also required. `withStatus(...)` returns a complete
+updated copy and never mutates the original. Equality is value-based across all
+eleven fields.
 
 ### Validation and persistence-facing values
 
 All eleven fields are required. Null and blank text are separate validation
-cases. Text is stripped at the boundaries and measured in Unicode code points:
-reporter ID is limited to 128, item name to 100, location to 120, and each of
-the two descriptions to 500. Future occurrence dates are rejected using the
-provided clock. `occurrenceDate` is a `LocalDate` stored strictly as
+cases. Creation strips surrounding whitespace before measuring text in Unicode
+code points. Restoration preserves surrounding whitespace, rejects entirely
+blank values, and measures the exact stored value so persistence can round-trip
+data without changing it. Reporter ID is limited to 128, item name to 100,
+location to 120, and each of the two descriptions to 500. Future occurrence
+dates are rejected when creating a report using the provided clock.
+`occurrenceDate` is a `LocalDate` stored strictly as
 `yyyy-MM-dd`. `createdAt` is an `Instant` stored in UTC with millisecond
 precision, such as `2026-09-19T07:15:30.123Z`.
 
@@ -223,7 +228,9 @@ lowercased or treated as a display name. The persistence property names are
 `occurrenceDate`, `publicDescription`, `privateIdentifyingDetail`, `status`,
 and `createdAt`.
 
-The enums have these exact stored names:
+The enums have these exact stored names. Persistence must call `storedName()`
+when writing and `fromStoredName(...)` when reading rather than maintaining a
+second switch or duplicate enum:
 
 ```text
 ReportType: LOST, FOUND
@@ -234,8 +241,14 @@ ReportStatus: SUBMITTED, UNDER_REVIEW
 
 Enum parsing is strict and case-sensitive. Unknown, null, or blank stored names
 are invalid. The public and private descriptions are intentionally separate;
-neither `ItemReport.toString()` nor `ReportCreationRequest.toString()` exposes
-the private identifying detail.
+`ItemReport.toString()` is always `ItemReport[redacted]`, and
+`ReportCreationRequest.toString()` exposes neither description.
+
+The repository must import these canonical types from the `report` package. It
+must not declare a parallel `report.model.ItemReport` or duplicate enums. The
+JSON decoder should pass the eleven decoded values to the clockless
+`ItemReport.restore(...)`; this keeps domain validation in one place and allows
+all supported categories to round-trip.
 
 The domain reports field-specific, readable validation errors through an
 immutable validation-error collection. JSON/file handling remains a storage
