@@ -67,7 +67,7 @@ class ItemReportCreationTest {
         assertEquals("Blue fabric case", report.publicDescription());
         assertEquals("Synthetic star-shaped label inside",
                 report.privateIdentifyingDetail());
-        assertFalse(report.toString().contains(report.privateIdentifyingDetail()));
+        assertEquals("ItemReport[redacted]", report.toString());
         assertFalse(request.toString().contains(request.publicDescription()));
         assertFalse(request.toString().contains(request.privateIdentifyingDetail()));
     }

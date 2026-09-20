@@ -143,6 +143,20 @@ class ItemReportValidationTest {
     }
 
     @Test
+    void clocklessRestoreRejectsBlankStoredText() {
+        ReportValidationException exception = assertThrows(
+                ReportValidationException.class,
+                () -> ItemReport.restore(
+                        REPORT_ID, "student-001", ReportType.LOST,
+                        "Blue pencil case", ItemCategory.STATIONERY,
+                        " \t ", LocalDate.of(2026, 9, 18),
+                        "Blue fabric case", "Synthetic detail",
+                        ReportStatus.SUBMITTED, NOW));
+
+        assertHasField(exception, "location");
+    }
+
+    @Test
     void collectsReadableErrorsAndExposesAnImmutableList() {
         ReportCreationRequest request = requestWith(
                 " ", null, "", null, "\t", null, "\n", " ");

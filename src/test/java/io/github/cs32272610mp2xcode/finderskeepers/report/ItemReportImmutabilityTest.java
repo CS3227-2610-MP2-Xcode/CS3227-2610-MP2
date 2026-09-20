@@ -61,6 +61,22 @@ class ItemReportImmutabilityTest {
     }
 
     @Test
+    void restorationPreservesValidStoredTextExactly() {
+        ItemReport restored = ItemReport.restore(
+                REPORT_ID, " student-001 ", ReportType.FOUND,
+                " Blue pencil case ", ItemCategory.STATIONERY,
+                " School library ", LocalDate.of(2026, 9, 18),
+                " Blue fabric case ", " Synthetic detail ",
+                ReportStatus.SUBMITTED, CLOCK.instant());
+
+        assertEquals(" student-001 ", restored.reporterId());
+        assertEquals(" Blue pencil case ", restored.itemName());
+        assertEquals(" School library ", restored.location());
+        assertEquals(" Blue fabric case ", restored.publicDescription());
+        assertEquals(" Synthetic detail ", restored.privateIdentifyingDetail());
+    }
+
+    @Test
     void rejectsMissingStatusForCopy() {
         ItemReport report = createReport();
 
