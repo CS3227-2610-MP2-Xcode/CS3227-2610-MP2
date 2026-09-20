@@ -205,7 +205,7 @@ class JsonReportRepositoryTest {
         return new ItemReport(
                 original.reportId(),
                 original.reporterId(),
-                ReportType.FOUND,
+                original.reportType() == ReportType.LOST ? ReportType.FOUND : ReportType.LOST,
                 "Replacement item",
                 ItemCategory.OTHER,
                 "Replacement location",

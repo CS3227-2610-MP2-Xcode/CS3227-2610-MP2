@@ -135,7 +135,7 @@ class JsonReportRepositoryFormatTest {
                         .getBytes(StandardCharsets.UTF_8)),
                 Arguments.of("C10", valid.replace("  \"schemaVersion\": 1,\n", "")
                         .getBytes(StandardCharsets.UTF_8)),
-                Arguments.of("C11", valid.replace("\"reports\": [", "\"reports\": null")
+                Arguments.of("C11", "{\"schemaVersion\":1,\"reports\":null}"
                         .getBytes(StandardCharsets.UTF_8)),
                 Arguments.of("C12", valid.replace("\"reportType\": \"LOST\"", "\"reportType\": \"lost\"")
                         .getBytes(StandardCharsets.UTF_8)),
