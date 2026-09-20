@@ -88,6 +88,68 @@ AuthenticationService -> PasswordHasher
 - Authenticated state contains only user ID, username, and role. Passwords,
   hashes, and salts never enter it.
 
+## Student report-submission components
+
+The Student submission slice is implemented as a UI/application boundary, but
+it is not yet wired into the running application. Its components are:
+
+- `report.application.ReportSubmitter` is the application boundary for creating
+  and saving one report. It accepts a `ReportCreationRequest` and
+  returns the saved `ItemReport`.
+- `report.application.ReportSubmissionService` implements that boundary. It
+  generates the report ID, creates and validates the domain object, and only
+  then calls its injected `Consumer<ItemReport>` storage adapter. This keeps
+  invalid input away from persistence without duplicating Developer 2's
+  `ReportRepository` contract.
+- `report.application.ReportSubmissionException` is the safe boundary for a
+  persistence or integration failure. Its technical cause is retained for
+  diagnostics, but it is not shown to the Student.
+- `report.ui.ReportFormInput` is an immutable snapshot of the editable form
+  values: lost/found type, item name, category, location, occurrence date,
+  public description, and private identifying detail. It adds the reporter ID
+  supplied by the authenticated session when creating a domain request.
+- `report.ui.ReportFormField` is the stable mapping between domain validation
+  field names and the editable controls.
+- `report.ui.SubmissionViewState` is the presentation result. A successful
+  state contains the saved report ID; an invalid state contains field-specific
+  messages; a storage-failure state contains only a safe retry/help message.
+  Failed states never contain a report ID, and field-error maps are immutable.
+- `report.ui.StudentReportFormController` binds one authenticated reporter to
+  a `ReportSubmitter`, converts input into a domain request, maps
+  `ReportValidationException` errors to `ReportFormField`, and translates
+  `ReportSubmissionException` into a generic storage-failure state.
+- `report.ui.StudentReportForm` is the JavaFX view. It presents the editable
+  controls, renders field errors and feedback, clears inputs after success or
+  on **Clear**, and retains input after a storage failure so the Student can
+  retry.
+
+The authenticated identity is not an editable form field. Integration must
+obtain the current `AuthenticatedUser` from the authentication session and pass
+`AuthenticatedUser.userId()` to `StudentReportFormController`; the controller
+rejects a missing or blank identity. The username is display-only. The public
+description is intended for matching, while the private identifying detail is
+reserved for staff verification and is not included in confirmations.
+
+The submission flow is:
+
+```text
+AuthenticatedUser.userId()
+        -> StudentReportFormController
+        -> ReportFormInput.toCreationRequest(reporterId)
+        -> ReportSubmissionService.submit(request)
+        -> injected report-storage adapter
+        -> saved ItemReport / validation state / storage-failure state
+        -> StudentReportForm feedback and field messages
+```
+
+`ReportRepository`, concrete JSON persistence, and the adapter from its save
+operation into `ReportSubmissionService` are Developer 2/shared integration
+dependencies. That adapter must translate storage failures into
+`ReportSubmissionException`. Authentication route wiring (including the
+Student route in `AuthenticationPane`) is also still required. Until those
+dependencies are connected, the form is not reachable from the current
+application startup.
+
 The version 1 credential store has this shape; values below are descriptive placeholders, not credentials:
 
 ```json
@@ -173,13 +235,100 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 
 ## Planned areas
 
-- Student workflows for reporting belongings and checking updates — to be designed and implemented.
+- Student report submission UI/controller components — implemented in an
+  isolated slice; repository/service composition and authenticated route wiring
+  remain to be integrated.
+- Student status features — to be designed and implemented.
 - Desk Officer workflows for reviewing reports and coordinating collection — to be designed and implemented.
 - Repository construction and startup wiring — to be integrated once the owning application workflow selects its store path and lifetime.
 - Richer category and status vocabularies, submission validation, and report creation — to be extended through the shared canonical model without introducing a competing report type.
 - Role-specific JavaFX views and navigation — to be documented with the feature implementation.
 - Deciding how the external demo credential store is supplied with a
   distributable release — pending shared integration approval.
+
+## Report domain contract (S1-D1-02)
+
+The report domain is independent of JavaFX and persistence. It lives under
+`io.github.cs32272610mp2xcode.finderskeepers.report` and provides the shared
+contract used by Student submission and Desk Officer storage/review features.
+
+`ItemReport` is an immutable final value object with these eleven fields and
+accessors:
+
+```text
+UUID reportId()
+String reporterId()
+ReportType reportType()
+String itemName()
+ItemCategory category()
+String location()
+LocalDate occurrenceDate()
+String publicDescription()
+String privateIdentifyingDetail()
+ReportStatus status()
+Instant createdAt()
+```
+
+`ReportCreationRequest` contains the eight user-supplied values: reporter ID,
+report type, item name, category, location, occurrence date, public
+description, and private identifying detail. Report ID, status, and creation
+time are controlled by the domain.
+
+New reports are created with `ItemReport.create(UUID, ReportCreationRequest,
+Clock)`. The factory validates the request, always assigns `SUBMITTED`, and
+uses the supplied clock for `createdAt`, truncated to milliseconds. Storage
+reconstruction uses the clockless `ItemReport.restore(...)`, which validates a
+complete stored record while preserving its status, creation time, and text
+exactly. The clock-taking overload is for importing external records when a
+future-date check is also required. `withStatus(...)` returns a complete
+updated copy and never mutates the original. Equality is value-based across all
+eleven fields.
+
+### Validation and persistence-facing values
+
+All eleven fields are required. Null and blank text are separate validation
+cases. Creation strips surrounding whitespace before measuring text in Unicode
+code points. Restoration preserves surrounding whitespace, rejects entirely
+blank values, and measures the exact stored value so persistence can round-trip
+data without changing it. Reporter ID is limited to 128, item name to 100,
+location to 120, and each of the two descriptions to 500. Future occurrence
+dates are rejected when creating a report using the provided clock.
+`occurrenceDate` is a `LocalDate` stored strictly as
+`yyyy-MM-dd`. `createdAt` is an `Instant` stored in UTC with millisecond
+precision, such as `2026-09-19T07:15:30.123Z`.
+
+`reportId` is a UUID serialized using its canonical string form and compared by
+UUID value. `reporterId` is an opaque, case-sensitive string; it is not
+lowercased or treated as a display name. The persistence property names are
+`reportId`, `reporterId`, `reportType`, `itemName`, `category`, `location`,
+`occurrenceDate`, `publicDescription`, `privateIdentifyingDetail`, `status`,
+and `createdAt`.
+
+The enums have these exact stored names. Persistence must call `storedName()`
+when writing and `fromStoredName(...)` when reading rather than maintaining a
+second switch or duplicate enum:
+
+```text
+ReportType: LOST, FOUND
+ItemCategory: STATIONERY, BOOKS, CLOTHING, BAGS, WATER_BOTTLES,
+              ELECTRONICS, SPORTS_EQUIPMENT, PERSONAL_ITEMS, OTHER
+ReportStatus: SUBMITTED, UNDER_REVIEW
+```
+
+Enum parsing is strict and case-sensitive. Unknown, null, or blank stored names
+are invalid. The public and private descriptions are intentionally separate;
+`ItemReport.toString()` is always `ItemReport[redacted]`, and
+`ReportCreationRequest.toString()` exposes neither description.
+
+The repository must import these canonical types from the `report` package. It
+must not declare a parallel `report.model.ItemReport` or duplicate enums. The
+JSON decoder should pass the eleven decoded values to the clockless
+`ItemReport.restore(...)`; this keeps domain validation in one place and allows
+all supported categories to round-trip.
+
+The domain reports field-specific, readable validation errors through an
+immutable validation-error collection. JSON/file handling remains a storage
+responsibility and must not be added to this domain package.
 
 ## Contribution notes
 
