@@ -13,10 +13,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemCategory;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemReport;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportStatus;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportType;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemCategory;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportStatus;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -140,17 +140,17 @@ class JsonReportRepositoryTest {
         byte[] before = Files.readAllBytes(store);
 
         List<ItemReport> invalidReplacements = List.of(
-                new ItemReport(
+                ItemReport.restore(
                         new UUID(0L, 2L), original.reporterId(), original.reportType(), original.itemName(),
                         original.category(), original.location(), original.occurrenceDate(),
                         original.publicDescription(), original.privateIdentifyingDetail(), original.status(),
                         original.createdAt()),
-                new ItemReport(
+                ItemReport.restore(
                         original.reportId(), "different-reporter", original.reportType(), original.itemName(),
                         original.category(), original.location(), original.occurrenceDate(),
                         original.publicDescription(), original.privateIdentifyingDetail(), original.status(),
                         original.createdAt()),
-                new ItemReport(
+                ItemReport.restore(
                         original.reportId(), original.reporterId(), original.reportType(), original.itemName(),
                         original.category(), original.location(), original.occurrenceDate(),
                         original.publicDescription(), original.privateIdentifyingDetail(), original.status(),
@@ -187,7 +187,7 @@ class JsonReportRepositoryTest {
     }
 
     private static ItemReport report(int sequence, ReportStatus status) {
-        return new ItemReport(
+        return ItemReport.restore(
                 new UUID(0L, sequence),
                 "reporter-" + sequence,
                 sequence % 2 == 0 ? ReportType.FOUND : ReportType.LOST,
@@ -202,7 +202,7 @@ class JsonReportRepositoryTest {
     }
 
     private static ItemReport replacementFor(ItemReport original) {
-        return new ItemReport(
+        return ItemReport.restore(
                 original.reportId(),
                 original.reporterId(),
                 original.reportType() == ReportType.LOST ? ReportType.FOUND : ReportType.LOST,

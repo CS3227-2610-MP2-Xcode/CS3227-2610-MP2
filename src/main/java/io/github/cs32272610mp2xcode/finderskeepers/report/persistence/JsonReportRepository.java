@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemReport;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
 
 /** Strict versioned JSON implementation of the report repository. */
 public final class JsonReportRepository implements ReportRepository {

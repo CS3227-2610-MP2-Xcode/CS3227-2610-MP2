@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemCategory;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemReport;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportStatus;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportType;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemCategory;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportStatus;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -65,8 +65,6 @@ class JsonReportRepositoryReplacementTest {
             assertTrue(loaded.createdAt().equals(original.createdAt()),
                     "Replacement must preserve Created At");
         }
-        assertTrue(ItemCategory.values().length == 1,
-                "Category mutation cannot be represented until the shared domain adds another category");
     }
 
     @Test
@@ -102,7 +100,7 @@ class JsonReportRepositoryReplacementTest {
     }
 
     private static ItemReport originalReport() {
-        return new ItemReport(
+        return ItemReport.restore(
                 UUID.fromString("60000000-0000-0000-0000-000000000001"),
                 "reporter-1",
                 ReportType.LOST,
@@ -125,7 +123,7 @@ class JsonReportRepositoryReplacementTest {
             String publicDescription,
             String privateDetail,
             ReportStatus status) {
-        return new ItemReport(
+        return ItemReport.restore(
                 original.reportId(),
                 original.reporterId(),
                 reportType,

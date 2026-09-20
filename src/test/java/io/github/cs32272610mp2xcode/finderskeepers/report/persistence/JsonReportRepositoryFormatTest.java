@@ -14,10 +14,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemCategory;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemReport;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportStatus;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportType;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemCategory;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportStatus;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -302,7 +302,7 @@ class JsonReportRepositoryFormatTest {
     }
 
     private static ItemReport report(int sequence) {
-        return new ItemReport(
+        return ItemReport.restore(
                 new UUID(0L, sequence),
                 "reporter-" + sequence,
                 ReportType.LOST,

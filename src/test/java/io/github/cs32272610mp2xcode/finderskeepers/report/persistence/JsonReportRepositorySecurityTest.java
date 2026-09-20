@@ -15,10 +15,10 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemCategory;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemReport;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportStatus;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportType;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemCategory;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportStatus;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -66,7 +66,7 @@ class JsonReportRepositorySecurityTest {
         Random random = new Random(3_227_261_000L);
 
         for (int iteration = 0; iteration < 256; iteration++) {
-            ItemReport current = new ItemReport(
+            ItemReport current = ItemReport.restore(
                     new UUID(1L, iteration + 1L),
                     generatedUnicode(random, 16),
                     ReportType.LOST,
@@ -159,7 +159,7 @@ class JsonReportRepositorySecurityTest {
     }
 
     private static ItemReport report() {
-        return new ItemReport(
+        return ItemReport.restore(
                 UUID.fromString("20000000-0000-0000-0000-000000000001"),
                 "reporter-base",
                 ReportType.LOST,
@@ -174,7 +174,7 @@ class JsonReportRepositorySecurityTest {
     }
 
     private static ItemReport neighbor(long sequence) {
-        return new ItemReport(
+        return ItemReport.restore(
                 new UUID(2L, sequence),
                 "neighbor-reporter-" + sequence,
                 ReportType.FOUND,
@@ -197,7 +197,7 @@ class JsonReportRepositorySecurityTest {
             source.privateIdentifyingDetail()
         };
         text[field] = value;
-        return new ItemReport(
+        return ItemReport.restore(
                 source.reportId(),
                 text[0],
                 source.reportType(),

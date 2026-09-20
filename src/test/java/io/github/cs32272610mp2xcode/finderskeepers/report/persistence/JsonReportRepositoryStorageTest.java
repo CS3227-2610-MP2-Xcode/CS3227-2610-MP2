@@ -17,10 +17,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemCategory;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemReport;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportStatus;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportType;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemCategory;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportStatus;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -426,7 +426,7 @@ class JsonReportRepositoryStorageTest {
         if (remainingCodePoints != 0 || remainingEscapes != 0) {
             throw new IllegalArgumentException("Capacity text could not be distributed");
         }
-        return new ItemReport(
+        return ItemReport.restore(
                 reportId,
                 values[0],
                 ReportType.LOST,
@@ -450,7 +450,7 @@ class JsonReportRepositoryStorageTest {
     }
 
     private static ItemReport maximumMutableReplacement(ItemReport original) {
-        return new ItemReport(
+        return ItemReport.restore(
                 original.reportId(),
                 original.reporterId(),
                 ReportType.FOUND,
@@ -469,15 +469,15 @@ class JsonReportRepositoryStorageTest {
         block.append("\n    {\n");
         appendFixtureMember(block, "reportId", report.reportId().toString(), true);
         appendFixtureMember(block, "reporterId", report.reporterId(), false);
-        appendFixtureMember(block, "reportType", report.reportType().name(), false);
+        appendFixtureMember(block, "reportType", report.reportType().storedName(), false);
         appendFixtureMember(block, "itemName", report.itemName(), false);
-        appendFixtureMember(block, "category", report.category().name(), false);
+        appendFixtureMember(block, "category", report.category().storedName(), false);
         appendFixtureMember(block, "location", report.location(), false);
         appendFixtureMember(block, "occurrenceDate", report.occurrenceDate().toString(), false);
         appendFixtureMember(block, "publicDescription", report.publicDescription(), false);
         appendFixtureMember(
                 block, "privateIdentifyingDetail", report.privateIdentifyingDetail(), false);
-        appendFixtureMember(block, "status", report.status().name(), false);
+        appendFixtureMember(block, "status", report.status().storedName(), false);
         appendFixtureMember(block, "createdAt", report.createdAt().toString(), false);
         block.append("\n    }");
         return block.toString();
@@ -590,7 +590,7 @@ class JsonReportRepositoryStorageTest {
     }
 
     private static ItemReport originalReport() {
-        return new ItemReport(
+        return ItemReport.restore(
                 UUID.fromString("30000000-0000-0000-0000-000000000001"),
                 "r",
                 ReportType.LOST,
@@ -606,7 +606,7 @@ class JsonReportRepositoryStorageTest {
 
     private static ItemReport replacementReport() {
         ItemReport original = originalReport();
-        return new ItemReport(
+        return ItemReport.restore(
                 original.reportId(),
                 original.reporterId(),
                 ReportType.FOUND,

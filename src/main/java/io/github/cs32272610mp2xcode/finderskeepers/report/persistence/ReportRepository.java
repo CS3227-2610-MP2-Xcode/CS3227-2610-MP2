@@ -3,7 +3,7 @@ package io.github.cs32272610mp2xcode.finderskeepers.report.persistence;
 import java.util.List;
 import java.util.UUID;
 
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemReport;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
 
 /** Persistence boundary for canonical item reports. */
 public interface ReportRepository {

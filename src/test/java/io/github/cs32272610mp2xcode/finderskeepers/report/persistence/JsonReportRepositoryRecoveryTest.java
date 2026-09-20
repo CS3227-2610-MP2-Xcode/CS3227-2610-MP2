@@ -16,10 +16,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemCategory;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemReport;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportStatus;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportType;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemCategory;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportStatus;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -199,7 +199,7 @@ class JsonReportRepositoryRecoveryTest {
     }
 
     private static ItemReport report(int sequence) {
-        return new ItemReport(
+        return ItemReport.restore(
                 new UUID(5L, sequence),
                 "reporter-" + sequence,
                 ReportType.LOST,
@@ -215,7 +215,7 @@ class JsonReportRepositoryRecoveryTest {
 
     private static ItemReport withIdentityAndText(
             ItemReport source, UUID reportId, String reporterId, String itemName) {
-        return new ItemReport(
+        return ItemReport.restore(
                 reportId,
                 reporterId,
                 source.reportType(),

@@ -5,11 +5,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.DateTimeException;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,16 +16,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemCategory;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemReport;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportStatus;
-import io.github.cs32272610mp2xcode.finderskeepers.report.model.ReportType;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemCategory;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportConstraints;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportStatus;
+import io.github.cs32272610mp2xcode.finderskeepers.report.ReportType;
 
 final class ReportStoreJsonCodec {
-    private static final DateTimeFormatter INSTANT_MILLIS = new DateTimeFormatterBuilder()
-            .appendInstant(3)
-            .toFormatter();
-
     private static final List<String> REPORT_MEMBERS = List.of(
             "reportId",
             "reporterId",
@@ -74,58 +69,15 @@ final class ReportStoreJsonCodec {
             throws InvalidReportStateException {
         appendMember(output, "reportId", report.reportId().toString(), true);
         appendMember(output, "reporterId", report.reporterId(), false);
-        appendMember(output, "reportType", encodeReportType(report.reportType()), false);
+        appendMember(output, "reportType", report.reportType().storedName(), false);
         appendMember(output, "itemName", report.itemName(), false);
-        appendMember(output, "category", encodeCategory(report.category()), false);
+        appendMember(output, "category", report.category().storedName(), false);
         appendMember(output, "location", report.location(), false);
         appendMember(output, "occurrenceDate", report.occurrenceDate().toString(), false);
         appendMember(output, "publicDescription", report.publicDescription(), false);
         appendMember(output, "privateIdentifyingDetail", report.privateIdentifyingDetail(), false);
-        appendMember(output, "status", encodeStatus(report.status()), false);
-        appendMember(output, "createdAt", INSTANT_MILLIS.format(report.createdAt()), false);
-    }
-
-    private static String encodeReportType(ReportType reportType) {
-        return switch (reportType) {
-            case LOST -> "LOST";
-            case FOUND -> "FOUND";
-        };
-    }
-
-    private static String encodeCategory(ItemCategory category) {
-        return switch (category) {
-            case OTHER -> "OTHER";
-        };
-    }
-
-    private static String encodeStatus(ReportStatus status) {
-        return switch (status) {
-            case SUBMITTED -> "SUBMITTED";
-            case UNDER_REVIEW -> "UNDER_REVIEW";
-        };
-    }
-
-    private static ReportType decodeReportType(String token) {
-        return switch (token) {
-            case "LOST" -> ReportType.LOST;
-            case "FOUND" -> ReportType.FOUND;
-            default -> throw new IllegalArgumentException("Unsupported report type token");
-        };
-    }
-
-    private static ItemCategory decodeCategory(String token) {
-        if ("OTHER".equals(token)) {
-            return ItemCategory.OTHER;
-        }
-        throw new IllegalArgumentException("Unsupported item category token");
-    }
-
-    private static ReportStatus decodeStatus(String token) {
-        return switch (token) {
-            case "SUBMITTED" -> ReportStatus.SUBMITTED;
-            case "UNDER_REVIEW" -> ReportStatus.UNDER_REVIEW;
-            default -> throw new IllegalArgumentException("Unsupported report status token");
-        };
+        appendMember(output, "status", report.status().storedName(), false);
+        appendMember(output, "createdAt", ReportConstraints.formatCreationTime(report.createdAt()), false);
     }
 
     private static void appendMember(BoundedUtf8 output, String name, String value, boolean first)
@@ -358,21 +310,21 @@ final class ReportStoreJsonCodec {
                     throw new IllegalArgumentException();
                 }
                 String instantText = values.get("createdAt");
-                Instant instant = Instant.parse(instantText);
-                if (!INSTANT_MILLIS.format(instant).equals(instantText)) {
+                Instant instant = ReportConstraints.parseCreationTime(instantText);
+                if (!ReportConstraints.formatCreationTime(instant).equals(instantText)) {
                     throw new IllegalArgumentException();
                 }
-                return new ItemReport(
+                return ItemReport.restore(
                         identifier,
                         values.get("reporterId"),
-                        decodeReportType(values.get("reportType")),
+                        ReportType.fromStoredName(values.get("reportType")),
                         values.get("itemName"),
-                        decodeCategory(values.get("category")),
+                        ItemCategory.fromStoredName(values.get("category")),
                         values.get("location"),
                         date,
                         values.get("publicDescription"),
                         values.get("privateIdentifyingDetail"),
-                        decodeStatus(values.get("status")),
+                        ReportStatus.fromStoredName(values.get("status")),
                         instant);
             } catch (DateTimeException | IllegalArgumentException | NullPointerException failure) {
                 throw new InvalidStoreException();
