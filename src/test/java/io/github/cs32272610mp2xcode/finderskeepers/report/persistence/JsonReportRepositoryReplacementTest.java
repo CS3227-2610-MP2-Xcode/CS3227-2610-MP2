@@ -28,6 +28,7 @@ class JsonReportRepositoryReplacementTest {
             throws ReportStoreException {
         ItemReport original = originalReport();
         List<ItemReport> replacements = List.of(
+                copyWithCategory(original, ItemCategory.STATIONERY),
                 copy(original, ReportType.FOUND, original.itemName(), original.location(),
                         original.occurrenceDate(), original.publicDescription(),
                         original.privateIdentifyingDetail(), original.status()),
@@ -112,6 +113,21 @@ class JsonReportRepositoryReplacementTest {
                 "Private detail",
                 ReportStatus.SUBMITTED,
                 Instant.parse("2026-09-20T01:02:03.456Z"));
+    }
+
+    private static ItemReport copyWithCategory(ItemReport original, ItemCategory category) {
+        return ItemReport.restore(
+                original.reportId(),
+                original.reporterId(),
+                original.reportType(),
+                original.itemName(),
+                category,
+                original.location(),
+                original.occurrenceDate(),
+                original.publicDescription(),
+                original.privateIdentifyingDetail(),
+                original.status(),
+                original.createdAt());
     }
 
     private static ItemReport copy(

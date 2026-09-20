@@ -133,6 +133,59 @@ class JsonReportRepositoryFormatTest {
                 "The canonical creation instant must reconstruct exactly");
     }
 
+    @Test
+    void everyCanonicalCategoryStoredNameRoundTrips() throws IOException, ReportStoreException {
+        for (ItemCategory category : ItemCategory.values()) {
+            String document = CANONICAL_DOCUMENT.replace(
+                    "\"category\": \"OTHER\"",
+                    "\"category\": \"" + category.storedName() + "\"");
+            Path input = temporaryDirectory.resolve("category-input-" + category.ordinal() + ".json");
+            Files.writeString(input, document, StandardCharsets.UTF_8);
+
+            ItemReport loaded = new JsonReportRepository(input).loadAll().getFirst();
+
+            assertTrue(loaded.category() == category,
+                    "Every canonical category stored name must decode through the domain API");
+            Path output = temporaryDirectory.resolve("category-output-" + category.ordinal() + ".json");
+            new JsonReportRepository(output).insert(loaded);
+            String emitted = Files.readString(output, StandardCharsets.UTF_8);
+            assertTrue(emitted.contains("\"category\": \"" + category.storedName() + "\""),
+                    "Every canonical category must encode through its stored name");
+        }
+    }
+
+    @Test
+    void clocklessRestorationPreservesStoredTextAndDoesNotApplyCurrentDatePolicy()
+            throws IOException, ReportStoreException {
+        Path store = temporaryDirectory.resolve("clockless.json");
+        String document = CANONICAL_DOCUMENT
+                .replace("\"reporterId\": \"reporter-1\"", "\"reporterId\": \" reporter-1 \"")
+                .replace("\"itemName\": \"Item 1\"", "\"itemName\": \" Item 1 \"")
+                .replace("\"location\": \"Location 1\"", "\"location\": \" Location 1 \"")
+                .replace("\"occurrenceDate\": \"2026-09-11\"",
+                        "\"occurrenceDate\": \"9999-12-31\"")
+                .replace("\"publicDescription\": \"Public description 1\"",
+                        "\"publicDescription\": \" Public description 1 \"")
+                .replace("\"privateIdentifyingDetail\": \"Private detail 1\"",
+                        "\"privateIdentifyingDetail\": \" Private detail 1 \"");
+        Files.writeString(store, document, StandardCharsets.UTF_8);
+
+        ItemReport loaded = new JsonReportRepository(store).loadAll().getFirst();
+
+        assertTrue(loaded.occurrenceDate().equals(LocalDate.of(9999, 12, 31)),
+                "Stored reports must load without a current-date comparison");
+        assertTrue(loaded.reporterId().equals(" reporter-1 "),
+                "Stored Reporter ID text must remain exact");
+        assertTrue(loaded.itemName().equals(" Item 1 "),
+                "Stored item-name text must remain exact");
+        assertTrue(loaded.location().equals(" Location 1 "),
+                "Stored location text must remain exact");
+        assertTrue(loaded.publicDescription().equals(" Public description 1 "),
+                "Stored public-description text must remain exact");
+        assertTrue(loaded.privateIdentifyingDetail().equals(" Private detail 1 "),
+                "Stored private-detail text must remain exact");
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidDocuments")
     void invalidStoredDocumentBlocksEveryOperationAndPreservesExactBytes(String caseId, byte[] invalidBytes)
@@ -252,7 +305,9 @@ class JsonReportRepositoryFormatTest {
                 Arguments.of("C42", valid.replace("\"reporterId\": \"reporter-1\"", "\"reporterId\": \"\"")
                         .getBytes(StandardCharsets.UTF_8)),
                 Arguments.of("C43", valid.replace("\"itemName\": \"Item 1\"",
-                        "\"itemName\": \"" + "x".repeat(101) + "\"").getBytes(StandardCharsets.UTF_8)));
+                        "\"itemName\": \"" + "x".repeat(101) + "\"").getBytes(StandardCharsets.UTF_8)),
+                Arguments.of("C44", valid.replace("\"location\": \"Location 1\"",
+                        "\"location\": \" \\t \"").getBytes(StandardCharsets.UTF_8)));
     }
 
     private static Stream<Arguments> invalidRequiredReportMembers() {
