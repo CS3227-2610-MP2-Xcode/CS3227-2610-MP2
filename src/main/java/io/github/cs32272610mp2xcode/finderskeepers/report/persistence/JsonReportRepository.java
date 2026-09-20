@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import io.github.cs32272610mp2xcode.finderskeepers.report.model.ItemReport;
 
@@ -55,6 +56,34 @@ public final class JsonReportRepository implements ReportRepository {
         }
         reports.add(report);
         writeCandidate(reports);
+    }
+
+    @Override
+    public synchronized void replace(UUID targetId, ItemReport replacement) throws ReportStoreException {
+        Objects.requireNonNull(targetId, "targetId");
+        Objects.requireNonNull(replacement, "replacement");
+        List<ItemReport> reports = new ArrayList<>(readCurrent());
+        int targetIndex = findReportIndex(reports, targetId);
+        if (targetIndex < 0) {
+            throw new ReportStoreException(ReportStoreException.Reason.REPLACEMENT_TARGET_NOT_FOUND);
+        }
+        ItemReport existing = reports.get(targetIndex);
+        if (!replacement.reportId().equals(targetId)
+                || !replacement.reporterId().equals(existing.reporterId())
+                || !replacement.createdAt().equals(existing.createdAt())) {
+            throw new ReportStoreException(ReportStoreException.Reason.IMMUTABLE_FIELD_MISMATCH);
+        }
+        reports.set(targetIndex, replacement);
+        writeCandidate(reports);
+    }
+
+    private static int findReportIndex(List<ItemReport> reports, UUID targetId) {
+        for (int index = 0; index < reports.size(); index++) {
+            if (reports.get(index).reportId().equals(targetId)) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private List<ItemReport> readCurrent() throws ReportStoreException {
