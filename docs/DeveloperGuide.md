@@ -84,6 +84,68 @@ AuthenticationService -> PasswordHasher
 - Authenticated state contains only user ID, username, and role. Passwords,
   hashes, and salts never enter it.
 
+## Student report-submission components
+
+The Student submission slice is implemented as a UI/application boundary, but
+it is not yet wired into the running application. Its components are:
+
+- `report.application.ReportSubmitter` is the application boundary for creating
+  and saving one report. It accepts a `ReportCreationRequest` and
+  returns the saved `ItemReport`.
+- `report.application.ReportSubmissionService` implements that boundary. It
+  generates the report ID, creates and validates the domain object, and only
+  then calls its injected `Consumer<ItemReport>` storage adapter. This keeps
+  invalid input away from persistence without duplicating Developer 2's
+  `ReportRepository` contract.
+- `report.application.ReportSubmissionException` is the safe boundary for a
+  persistence or integration failure. Its technical cause is retained for
+  diagnostics, but it is not shown to the Student.
+- `report.ui.ReportFormInput` is an immutable snapshot of the editable form
+  values: lost/found type, item name, category, location, occurrence date,
+  public description, and private identifying detail. It adds the reporter ID
+  supplied by the authenticated session when creating a domain request.
+- `report.ui.ReportFormField` is the stable mapping between domain validation
+  field names and the editable controls.
+- `report.ui.SubmissionViewState` is the presentation result. A successful
+  state contains the saved report ID; an invalid state contains field-specific
+  messages; a storage-failure state contains only a safe retry/help message.
+  Failed states never contain a report ID, and field-error maps are immutable.
+- `report.ui.StudentReportFormController` binds one authenticated reporter to
+  a `ReportSubmitter`, converts input into a domain request, maps
+  `ReportValidationException` errors to `ReportFormField`, and translates
+  `ReportSubmissionException` into a generic storage-failure state.
+- `report.ui.StudentReportForm` is the JavaFX view. It presents the editable
+  controls, renders field errors and feedback, clears inputs after success or
+  on **Clear**, and retains input after a storage failure so the Student can
+  retry.
+
+The authenticated identity is not an editable form field. Integration must
+obtain the current `AuthenticatedUser` from the authentication session and pass
+`AuthenticatedUser.userId()` to `StudentReportFormController`; the controller
+rejects a missing or blank identity. The username is display-only. The public
+description is intended for matching, while the private identifying detail is
+reserved for staff verification and is not included in confirmations.
+
+The submission flow is:
+
+```text
+AuthenticatedUser.userId()
+        -> StudentReportFormController
+        -> ReportFormInput.toCreationRequest(reporterId)
+        -> ReportSubmissionService.submit(request)
+        -> injected report-storage adapter
+        -> saved ItemReport / validation state / storage-failure state
+        -> StudentReportForm feedback and field messages
+```
+
+`ReportRepository`, concrete JSON persistence, and the adapter from its save
+operation into `ReportSubmissionService` are Developer 2/shared integration
+dependencies. That adapter must translate storage failures into
+`ReportSubmissionException`. Authentication route wiring (including the
+Student route in `AuthenticationPane`) is also still required. Until those
+dependencies are connected, the form is not reachable from the current
+application startup.
+
 The version 1 credential store has this shape; values below are descriptive placeholders, not credentials:
 
 ```json
@@ -164,7 +226,10 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 
 ## Planned areas
 
-- Student workflows for reporting belongings and checking updates — to be designed and implemented.
+- Student report submission UI/controller components — implemented in an
+  isolated slice; repository/service composition and authenticated route wiring
+  remain to be integrated.
+- Student status features — to be designed and implemented.
 - Desk Officer workflows for reviewing reports and coordinating collection — to be designed and implemented.
 - Shared domain and storage services — to be designed before both role features depend on them.
 - Deciding how the external demo credential store is supplied with a
