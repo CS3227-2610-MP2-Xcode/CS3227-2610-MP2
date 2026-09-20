@@ -19,9 +19,10 @@ scenario, and extension to stable behavior-level evidence. The repository owner
 approved the mapping and separately authorized implementation on 2026-09-20.
 
 A `Deferred` or `Pending` row is not complete. The repository owner confirmed
-TS-01 through TS-05 on 2026-09-19 and approved the shared canonical model,
+TS-01 through TS-05 on 2026-09-19 and approved the temporary shared model,
 TS-06, the 16 MiB limit, the revised planning set, and separate implementation
-authorization on 2026-09-20.
+authorization on 2026-09-20. Developer 1's canonical domain now supersedes that
+temporary model without changing the persistence operation set or JSON shape.
 
 ## Status vocabulary
 
@@ -40,8 +41,8 @@ authorization on 2026-09-20.
 
 ## Test-seam index
 
-The repository owner confirmed the persistence seams on 2026-09-19. TS-06 is
-added for the approved shared canonical record and is part of this final approval
+The repository owner confirmed the persistence seams on 2026-09-19. TS-06 now
+references Developer 1's canonical domain APIs and remains part of the final
 approval.
 
 | Seam | Evidence boundary | Policy | Status |
@@ -51,7 +52,7 @@ approval.
 | TS-03 | Package-private deterministic `ReportStoreFiles` fault adapter | Use only for access, staging/force-equivalent, atomic-move, and cleanup outcomes that cannot be induced portably; assert public reasons and target state, never interaction counts | Confirmed - repository owner, 2026-09-19 |
 | TS-04 | Concurrent calls through one shared public repository instance | Coordinate calls with barriers/executors and assert only a serial-equivalent persisted result | Confirmed - repository owner, 2026-09-19 |
 | TS-05 | Source, documentation, and build evidence | Structural review for canonical-domain reuse, bounded resources, privacy-safe tests, storage docs, and Gradle gates | Confirmed - repository owner, 2026-09-19 |
-| TS-06 | Public `ItemReport` constructor, accessors, equality, and redacted `toString()` | Verify only the minimal shared canonical invariants needed by persistence; clock-dependent submission policy remains external | Confirmed - repository owner, 2026-09-20 |
+| TS-06 | Canonical `ItemReport.restore(...)`, enum storage APIs, accessors, equality, and redacted `toString()` | Reuse Developer 1's domain tests and verify persistence reconstructs through the clockless factory without duplicating domain validation; clock-dependent submission policy remains external | Confirmed - repository owner, 2026-09-20 |
 
 Tests do not call codec internals and do not replace repository-owned logic with
 mocks. Normal filesystem behavior always uses the real NIO adapter under an
@@ -73,13 +74,13 @@ isolated temporary directory.
 
 ## Implementation evidence catalog
 
-### Shared canonical report behavior
+### Canonical report behavior supplied by Developer 1
 
 | ID | Stable behavior name | Seam | Evidence | Status |
 | --- | --- | --- | --- | --- |
-| RT-030 | `canonicalReportRequiresEveryFieldAndPreservesAcceptedValuesExactly` | TS-06 | Each field rejects `null`; bounded text rejects zero and maximum-plus-one code points, accepts one and maximum code points including supplementary scalars, and accessors return the exact unnormalized values | Passing - 2026-09-20 |
-| RT-031 | `canonicalReportUsesApprovedIdentityEnumsAndMillisecondPrecision` | TS-06 | UUID and exact Reporter-ID equality, all approved enum constants, accepted millisecond instants, and rejected sub-millisecond instants are covered without a clock-dependent occurrence-date assertion | Passing - 2026-09-20 |
-| RT-032 | `canonicalReportStringRepresentationDisclosesNoFieldValues` | TS-06 | A report containing distinct synthetic canaries produces exactly `ItemReport[redacted]` and contains none of them | Passing - 2026-09-20 |
+| RT-030 | Canonical `ItemReportValidationTest` and `ItemReportImmutabilityTest` coverage | TS-06 | Requiredness, blank handling, code-point limits, exact restored text, equality, millisecond precision, and clockless restoration are owned and tested by Developer 1 | Passing on integrated main |
+| RT-031 | `ReportEnumParsingTest.parsesEveryExactStoredName` | TS-06 | Every canonical enum round-trips through `storedName()` and `fromStoredName(...)`; unknown, blank, null, and differently cased names are rejected | Passing on integrated main |
+| RT-032 | Canonical redaction coverage | TS-06 | `ItemReport.toString()` remains exactly `ItemReport[redacted]` and submission request output excludes descriptions | Passing on integrated main |
 
 ### Public repository and reconstruction behavior
 
@@ -90,8 +91,8 @@ isolated temporary directory.
 | RT-003 | `requiredReportMembersRejectNullAndRoundTripWithoutNormalization` | TS-01, TS-02 | Every report member is tested missing, `null`, and wrong-typed; required values including location and occurrence date reconstruct exactly without normalization | Passing - 2026-09-20 |
 | RT-004 | `insertionAndReplacementPreserveStableOrderAcrossReconstruction` | TS-01 | A multi-report fixture proves append order, middle replacement position, unaffected neighbors, and fresh-instance visibility | Passing - 2026-09-20 |
 | RT-005 | `loadedReportsAreAnUnmodifiableStructuralSnapshot` | TS-01 | Caller cannot mutate the returned list; a later repository mutation does not alter the earlier list object | Passing - 2026-09-20 |
-| RT-006 | `canonicalEnumAndTemporalRepresentationsRoundTripExactly` | TS-01, TS-02 | Every approved enum token, canonical `LocalDate` string, and exact three-digit UTC `createdAt` value reconstructs exactly; alternate offsets and one-, six-, or nine-digit precision are rejected | Passing - 2026-09-20 |
-| RT-007 | `replacementPersistsEachRepresentableMutableFieldAndPreservesImmutableState` | TS-01 | Each of the seven currently representable mutable values changes alone and all change together; a fresh repository instance verifies the replacement, Report ID, Reporter ID, Created At, order, and unaffected reports; an identical replacement follows the same successful commit path; category remains the approved singleton `OTHER` until a compatibility-reviewed domain expansion | Passing - 2026-09-20 |
+| RT-006 | `canonicalEnumAndTemporalRepresentationsRoundTripExactly` and `everyCanonicalCategoryStoredNameRoundTrips` | TS-01, TS-02 | Every canonical category stored name, both report types, both statuses, canonical `LocalDate`, and exact three-digit UTC `createdAt` reconstruct exactly; alternate temporal representations are rejected | Passing after canonical integration |
+| RT-007 | `replacementPersistsEachRepresentableMutableFieldAndPreservesImmutableState` | TS-01 | Each of the eight mutable values, including category, changes independently; a fresh repository verifies the replacement and immutable state; an identical replacement follows the same safe commit path | Passing after canonical integration |
 | RT-008 | `duplicateInsertReturnsDuplicateConflictAndPreservesBytes` | TS-01 | Canonically equal UUID is rejected with the exact typed reason and target bytes remain identical | Passing - 2026-09-20 |
 | RT-009 | `missingReplacementReturnsMissingConflictWithoutCreatingOrChangingStorage` | TS-01 | Missing target is covered in a valid existing store and with a missing store; no file is created or changed | Passing - 2026-09-20 |
 | RT-010 | `immutableMismatchOrRetargetAttemptFailsWithoutMutation` | TS-01 | Reporter-ID and Created-At mismatches plus explicit UUID target-ID mismatch are separate cases | Passing - 2026-09-20 |
@@ -168,7 +169,7 @@ surrogates even though they cannot be emitted as valid JSON UTF-8.
 | RV-002 | `repositoryUsesCanonicalDomainTypesAndDefinesNoShadowReportModel` | TS-05 | Inspect public signatures/imports and search production source for exactly one shared `ItemReport` definition and explicit UUID replacement target | Passed - 2026-09-20 |
 | RV-003 | `persistenceTestsUseOnlySyntheticReportsTemporaryPathsAndPrivacySafeAssertions` | TS-05 | Review all fixture factories, parameter display names, assertion helpers, captured output, and target paths | Passed - 2026-09-20 |
 | RV-004 | `resourceUseIsBoundedDuringReadDecodeAndEncode` | TS-05 | Review overflow-safe maximum-plus-one reads, schema-bounded parser depth/allocations, bounded encoder, the documented 1,000-report sizing calculation, and no unbounded whole-document fallback | Passed - 2026-09-20 |
-| RV-005 | `changeSetStaysWithinApprovedOwnershipAndScope` | TS-05 | Diff review finds the approved minimal shared model, persistence, tests, documentation, and separately authorized delivery-skill alignment; no dependency, status-transition policy, workflow, UI, startup, release, or CI change | Passed - 2026-09-20 |
+| RV-005 | `changeSetStaysWithinApprovedOwnershipAndScope` | TS-05 | Diff review finds canonical-domain reuse, persistence, tests, documentation, and separately authorized delivery-skill alignment; no canonical-domain edit, dependency, status-transition policy, workflow, UI, startup, release, or CI change | Passed after canonical integration |
 | RV-006 | `nioAdapterUsesTheApprovedSafeReplacementProtocol` | TS-05 | Inspect public-constructor delegation to production policy and the NIO adapter for final-target no-follow handling, a same-directory random temp, complete write, `force(true)`, close, one `ATOMIC_MOVE` attempt, no target pre-delete or non-atomic fallback, safe cleanup, and no report-derived path | Passed - 2026-09-20 |
 | RV-007 | `documentationScreenshotsAndHandoffContainNoReportValues` | TS-05 | Review changed documentation, produced screenshots if any, command output retained for handoff, and the final handoff summary for report field values or private identifying detail | Passed - 2026-09-20; no screenshots produced |
 | VG-001 | `focusedPersistenceTestsAndRepositoryCheckPass` | TS-05 | Run the focused persistence suite followed by `gradlew.bat check`; no required test is skipped or quarantined | Passing - 2026-09-20 |
@@ -177,13 +178,13 @@ surrogates even though they cannot be emitted as valid JSON UTF-8.
 
 Evidence was collected on 2026-09-20:
 
-- The focused domain and persistence suite passed with
-  `gradlew.bat test --tests "io.github.cs32272610mp2xcode.finderskeepers.report.model.*" --tests "io.github.cs32272610mp2xcode.finderskeepers.report.persistence.*"`.
+- The focused canonical-domain and persistence suite passes with
+  `gradlew.bat test --tests "io.github.cs32272610mp2xcode.finderskeepers.report.*"`.
 - The repository-wide `gradlew.bat check` gate passed, including compilation,
   JUnit, Checkstyle, Javadoc, and JaCoCo report generation.
-- Production source contains one canonical `ItemReport` definition, and both
-  public repository implementations import that shared type with an explicit
-  UUID replacement target.
+- Production source contains one canonical `ItemReport` definition under the
+  `report` package. The repository imports that type, uses the explicit UUID
+  replacement target, and reconstructs with clockless `restore(...)`.
 - Persistence tests use synthetic values with `@TempDir` paths or in-memory
   package-private filesystem fakes. Parameter names and assertions do not emit
   report values.
@@ -208,7 +209,7 @@ Evidence was collected on 2026-09-20:
 | Identity state | New ID; canonically equal duplicate ID; existing target; missing target; explicit target-ID mismatch where representable | RT-002, RT-008 through RT-010, RT-016 |
 | Replacement invariants | All immutables equal; Reporter-ID mismatch; Created-At mismatch; Report-ID retarget attempt | RT-007, RT-010, RV-002 |
 | Required values | Present value; missing member; explicit `null`; empty bounded text; maximum and maximum-plus-one code points | RT-003, RT-012, RT-030 |
-| Mutable fields | Each of seven currently representable mutable fields changed independently; all changed together; none changed; category is the approved singleton `OTHER` | RT-007 |
+| Mutable fields | Each of eight mutable fields changed independently, including a non-`OTHER` category; all changed together; none changed | RT-007 |
 | Enum and temporal values | Every enum constant; approved date/time boundary values; precision, offset, and timezone representatives | RT-006, RT-015 |
 | JSON grammar | Valid canonical; valid alternate member order; lexical/syntax failure; schema failure; canonical reconstruction failure | RT-012, RT-015 |
 | Schema version | Integer 1; lower and higher integers; wrong type/non-integer treated as corrupt | RT-012, RT-013, RT-015 |
@@ -285,7 +286,7 @@ Evidence was collected on 2026-09-20:
 
 | ID | Status | Owner | Required resolution | Effect |
 | --- | --- | --- | --- | --- |
-| D-001 | Resolved 2026-09-20 | Repository owner under shared-integration exception | Canonical package/API, requiredness, types, identity, enums, temporal representations, validation split, immutability, and field limits | Exact contract recorded in the TDD; Developer 1 review remains a non-blocking later handoff |
+| D-001 | Resolved by canonical integration | Developer 1 and repository owner | Canonical package/API, requiredness, types, identity, enums, temporal representations, validation split, immutability, and field limits | Developer 1's `report` package, enum persistence APIs, and clockless restoration factory are integrated directly |
 | D-002 | Resolved 2026-09-20 | Developer 2 and repository owner | Bound resource use for 1,000 expected reports | `MAX_STORE_BYTES = 16,777,216`; calculation and boundary evidence recorded |
 | D-003 | Resolved 2026-09-20 | Repository owner | Confirm TS-01 through TS-06 and the repository/error seam | TS-01 through TS-05 were confirmed on 2026-09-19; TS-06 and the complete revised seam were approved on 2026-09-20 |
 | D-004 | Resolved 2026-09-20 | Repository owner | Authorize test and production implementation after planning approval | Test and production implementation were separately authorized on 2026-09-20 |

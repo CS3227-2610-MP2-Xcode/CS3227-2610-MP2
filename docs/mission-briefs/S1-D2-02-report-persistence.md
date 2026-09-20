@@ -46,10 +46,9 @@ partially replacing report data.
 
 Developer 2 implements:
 
-- A controlled cross-owner minimum canonical `ItemReport`, `ReportType`,
-  `ItemCategory`, and `ReportStatus` contract because Developer 1's
-  implementation is unavailable
-- The `ReportRepository` interface over that single canonical `ItemReport`
+- The `ReportRepository` interface over Developer 1's canonical `ItemReport`
+- Direct integration with the canonical `ReportType`, `ItemCategory`, and
+  `ReportStatus` persistence APIs
 - A local JSON-backed repository at a caller-supplied path
 - Loading every stored report in stable insertion order
 - Inserting one report without overwriting a duplicate identifier
@@ -82,8 +81,8 @@ separately from the replacement report.
 This task does not implement:
 
 - A temporary, duplicate, or persistence-owned report-domain model
-- Categories beyond `OTHER`, report statuses beyond `SUBMITTED` and
-  `UNDER_REVIEW`, or broader report-domain behaviour
+- Changes to canonical categories, report statuses, or broader report-domain
+  behaviour owned by Developer 1
 - Report creation, identifier generation, or creation-time generation
 - Clock-dependent occurrence-date validation, submission requests, or
   submission-specific validation owned by Developer 1
@@ -123,35 +122,38 @@ date cannot be absent in version 1.
 Public description and private identifying detail remain separate values in
 the domain object and JSON schema.
 
-## Canonical domain contract and ownership exception
+## Canonical domain contract and ownership
 
-The repository owner and Developer 1 agreed that a blocked developer may make a
-minimal overlapping change. Under that exception, Developer 2 establishes one
-shared canonical contract in
-`io.github.cs32272610mp2xcode.finderskeepers.report.model`:
+Developer 1 supplies the single canonical contract in
+`io.github.cs32272610mp2xcode.finderskeepers.report`. The previously approved
+controlled overlap is superseded and leaves no compatibility wrapper or
+parallel model:
 
-- `ItemReport` is an immutable Java record whose public constructor and record
-  accessors are the construction and reconstruction interface.
+- `ItemReport` is an immutable final value object whose accessors expose the
+  complete state and whose clockless `restore(...)` factory is the persistence
+  reconstruction interface.
 - Report ID is a non-null `UUID`; equality and uniqueness use `UUID.equals`.
 - Reporter ID is a required `String`; equality is exact and case-sensitive.
 - `ReportType` contains `LOST` and `FOUND`.
-- `ItemCategory` initially contains only `OTHER`.
+- `ItemCategory` contains `STATIONERY`, `BOOKS`, `CLOTHING`, `BAGS`,
+  `WATER_BOTTLES`, `ELECTRONICS`, `SPORTS_EQUIPMENT`, `PERSONAL_ITEMS`, and
+  `OTHER`.
 - `ReportStatus` initially contains `SUBMITTED` and `UNDER_REVIEW`.
-- Enum names are stable version 1 storage tokens. Constants may be added, but a
-  persisted constant cannot be renamed or removed without a compatibility or
-  migration decision.
+- Enum `storedName()` values are stable version 1 storage tokens and are parsed
+  with `fromStoredName(...)`. A persisted token cannot be renamed or removed
+  without a compatibility or migration decision.
 - Location is a required `String` and occurrence date is a required
   `LocalDate`.
 - Created At is a required `Instant` with millisecond precision.
-- The record validates requiredness, supplied code-point limits, and Created At
-  precision without normalizing values. Its `toString()` reveals no field
-  values and returns exactly `ItemReport[redacted]`.
+- Clockless restoration validates requiredness, rejects blank text, applies the
+  canonical code-point limits and Created At precision, and preserves valid text
+  without normalizing it. `toString()` reveals no field values and returns
+  exactly `ItemReport[redacted]`.
 - The clock-dependent rule that an occurrence date is today or earlier belongs
   to Developer 1's later submission-validation workflow.
 
 This is the project's canonical model, not a persistence-owned substitute.
-Developer 1 must extend or jointly revise it instead of introducing competing
-types.
+Developer 2 imports it directly and does not modify it for storage convenience.
 
 ## Repository behaviour
 
@@ -300,13 +302,13 @@ directly. The persistence implementation must not:
 
 ## Ownership and integration
 
-This task primarily stays within Developer 2's persistence and storage-recovery
-ownership. The minimal shared report model is an explicitly approved exception
-to the Developer 1 ownership recorded in `AGENTS.md`.
+This task stays within Developer 2's persistence and storage-recovery ownership.
+Developer 1's canonical report domain is consumed as an integration dependency;
+no domain implementation is owned or modified by this mission.
 
 The following require Developer 1 coordination or separate approval:
 
-- Expanding or changing the minimal canonical report contract after this mission
+- Expanding or changing the canonical report contract
 - Renaming or removing stable report enum storage names
 - Changing shared report-status behaviour
 - Adding or changing a JSON dependency in `build.gradle`
@@ -385,8 +387,9 @@ implementation. Work proceeds through these gates in order:
    ledger with no unresolved product decision.
 3. `docs/features/S1-D2-02/PRD.md` is approved with its approver and approval
    date.
-4. The repository owner approves the controlled cross-owner canonical report
-   contract described above and records Developer 1 review as a later handoff.
+4. The canonical report contract is available from Developer 1 or an approved
+   temporary exception; Developer 1's delivered contract now satisfies this
+   prerequisite and supersedes the exception.
 5. `docs/features/S1-D2-02/TDD.md` and
    `docs/features/S1-D2-02/RequirementsToTests.md` are complete, record approved
    status and approval dates consistent with the other planning artifacts, and
@@ -397,8 +400,8 @@ Approval of this mission brief is not PRD or TDD approval and is not
 implementation authorization.
 
 All six gates were completed by the repository owner on 2026-09-20. Developer
-1 review remains a later integration handoff and does not block the approved
-shared-model exception.
+1 has since supplied the canonical package and persistence-facing APIs used by
+this integration.
 
 ## Handoff evidence
 

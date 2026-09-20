@@ -16,10 +16,12 @@
 ## Approval record
 
 The repository owner conditionally approved the original design and TS-01
-through TS-05 on 2026-09-19. On 2026-09-20 the owner selected the controlled
-cross-owner canonical report contract and numeric storage limit, approved the
-revised mission brief, PRD, this TDD, and the test mapping, confirmed TS-06, and
-separately authorized test and production implementation.
+through TS-05 on 2026-09-19. On 2026-09-20 the owner selected the temporary
+cross-owner report contract and numeric storage limit, approved the revised
+mission brief, PRD, this TDD, and the test mapping, confirmed TS-06, and
+separately authorized test and production implementation. Developer 1's
+subsequently delivered canonical package supersedes the temporary model while
+preserving the approved persistence behavior.
 
 ## Authority and precedence
 
@@ -52,8 +54,8 @@ The design optimizes for:
 
 ## Exclusions
 
-Apart from the approved minimum shared report record and enums, this design does
-not add report-domain behaviour, clock-dependent submission validation, workflow
+This design does not add or modify report-domain behaviour, clock-dependent
+submission validation, workflow
 or status-transition policy, report creation, identifier or time generation,
 lookup, deletion, filtering, presentation sorting, UI, startup wiring,
 encryption, ACL management, backups, migration, journaling, multi-process
@@ -69,9 +71,9 @@ outcome.
 - The project uses Java 25, JUnit Jupiter 5.14.4, the Gradle Wrapper, Checkstyle,
   and JaCoCo.
 - Production dependencies contain JavaFX only; no JSON library is present.
-- The current source tree contains the application scaffold but no report-domain
-  or report-persistence code. The approved implementation will add the one shared
-  canonical report contract and persistence module together.
+- The current source tree contains Developer 1's canonical report domain and
+  Student submission slice. This implementation adds only the persistence
+  package and consumes the canonical domain directly.
 - Version 1 is the first report-store format; no data migration is required.
 - A separate local-auth design demonstrates repository naming, but its
   non-atomic fallback and its unrelated byte limit do not satisfy this PRD and
@@ -252,20 +254,22 @@ seemingly valid mutation.
 
 ## Module structure and ownership
 
-The controlled cross-owner shared model is:
+Developer 1's canonical report domain is:
 
 ```text
-io.github.cs32272610mp2xcode.finderskeepers.report.model
-├── ItemReport.java                       public immutable record
+io.github.cs32272610mp2xcode.finderskeepers.report
+├── ItemReport.java                       public immutable final value object
 ├── ReportType.java                       LOST, FOUND
-├── ItemCategory.java                     OTHER
-└── ReportStatus.java                     SUBMITTED, UNDER_REVIEW
+├── ItemCategory.java                     nine canonical categories
+├── ReportStatus.java                     SUBMITTED, UNDER_REVIEW
+└── ReportConstraints.java                stable size and temporal formats
 ```
 
-`ItemReport` has this exact record interface:
+`ItemReport` exposes eleven accessors and the following persistence restoration
+factory:
 
 ```java
-public record ItemReport(
+public static ItemReport restore(
         UUID reportId,
         String reporterId,
         ReportType reportType,
@@ -276,17 +280,14 @@ public record ItemReport(
         String publicDescription,
         String privateIdentifyingDetail,
         ReportStatus status,
-        Instant createdAt) {
-}
+        Instant createdAt)
 ```
 
-Its compact constructor rejects null fields, enforces the approved inclusive
-code-point bounds, and rejects an `Instant` whose nanoseconds are not divisible
-by `1_000_000`. It preserves every accepted string exactly. A non-empty
-whitespace-only string is representable because this shared record enforces the
-approved code-point bound rather than submission-specific blank policy. The
-clock-dependent occurrence-date rule belongs to the later submission workflow.
-The record's generated equality covers all fields; repository identity and
+Clockless restoration rejects null or blank fields, enforces the canonical
+inclusive code-point bounds, and rejects an `Instant` whose nanoseconds are not
+divisible by `1_000_000`. It preserves every accepted string exactly and does
+not apply the clock-dependent occurrence-date rule. Value equality covers all
+fields; repository identity and
 uniqueness use `reportId`, while immutable Reporter ID comparison uses exact
 case-sensitive `String.equals`. `toString()` returns a fixed redacted form with
 no field values: exactly `ItemReport[redacted]`.
@@ -329,8 +330,8 @@ portably. Tests observe repository outcomes and target bytes, not collaborator
 call counts.
 
 The codec parses directly into local scalar values and immediately invokes the
-public `ItemReport` constructor. Parsed maps, token objects, and local variables
-are implementation details, not a second report model.
+clockless `ItemReport.restore(...)` factory. Parsed maps, token objects, and
+local variables are implementation details, not a second report model.
 
 ### Canonical report invariants
 
@@ -340,7 +341,7 @@ are implementation details, not a second report model.
 | `reporterId` | `String` | Required; 1–128 Unicode code points; exact case-sensitive equality |
 | `reportType` | `ReportType` | Required; `LOST` or `FOUND` |
 | `itemName` | `String` | Required; 1–100 Unicode code points |
-| `category` | `ItemCategory` | Required; initially `OTHER` |
+| `category` | `ItemCategory` | Required; any canonical category |
 | `location` | `String` | Required; 1–120 Unicode code points |
 | `occurrenceDate` | `LocalDate` | Required; clock-dependent today-or-earlier validation is external |
 | `publicDescription` | `String` | Required; 1–500 Unicode code points |
@@ -350,8 +351,8 @@ are implementation details, not a second report model.
 
 An enum constant name is a compatibility token once persisted. Adding a constant
 is allowed, while renaming or removing a persisted constant requires a version or
-migration decision. The record does not generate IDs or time values and exposes
-no status-transition policy or copy helper.
+migration decision. The value object does not generate IDs or time values and
+exposes no status-transition policy.
 
 ## Version 1 JSON contract
 
@@ -372,7 +373,7 @@ Each `reports` element is one object with exactly these members:
 | `reporterId` | Required store member | Exact JSON string satisfying the canonical code-point bound |
 | `reportType` | Required store member | Exact stable enum token `LOST` or `FOUND` |
 | `itemName` | Required store member | Exact JSON string satisfying the canonical code-point bound |
-| `category` | Required store member | Exact stable enum token `OTHER` |
+| `category` | Required store member | Exact canonical `ItemCategory.storedName()` token |
 | `location` | Required store member | Exact JSON string satisfying the canonical code-point bound |
 | `occurrenceDate` | Required store member | Canonical `LocalDate.toString()` ISO-8601 string that round-trips unchanged through `LocalDate.parse` |
 | `publicDescription` | Required store member | Exact JSON string satisfying the canonical code-point bound |
@@ -641,7 +642,7 @@ still never intentionally uses a non-atomic replacement.
 | TS-03: Package-private `ReportStoreFiles` fault adapter | Confirmed - repository owner, 2026-09-19 | Inject only non-portable read, staging, force-equivalent, atomic-move, and cleanup outcomes; assert public reason and target state, never call counts |
 | TS-04: Shared-instance concurrency | Confirmed - repository owner, 2026-09-19 | Coordinate public calls with barriers/executors and assert a serial-equivalent persisted result |
 | TS-05: Structural and command evidence | Confirmed - repository owner, 2026-09-19 | Review imports/types/docs and the real NIO same-directory, force, single-atomic-move, no-fallback sequence; then run focused tests and `gradlew.bat check` |
-| TS-06: Public `ItemReport` constructor, accessors, equality, and redacted `toString()` | Confirmed - repository owner, 2026-09-20 | Verify only requiredness, code-point bounds, exact preservation, identity/equality, enum values, millisecond precision, and privacy-safe representation; do not test clock-dependent submission policy here |
+| TS-06: Canonical `ItemReport.restore(...)`, accessors, equality, and redacted `toString()` | Confirmed - repository owner, 2026-09-20 | Reuse Developer 1's domain tests and verify persistence reconstruction, exact preservation, enum storage APIs, millisecond precision, and privacy-safe representation without applying clock-dependent submission policy |
 
 The complete stable test catalog and traceability are in
 `RequirementsToTests.md`. No persistence test may use real application storage.
@@ -686,14 +687,14 @@ Every row must be resolved in this document and in
 
 | Blocker | Owner | Required resolution | Status |
 | --- | --- | --- | --- |
-| TDD-B01 | Shared integration exception | Package `report.model`; public immutable record constructor/accessors | Resolved 2026-09-20 |
-| TDD-B02 | Shared integration exception | `UUID` identity and exact case-sensitive Reporter ID semantics | Resolved 2026-09-20 |
-| TDD-B03 | Shared integration exception | Immutable record; explicit `UUID` replacement target; no copy helper | Resolved 2026-09-20 |
-| TDD-B04 | Shared integration exception | All fields required with exact Java types and no normalization | Resolved 2026-09-20 |
-| TDD-B05 | Shared integration exception | Stable enum-name tokens and approved minimal constant sets | Resolved 2026-09-20 |
-| TDD-B06 | Shared integration exception | Required `LocalDate` and canonical round-tripping ISO-8601 string | Resolved 2026-09-20 |
-| TDD-B07 | Shared integration exception | Required millisecond-precision `Instant`; exact three-digit UTC `Z` representation | Resolved 2026-09-20 |
-| TDD-B08 | Shared integration exception | Requiredness, code-point bounds, precision, redacted `toString()`; clock rule deferred to submission | Resolved 2026-09-20 |
+| TDD-B01 | Canonical domain integration | Developer 1's `report` package; clockless `ItemReport.restore(...)` and accessors | Resolved by Developer 1 contract and integration review |
+| TDD-B02 | Canonical domain integration | `UUID` identity and exact case-sensitive Reporter ID semantics | Resolved by Developer 1 contract |
+| TDD-B03 | Canonical domain integration | Immutable value object and explicit `UUID` replacement target | Resolved by Developer 1 contract |
+| TDD-B04 | Canonical domain integration | All fields required with exact Java types and no normalization | Resolved by Developer 1 contract |
+| TDD-B05 | Canonical domain integration | Stable `storedName()`/`fromStoredName(...)` tokens for every canonical enum constant | Resolved by Developer 1 contract and integration review |
+| TDD-B06 | Canonical domain integration | Required `LocalDate` and canonical round-tripping ISO-8601 string | Resolved by Developer 1 contract |
+| TDD-B07 | Canonical domain integration | Required millisecond-precision `Instant`; exact three-digit UTC `Z` representation | Resolved by Developer 1 contract |
+| TDD-B08 | Canonical domain integration | Requiredness, code-point bounds, precision, redacted `toString()`; clock rule remains in submission | Resolved by Developer 1 contract |
 | TDD-B09 | Developer 2 with repository owner | 1,000-report sizing calculation and `MAX_STORE_BYTES = 16,777,216` | Resolved 2026-09-20 |
 | TDD-B10 | Repository owner | Confirmation of TS-01 through TS-05 and the proposed public error/interface seam | Resolved 2026-09-19 |
 
@@ -702,10 +703,10 @@ and separately authorized implementation on 2026-09-20.
 
 ## Cross-workstream handoff
 
-Developer 1 need not implement persistence. Developer 2 creates the minimum
-shared model under the approved overlap, and Developer 1 later reviews and
-extends that same model for Student submission. A competing `ItemReport` or enum
-set is prohibited. Future changes to persisted requiredness, enum names,
+Developer 1 need not implement persistence. Developer 2 consumes Developer 1's
+canonical model directly and removes the superseded temporary model. A
+competing `ItemReport` or enum set is prohibited. Future changes to persisted
+requiredness, enum names,
 identity, or temporal representations require joint compatibility review.
 
 Adding a JSON dependency is not proposed. If the team later prefers one,
@@ -729,9 +730,9 @@ Implementation is not complete until:
 5. focused persistence tests pass;
 6. `gradlew.bat check` passes on Windows, or the repository-approved equivalent
    passes on the executing platform;
-7. the diff contains only the approved shared report model plus persistence and
-   documentation, with no duplicate model, dependency, startup, JavaFX, release,
-   or CI change;
+7. the diff contains persistence, persistence tests, and documentation with no
+   duplicate model, canonical-domain modification, dependency, startup, JavaFX,
+   release, or CI change;
 8. storage schema, bound, recovery, plaintext, orphan-temp, durability, and
    unsupported-concurrency limitations are documented; and
 9. the repository owner separately authorizes and then accepts implementation.

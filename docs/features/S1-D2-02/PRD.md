@@ -41,11 +41,11 @@ read or changed.
   separately owned Student submission workflow.
 - **Desk Officer application service:** will load and replace canonical reports
   through separately planned review workflows.
-- **Developer 1:** later extends the jointly shared canonical report types and
-  owns Student submission and clock-dependent occurrence-date validation.
-- **Developer 2:** establishes the approved minimum shared report contract and
-  owns the repository contract, JSON persistence, storage failure behaviour,
-  and storage documentation.
+- **Developer 1:** owns and extends the canonical report types, Student
+  submission, and clock-dependent occurrence-date validation.
+- **Developer 2:** consumes the canonical report contract and owns the
+  repository contract, JSON persistence, storage failure behaviour, and storage
+  documentation.
 
 ## Success criteria
 
@@ -70,14 +70,14 @@ The approved revised S1-D2-02 mission brief and completed decision ledger define
 this PRD's scope and product decisions. The repository owner reapproved them
 together with this PRD on 2026-09-20.
 
-### Controlled cross-owner canonical contract
+### Canonical report-domain dependency
 
-Developer 1 is unavailable, and the repository owner has authorized the smallest
-shared-domain overlap needed to unblock persistence. The project will use one
-canonical immutable `ItemReport` record with the exact field types, requiredness,
-limits, identity rules, enum names, and temporal semantics recorded in the
-mission brief and TDD. It is not a persistence DTO. Developer 1 must extend or
-jointly revise that model rather than create a competing implementation.
+Developer 1's canonical domain is available under
+`io.github.cs32272610mp2xcode.finderskeepers.report`. The earlier controlled
+shared-model exception is superseded. Persistence imports the canonical
+`ItemReport` and enums directly, reconstructs stored records through the
+clockless `ItemReport.restore(...)`, and must not retain a wrapper, duplicate,
+or compatibility model.
 
 ### Operational assumptions
 
@@ -105,10 +105,10 @@ jointly revise that model rather than create a competing implementation.
 
 ## Included scope
 
-- Defining the approved minimum shared canonical `ItemReport`, `ReportType`,
-  `ItemCategory`, and `ReportStatus`
-- Requiredness, code-point limits, Created At precision, canonical identity, and
-  privacy-safe report string representation
+- Consuming the canonical `ItemReport`, `ReportType`, `ItemCategory`, and
+  `ReportStatus` supplied by Developer 1
+- Preserving canonical requiredness, code-point limits, Created At precision,
+  identity, and privacy-safe report representation during reconstruction
 - Loading all canonical reports
 - Inserting one canonical report
 - Replacing one complete existing canonical report
@@ -123,7 +123,7 @@ jointly revise that model rather than create a competing implementation.
 
 ## Excluded scope
 
-- Expanding the minimal category or status sets beyond the approved constants
+- Changing the canonical category or status sets owned by Developer 1
 - Clock-dependent occurrence-date validation and other submission validation
 - Report creation, ID generation, or creation-time generation
 - Student or Desk Officer UI and application workflows
@@ -160,12 +160,13 @@ All eleven values are required. Persistence must reject absent values and must
 not trim, normalize, default, or otherwise reinterpret a canonical value.
 
 The shared canonical report accepts `UUID` Report IDs, exact case-sensitive
-Reporter IDs, `LOST` or `FOUND`, category `OTHER`, statuses `SUBMITTED` or
-`UNDER_REVIEW`, a `LocalDate`, and a millisecond-precision `Instant`. Text uses
-inclusive Unicode code-point bounds: Reporter ID 1–128, item name 1–100,
-location 1–120, public description 1–500, and private identifying detail 1–500.
-The record itself does not enforce the clock-dependent today-or-earlier
-occurrence-date rule; the later Student submission workflow owns that rule.
+Reporter IDs, `LOST` or `FOUND`, every canonical `ItemCategory` stored name,
+`SUBMITTED` or `UNDER_REVIEW`, a `LocalDate`, and a millisecond-precision
+`Instant`. Text uses inclusive Unicode code-point bounds: Reporter ID 1–128,
+item name 1–100, location 1–120, public description 1–500, and private
+identifying detail 1–500. Clockless restoration does not enforce the
+today-or-earlier occurrence-date rule; the Student submission workflow owns
+that rule.
 
 ### FR-002 — Load missing storage as empty
 
@@ -315,11 +316,10 @@ print report values.
 
 ### NFR-004 — Ownership and maintainability
 
-The persistence feature and later workflows must share the one canonical report
-contract established by the approved cross-owner exception. No second report
-model may be created. Developer 1 may add enum constants and submission
-validation, but persisted enum names, requiredness, identity, or temporal
-semantics cannot change silently.
+The persistence feature and later workflows share Developer 1's one canonical
+report contract. No second report model may be created. Persistence uses
+`storedName()` and `fromStoredName(...)` so enum storage names remain owned in
+one place; requiredness, identity, or temporal semantics cannot change silently.
 
 ### NFR-005 — Compatibility boundary
 
@@ -476,8 +476,8 @@ observable requirement in this PRD returns to PRD review and approval first.
 
 ## Approval and next gate
 
-The repository owner approved the original PRD on 2026-09-19 and reapproved this
-complete revision on 2026-09-20, including the controlled cross-owner report
-model, required-field semantics, and 16 MiB bound. The revised TDD and
-`RequirementsToTests.md` were approved on the same date, followed by separate
-test and production implementation authorization.
+The repository owner approved the original PRD on 2026-09-19 and reapproved the
+complete persistence design on 2026-09-20, including required-field semantics
+and the 16 MiB bound. Developer 1's subsequently delivered canonical domain
+supersedes the temporary cross-owner model exception while leaving the approved
+repository behavior and eleven-field storage shape unchanged.

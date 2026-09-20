@@ -27,7 +27,7 @@ Each report object has exactly these required members:
 | `reporterId` | string | Exact Reporter ID text |
 | `reportType` | string | Version-one token `LOST` or `FOUND` |
 | `itemName` | string | Exact item-name text |
-| `category` | string | Version-one token `OTHER` |
+| `category` | string | Exact canonical `ItemCategory.storedName()` token |
 | `location` | string | Exact location text |
 | `occurrenceDate` | string | Canonical ISO-8601 `LocalDate` |
 | `publicDescription` | string | Exact public-description text |
@@ -36,6 +36,11 @@ Each report object has exactly these required members:
 | `createdAt` | string | UTC `Instant` with exactly three fractional digits and `Z` |
 
 All eleven report members are required and non-null. Text remains exact: the codec does not trim, normalize, reinterpret, or otherwise alter it.
+
+Version one accepts these category tokens: `STATIONERY`, `BOOKS`, `CLOTHING`,
+`BAGS`, `WATER_BOTTLES`, `ELECTRONICS`, `SPORTS_EQUIPMENT`, `PERSONAL_ITEMS`,
+and `OTHER`. Writers use each enum's `storedName()` and readers use the
+corresponding `fromStoredName(...)`; enum display labels are never persisted.
 
 ## Canonical output
 
@@ -91,4 +96,7 @@ Private identifying details are stored as plaintext JSON. The persistence layer 
 
 All public operations on one `JsonReportRepository` instance are synchronized, and every operation rereads the authoritative file. The supported application shape is one process using one shared repository instance. Coordination between multiple repository instances or multiple processes is not provided and can lose updates.
 
-Version one has no migration, backup, journal, repair, or manual-edit workflow. `ItemCategory` currently has only `OTHER`, so category replacement cannot yet express a different value. Adding an enum constant requires an explicit version-one compatibility review; renaming or removing a persisted token requires a schema-version or migration decision.
+Version one has no migration, backup, journal, repair, or manual-edit workflow.
+The canonical category expansion above is compatible with existing `OTHER`
+documents and does not change the eleven-field representation. Renaming or
+removing a persisted token requires a schema-version or migration decision.

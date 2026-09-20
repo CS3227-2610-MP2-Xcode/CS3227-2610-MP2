@@ -17,7 +17,8 @@ The current source tree keeps application startup separate from the shared repor
 - `FindersKeepersApp` owns the JavaFX lifecycle and creates the authentication scene.
 - `AppMetadata` is the single source of truth for the application name and version.
 - `app.css` keeps presentation rules separate from the Java scene construction.
-- `report.model` contains the canonical immutable `ItemReport` and its persisted enums.
+- `report` contains the canonical immutable `ItemReport`, its persisted enums,
+  creation request, validation types, and storage-format constraints.
 - `report.persistence` exposes `ReportRepository` and its strict, ordered, versioned JSON implementation.
 
 `Launcher` delegates to `FindersKeepersApp`, which composes the authentication coordinator for `data/demo-users.json` and displays `AuthenticationPane`. Future features should use simple, age-appropriate language for students and keep shared services independent of the role-specific user interfaces.
@@ -320,9 +321,9 @@ are invalid. The public and private descriptions are intentionally separate;
 `ItemReport.toString()` is always `ItemReport[redacted]`, and
 `ReportCreationRequest.toString()` exposes neither description.
 
-The repository must import these canonical types from the `report` package. It
-must not declare a parallel `report.model.ItemReport` or duplicate enums. The
-JSON decoder should pass the eleven decoded values to the clockless
+The repository imports these canonical types directly from the `report`
+package. It declares no parallel report-domain type or duplicate enum. The JSON
+decoder passes the eleven decoded values to the clockless
 `ItemReport.restore(...)`; this keeps domain validation in one place and allows
 all supported categories to round-trip.
 

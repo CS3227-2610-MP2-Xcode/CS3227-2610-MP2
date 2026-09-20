@@ -18,6 +18,16 @@ This ledger records the product decisions settled before drafting the S1-D2-02
 PRD. It is descriptive evidence of the completed grilling process, not
 implementation authorization.
 
+## Canonical-domain integration update
+
+Developer 1's canonical report domain is now available under
+`io.github.cs32272610mp2xcode.finderskeepers.report`. It supersedes the temporary
+shared-model exception recorded below without changing the repository operation
+set or the eleven-field version-one JSON representation. Persistence consumes
+the canonical types directly, writes enums with `storedName()`, reads them with
+`fromStoredName(...)`, and reconstructs stored reports with the clockless
+`ItemReport.restore(...)` factory.
+
 ## Confirmed decisions
 
 ### Scope and callers
@@ -110,22 +120,25 @@ implementation authorization.
 - **GD-026 — Restart evidence:** Persistence across restarts is demonstrated by
   writing through one repository instance and loading through a fresh instance at
   the same temporary path. Full application restart belongs to later integration.
-- **GD-027 — Controlled ownership overlap:** Because Developer 1's implementation
-  is unavailable, the repository owner approved a minimal canonical report model
-  as a shared-integration exception. It becomes the single project model and is
-  handed to Developer 1 for later extension rather than duplicated.
+- **GD-027 — Controlled ownership overlap:** The repository owner originally
+  approved a minimal shared model while Developer 1's implementation was
+  unavailable. Developer 1's delivered canonical domain now supersedes that
+  exception, and the temporary model must be removed rather than retained as a
+  compatibility layer.
 - **GD-028 — Separate authorization:** Mission, PRD, TDD, and
   requirements-to-tests approval do not authorize implementation, commits,
   pushing, merging, or publishing.
-- **GD-029 — Minimal enum contract:** Version 1 uses `LOST` and `FOUND`, category
-  `OTHER`, and statuses `SUBMITTED` and `UNDER_REVIEW` as stable enum-name tokens.
-  Constants may be added; persisted names require compatibility review before
-  rename or removal.
-- **GD-030 — Canonical Java shape:** `ItemReport` is an immutable record with a
-  `UUID` Report ID, exact case-sensitive `String` Reporter ID, required text,
-  required `LocalDate` occurrence date, and required millisecond-precision
-  `Instant` Created At value. Its public constructor is the reconstruction seam.
-- **GD-031 — Validation split:** The record enforces requiredness, supplied
+- **GD-029 — Enum storage contract:** Version 1 uses the canonical enums'
+  `storedName()` values. The current categories are `STATIONERY`, `BOOKS`,
+  `CLOTHING`, `BAGS`, `WATER_BOTTLES`, `ELECTRONICS`, `SPORTS_EQUIPMENT`,
+  `PERSONAL_ITEMS`, and `OTHER`; persisted names require compatibility review
+  before rename or removal.
+- **GD-030 — Canonical Java shape:** `ItemReport` is an immutable final value
+  object with a `UUID` Report ID, exact case-sensitive `String` Reporter ID,
+  required text, required `LocalDate` occurrence date, and required
+  millisecond-precision `Instant` Created At value. The clockless
+  `ItemReport.restore(...)` factory is the persistence reconstruction seam.
+- **GD-031 — Validation split:** The canonical value object enforces requiredness, supplied
   code-point limits, Created At precision, and privacy-safe `toString()` output.
   Developer 1's later submission workflow enforces the clock-dependent
   occurrence-date rule.
@@ -134,10 +147,9 @@ implementation authorization.
 
 ## Inherited constraints
 
-- Developer 1 ordinarily owns `ItemReport`, `ReportType`, `ItemCategory`, and
-  `ReportStatus`; this mission has explicit approval to establish their minimal
-  shared form. Developer 1 retains creation requests, clock-dependent submission
-  validation, richer enums, and Student submission.
+- Developer 1 owns `ItemReport`, `ReportType`, `ItemCategory`, `ReportStatus`,
+  creation requests, submission validation, and Student submission. Developer 2
+  consumes those canonical types without wrappers or duplicates.
 - Developer 2 owns `ReportRepository`, JSON persistence, storage failure, and
   recovery behaviour.
 - Shared interfaces, status contracts, dependencies, startup, and end-to-end
