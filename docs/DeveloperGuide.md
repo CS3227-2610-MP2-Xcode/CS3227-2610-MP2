@@ -30,7 +30,8 @@ The current source tree keeps application startup separate from the shared repor
 `data/demo-users.json`, one report repository for `data/reports.json`, and the
 injected Student workspace view. Future features should use simple,
 age-appropriate language for students and keep shared services independent of
-the role-specific user interfaces.
+the role-specific user interfaces. `data/reports.json` is mutable runtime data:
+it is ignored by Git and created only after the first successful submission.
 
 Report persistence is deliberately repository-only: startup constructs one
 `JsonReportRepository` for `data/reports.json` and injects it into the Student

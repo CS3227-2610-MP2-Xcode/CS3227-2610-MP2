@@ -6,7 +6,8 @@ Finders Keepers is intended for a primary school's lost-and-found desk. Applicat
 
 The Student report form and personal report-history/search components are
 available from the authenticated Student workspace. Reports are stored in the
-project-local `data/reports.json` file.
+project-local `data/reports.json` file. The application creates this local,
+untracked runtime file after the first successful report submission.
 
 ## Requirements
 
