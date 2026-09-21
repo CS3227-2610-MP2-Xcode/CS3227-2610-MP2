@@ -2,7 +2,11 @@
 
 ## Scope
 
-This guide describes the implemented project baseline, integrated Developer 2 local-authentication module, and S1-D2-02 report-persistence foundation for a primary-school lost-and-found application. The approved application-shell integration opens authentication at startup; report persistence remains available behind its repository interface until an owning workflow selects its store path and lifetime.
+This guide describes the implemented project baseline, integrated Developer 2
+local-authentication module, S1-D2-02 report-persistence foundation, and
+S1-D2-03 Desk Officer review queue for a primary-school lost-and-found
+application. Application startup opens authentication and owns one shared
+report repository for the Desk Officer workflow.
 
 ## Development prerequisites
 
@@ -20,10 +24,27 @@ The current source tree keeps application startup separate from the shared repor
 - `report` contains the canonical immutable `ItemReport`, its persisted enums,
   creation request, validation types, and storage-format constraints.
 - `report.persistence` exposes `ReportRepository` and its strict, ordered, versioned JSON implementation.
+- `review.application` owns submitted-queue state, filtering, selection,
+  transition policy, stale-target reconciliation, and privacy-safe outcomes.
+- `review.ui` renders the separate Desk Officer queue and complete read-only
+  details view.
 
-`Launcher` delegates to `FindersKeepersApp`, which composes the authentication coordinator for `data/demo-users.json` and displays `AuthenticationPane`. Future features should use simple, age-appropriate language for students and keep shared services independent of the role-specific user interfaces.
+`Launcher` delegates to `FindersKeepersApp`, which composes the authentication
+coordinator for `data/demo-users.json`, one application-lifetime
+`JsonReportRepository` for `data/reports.json`, and `AuthenticationPane`.
+The authentication pane lazily creates a fresh Desk Officer service and view
+only after the stored role routes to `DESK_OFFICER`. Future features should use
+simple, age-appropriate language for students and keep shared services
+independent of the role-specific user interfaces.
 
-Report persistence is deliberately repository-only: application startup does not yet construct or wire a report repository. The repository stores all canonical report fields in a caller-selected file and preserves insertion order across reconstruction. It performs bounded strict reads and all-or-nothing atomic replacement with no unsafe fallback. See [S1-D2-02 Report Storage Format](features/S1-D2-02/StorageFormat.md) for the public boundary, JSON contract, failure behavior, privacy limits, and operating assumptions.
+The repository stores all canonical report fields and preserves insertion order
+across reconstruction. It performs bounded strict reads and all-or-nothing
+atomic replacement with no unsafe fallback. The application-owned
+`data/reports.json` remains plaintext and is excluded from Git by the exact
+root-relative ignore rule `/data/reports.json`. See
+[S1-D2-02 Report Storage Format](features/S1-D2-02/StorageFormat.md) for the
+public boundary, JSON contract, failure behavior, privacy limits, and operating
+assumptions.
 
 ## Local authentication design
 
@@ -88,6 +109,63 @@ AuthenticationService -> PasswordHasher
   successful login or the explicit **Clear** action.
 - Authenticated state contains only user ID, username, and role. Passwords,
   hashes, and salts never enter it.
+
+## Desk Officer review components
+
+The review workflow is separated from authentication, the canonical domain,
+and persistence:
+
+- `DeskOfficerReviewService` is one stateful, plain-Java application service
+  per mounted Desk Officer view. It loads ordered reports through
+  `ReportRepository`, retains only `SUBMITTED` reports, applies the exact
+  All/Lost/Found filters in memory, owns visible selection, and returns an
+  immutable `ReviewQueueState`.
+- `ReviewQueueFilter` is a non-persisted UI filter. Lost and Found delegate to
+  canonical `ReportType` values and display labels; no stored token or report
+  enum is duplicated.
+- `ReviewQueueState` contains canonical `ItemReport` values rather than a
+  second report-shaped DTO. It distinguishes a ready queue from unavailable
+  storage and supplies exact empty, feedback, and Retry presentation state.
+- `DeskOfficerReviewPane` renders the state, a five-value public queue row, and
+  all eleven selected canonical values. The private identifying detail appears
+  only in the selected authenticated details section. Review-specific styling
+  is scoped to `review.css`.
+
+The main flow is:
+
+```text
+authenticated DESK_OFFICER route
+        -> lazy DeskOfficerReviewPane and DeskOfficerReviewService
+        -> shared ReportRepository.loadAll()
+        -> ordered SUBMITTED snapshot and active type filter
+        -> selected canonical ItemReport details
+        -> authoritative loadAll() recheck
+        -> authoritative.withStatus(UNDER_REVIEW)
+        -> ReportRepository.replace(...)
+        -> success state only after durable replacement returns
+```
+
+The service permits only `SUBMITTED -> UNDER_REVIEW`; it accepts no caller-
+selected target status and exposes no reverse action. The authoritative report
+produces the status-only replacement, so every other canonical value remains
+unchanged. A missing or non-submitted target is reconciled as stale without a
+replacement. A replacement target that disappears triggers one authoritative
+reload. If that reload fails, Retry retains the active filter and restores the
+stale notice after recovery.
+
+Load failure is distinct from an empty queue. Initial or reconciliation load
+failure removes report values, disables Start review, and exposes Retry.
+Precheck or replacement failure retains the current row, selection, details,
+filter, and explicit Start review retry. The UI receives only fixed contextual
+copy; paths, JSON, persistence reason names, exception text, and report values
+are not included in error messages.
+
+`AuthenticationPane` receives only an opaque lazy `Supplier<? extends Node>`.
+It invokes that supplier only for the existing Desk Officer route. The Student
+placeholder remains unchanged. Logout clears the coordinator session and
+replaces the entire authenticated subtree, so a later Desk Officer login gets a
+fresh service/view and a new authoritative queue load over the same shared
+repository instance.
 
 ## Student report-submission components
 
@@ -219,6 +297,11 @@ gradlew.bat release
   bounds, atomic-write failures, recovery behavior, and supported
   shared-instance concurrency. Persistence tests use JUnit temporary
   directories only.
+- Desk Officer review tests cover submitted-only membership and order, exact
+  filters, global and filtered empty states, selection, immutable state,
+  authoritative status-only replacement, invalid/repeat transition absence,
+  stale targets, storage failures, Retry context, and fresh-instance
+  durability. Real persistence evidence uses JUnit temporary directories.
 - Java compilation enables all lint warnings and treats warnings as errors.
 - Checkstyle runs against production and test sources.
 - Javadoc warnings fail the build.
@@ -240,8 +323,12 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
   isolated slice; repository/service composition and authenticated route wiring
   remain to be integrated.
 - Student status features — to be designed and implemented.
-- Desk Officer workflows for reviewing reports and coordinating collection — to be designed and implemented.
-- Repository construction and startup wiring — to be integrated once the owning application workflow selects its store path and lifetime.
+- Desk Officer collection, matching, claiming, and return workflows — to be
+  designed and implemented separately from the delivered submitted-report
+  review queue.
+- Student-side repository construction and route wiring — to be integrated by
+  its owning workflow; the Desk Officer path already owns the shared report
+  repository lifetime.
 - Richer category and status vocabularies, submission validation, and report creation — to be extended through the shared canonical model without introducing a competing report type.
 - Role-specific JavaFX views and navigation — to be documented with the feature implementation.
 - Deciding how the external demo credential store is supplied with a

@@ -2,11 +2,14 @@
 
 ## Current status
 
-Finders Keepers is intended for a primary school's lost-and-found desk. Application startup now opens the local login, with Student and Desk Officer routing and logout available after authentication.
+Finders Keepers is intended for a primary school's lost-and-found desk.
+Application startup opens the local login, with Student and Desk Officer
+routing and logout available after authentication. The Desk Officer route now
+opens the submitted-report review queue backed by `data/reports.json`.
 
 The Student report form and its validation/controller logic are implemented,
 but the current application does not yet open that form. Concrete report
-storage and authentication route wiring are still integration work. The steps
+submission storage and Student route wiring are still integration work. The steps
 below describe the implemented form behavior for the integrated build; they
 are not a claim that the current startup can reach it.
 
@@ -163,7 +166,41 @@ Invalid examples:
 
 ### Desk Officer
 
-Successful Desk Officer login reaches a distinct Desk Officer home. Report review and collection features remain planned for later sprints.
+Successful Desk Officer login automatically loads the submitted-report queue.
+Only reports whose status is **Submitted** appear, in their stored insertion
+order. The row summary contains only the report's Lost/Found type, item name,
+category, occurrence date, and location.
+
+![Desk Officer submitted-report queue](images/desk-officer-review-queue.png)
+
+Use the review queue as follows:
+
+1. Choose **All**, **Lost**, or **Found**. **All** is selected on entry.
+2. Select a row to display its complete read-only report details. The public
+   description and the private identifying detail appear in separate sections;
+   the private section is reserved for Desk Officer verification.
+3. Select **Start review**. The action immediately changes the report from
+   **Submitted** to **Under review** after the change is saved. The row then
+   leaves this queue, the selection clears, and `Review started.` appears.
+
+Changing filters retains a selection only while the selected report remains
+visible. Without a selection, **Start review** is disabled and the details area
+asks you to select a report.
+
+An empty All queue shows `No submitted reports.` A Lost or Found filter with no
+matching submitted report shows the corresponding filter-specific message.
+These empty states are not storage errors.
+
+If reports cannot be loaded, the view shows
+`Reports are unavailable. Please try again.` and an explicit **Retry** button.
+If saving Start review fails, the selected row and details remain available so
+the Desk Officer can try the action again. Technical storage details and report
+values are not included in error messages.
+
+Logging out removes the queue and any selected private detail. A later Desk
+Officer login starts again with the All filter and reloads the report store.
+Report editing, returning a report to Submitted, collection, matching, and
+return workflows remain outside this feature.
 
 ## Troubleshooting
 
