@@ -17,3 +17,6 @@ out/
 Thumbs.db
 *.swp
 *.swo
+
+# Local mutable application data
+data/reports.json
