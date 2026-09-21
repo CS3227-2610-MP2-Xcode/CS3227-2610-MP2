@@ -20,3 +20,5 @@ Thumbs.db
 
 # Local mutable application data
 /data/reports.json
+/data/possible-match-links.txt
+/data/.possible-match-links-*.tmp
