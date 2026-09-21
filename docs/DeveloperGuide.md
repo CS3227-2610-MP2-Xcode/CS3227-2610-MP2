@@ -2,7 +2,7 @@
 
 ## Scope
 
-This guide describes the project baseline and the integrated Developer 2 local-authentication module for a primary-school lost-and-found application. The approved application-shell integration now opens authentication at startup.
+This guide describes the implemented project baseline, integrated Developer 2 local-authentication module, and S1-D2-02 report-persistence foundation for a primary-school lost-and-found application. The approved application-shell integration opens authentication at startup; report persistence remains available behind its repository interface until an owning workflow selects its store path and lifetime.
 
 ## Development prerequisites
 
@@ -11,14 +11,19 @@ This guide describes the project baseline and the integrated Developer 2 local-a
 
 ## Current design
 
-The current source tree is intentionally small:
+The current source tree keeps application startup separate from the shared report foundation:
 
 - `Launcher` is the plain Java entry point used by Gradle and the packaged JAR.
 - `FindersKeepersApp` owns the JavaFX lifecycle and creates the authentication scene.
 - `AppMetadata` is the single source of truth for the application name and version.
 - `app.css` keeps presentation rules separate from the Java scene construction.
+- `report` contains the canonical immutable `ItemReport`, its persisted enums,
+  creation request, validation types, and storage-format constraints.
+- `report.persistence` exposes `ReportRepository` and its strict, ordered, versioned JSON implementation.
 
 `Launcher` delegates to `FindersKeepersApp`, which composes the authentication coordinator for `data/demo-users.json` and displays `AuthenticationPane`. Future features should use simple, age-appropriate language for students and keep shared services independent of the role-specific user interfaces.
+
+Report persistence is deliberately repository-only: application startup does not yet construct or wire a report repository. The repository stores all canonical report fields in a caller-selected file and preserves insertion order across reconstruction. It performs bounded strict reads and all-or-nothing atomic replacement with no unsafe fallback. See [S1-D2-02 Report Storage Format](features/S1-D2-02/StorageFormat.md) for the public boundary, JSON contract, failure behavior, privacy limits, and operating assumptions.
 
 ## Local authentication design
 
@@ -208,7 +213,12 @@ gradlew.bat release
   credential whitespace and array clearing, both role routes, logout, factory
   wiring, PBKDF2 verification and salt uniqueness, provisioning validation,
   bounded JSON persistence, missing storage, corrupt metadata, and plaintext
-  exclusion. Persistence tests use JUnit temporary directories only.
+  exclusion.
+- Report domain and persistence tests cover report invariants, reconstruction,
+  ordering, replacement conflicts, strict JSON and Unicode handling, resource
+  bounds, atomic-write failures, recovery behavior, and supported
+  shared-instance concurrency. Persistence tests use JUnit temporary
+  directories only.
 - Java compilation enables all lint warnings and treats warnings as errors.
 - Checkstyle runs against production and test sources.
 - Javadoc warnings fail the build.
@@ -231,7 +241,9 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
   remain to be integrated.
 - Student status features — to be designed and implemented.
 - Desk Officer workflows for reviewing reports and coordinating collection — to be designed and implemented.
-- Shared domain and storage services — to be designed before both role features depend on them.
+- Repository construction and startup wiring — to be integrated once the owning application workflow selects its store path and lifetime.
+- Richer category and status vocabularies, submission validation, and report creation — to be extended through the shared canonical model without introducing a competing report type.
+- Role-specific JavaFX views and navigation — to be documented with the feature implementation.
 - Deciding how the external demo credential store is supplied with a
   distributable release — pending shared integration approval.
 
@@ -309,9 +321,9 @@ are invalid. The public and private descriptions are intentionally separate;
 `ItemReport.toString()` is always `ItemReport[redacted]`, and
 `ReportCreationRequest.toString()` exposes neither description.
 
-The repository must import these canonical types from the `report` package. It
-must not declare a parallel `report.model.ItemReport` or duplicate enums. The
-JSON decoder should pass the eleven decoded values to the clockless
+The repository imports these canonical types directly from the `report`
+package. It declares no parallel report-domain type or duplicate enum. The JSON
+decoder passes the eleven decoded values to the clockless
 `ItemReport.restore(...)`; this keeps domain validation in one place and allows
 all supported categories to round-trip.
 
