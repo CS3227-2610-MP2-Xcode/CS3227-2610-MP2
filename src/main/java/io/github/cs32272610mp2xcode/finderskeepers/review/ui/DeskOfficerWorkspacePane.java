@@ -13,7 +13,12 @@ import javafx.scene.control.TabPane;
 
 /** Cohesive authenticated Desk Officer workspace containing review and matching. */
 public final class DeskOfficerWorkspacePane extends TabPane {
-    /** Creates fresh per-login review and matching workflows over shared repositories. */
+    /**
+     * Creates fresh per-login review and matching workflows over shared repositories.
+     *
+     * @param reports shared canonical report repository
+     * @param relationships shared possible-match relationship repository
+     */
     public DeskOfficerWorkspacePane(ReportRepository reports,
             PossibleMatchRepository relationships) {
         Objects.requireNonNull(reports, "reports");

@@ -7,6 +7,11 @@ Application startup opens the local login, with Student and Desk Officer
 routing and logout available after authentication. The Desk Officer route now
 opens the submitted-report review queue backed by `data/reports.json`.
 
+The Desk Officer possible-match workspace is implemented but is not yet
+reachable from the current launcher because its small application-shell hookup
+is awaiting separate cross-owner approval. The instructions below describe the
+implemented workspace for verification after that hookup is approved.
+
 The Student report form and personal report-history/search components are
 available from the authenticated Student workspace. Reports are stored in the
 project-local `data/reports.json` file. The application creates this local,
@@ -226,8 +231,55 @@ values are not included in error messages.
 
 Logging out removes the queue and any selected private detail. A later Desk
 Officer login starts again with the All filter and reloads the report store.
-Report editing, returning a report to Submitted, collection, matching, and
-return workflows remain outside this feature.
+Report editing, returning a report to Submitted, collection, ownership
+verification, and return workflows remain outside this feature.
+
+#### Review possible matches (pending launcher hookup)
+
+When the separately approved shell integration is present, Desk Officer login
+opens a tabbed workspace. **Report review** remains the default tab. Open
+**Possible matches** to load current reports and officer-created links.
+
+The Suggestions list contains deterministic LOST-to-FOUND possible matches.
+Rows show each report's type, item name, category, occurrence date, and
+location, plus rule points and brief reasons. Rows never show Reporter ID,
+descriptions, status, creation time, or private identifying detail. A score is
+rule evidence only; it is not confidence and does not prove ownership.
+
+The four rules are exact category equality (40 points), shared item-name
+keyword (20), same normalized location (30), and FOUND occurring zero to seven
+days after LOST (10). Category and date are mandatory. At least 70 points are
+required, so a qualifying pair must also share a keyword or normalized
+location. Punctuation and whitespace separate words; the workflow does not use
+fuzzy, probabilistic, AI, description, or private-detail matching.
+
+Use the workspace as follows:
+
+1. Select a suggestion to compare both canonical reports side by side. The
+   comparison is read only and shows all report fields, separates public and
+   private descriptions, and labels private detail as officer-only verification
+   information.
+2. Review all four component outcomes and their rule points. Selecting or
+   refreshing a pair changes neither report nor link state.
+3. Select **Link as Possible Match** only when the pair should remain recorded
+   for officer review. Success appears only after the separate relationship is
+   saved. Linking does not change either report or confirm ownership.
+4. Select a row under **Linked possible matches** and use **Unlink Possible
+   Match** to remove only that relationship. Unlinking does not assert that the
+   items differ and does not affect another link.
+5. Use **Refresh** for a new authoritative report/link load. Use **Retry** when
+   loading is unavailable. There is no automatic polling or retry.
+
+A report may appear in several links. Linked pairs stay available for Unlink
+even if they later stop qualifying or one report is unavailable. The workspace
+distinguishes no eligible LOST-to-FOUND pair, no qualifying pair, all qualifying
+pairs already linked, no linked relationships, and unavailable storage.
+Failed Link or Unlink keeps clearly labelled last-known state and never shows
+success.
+
+Logging out removes suggestions, comparisons, reasons, Reporter IDs, and
+private details from the screen. Durable links remain stored. A later Desk
+Officer login performs a fresh load and restores no previous selection.
 
 ## Troubleshooting
 

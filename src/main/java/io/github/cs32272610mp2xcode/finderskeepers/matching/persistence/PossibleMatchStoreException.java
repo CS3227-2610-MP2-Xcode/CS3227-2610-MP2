@@ -8,15 +8,20 @@ public final class PossibleMatchStoreException extends Exception {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /** Stable caller-visible failure category. */
     private final Reason reason;
 
-    /** Creates a failure with a fixed privacy-safe diagnostic. */
+    /** Creates a failure with a fixed privacy-safe diagnostic.
+     * @param failureReason stable failure category
+     */
     public PossibleMatchStoreException(Reason failureReason) {
         super(messageFor(failureReason), null, false, true);
         reason = failureReason;
     }
 
-    /** Returns the stable failure category. */
+    /** Returns the stable failure category.
+     * @return failure category
+     */
     public Reason reason() {
         return reason;
     }

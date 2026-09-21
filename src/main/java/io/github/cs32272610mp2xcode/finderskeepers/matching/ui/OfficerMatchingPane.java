@@ -56,7 +56,9 @@ public final class OfficerMatchingPane extends BorderPane {
 
     private boolean rendering;
 
-    /** Creates the view and performs its initial authoritative load. */
+    /** Creates the view and performs its initial authoritative load.
+     * @param matchingService per-login matching workflow
+     */
     public OfficerMatchingPane(OfficerMatchingService matchingService) {
         service = Objects.requireNonNull(matchingService, "matchingService");
         configureView();

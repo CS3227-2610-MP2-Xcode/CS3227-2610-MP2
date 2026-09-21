@@ -79,7 +79,15 @@ public final class MatchingWorkspaceState {
         ALREADY_UNLINKED
     }
 
-    /** Restricted public row projection; it is never accepted by matching or storage. */
+    /**
+     * Restricted public row projection; it is never accepted by matching or storage.
+     *
+     * @param reportType canonical LOST or FOUND type
+     * @param itemName public row item name
+     * @param category canonical category
+     * @param occurrenceDate report occurrence date
+     * @param location public row location
+     */
     public record ReportSummary(ReportType reportType, String itemName,
             ItemCategory category, LocalDate occurrenceDate, String location) {
         /** Validates every approved row field. */
@@ -97,7 +105,16 @@ public final class MatchingWorkspaceState {
         }
     }
 
-    /** One row in a suggestion or linked relationship section. */
+    /**
+     * One row in a suggestion or linked relationship section.
+     *
+     * @param pair internal canonical selection key
+     * @param firstReport first available public summary
+     * @param secondReport second available public summary
+     * @param kind row lifecycle kind
+     * @param rulePoints qualifying rule points, when applicable
+     * @param reasonLabels brief positive reasons
+     */
     public record PairRow(PossibleMatchPair pair, Optional<ReportSummary> firstReport,
             Optional<ReportSummary> secondReport, RowKind kind,
             Optional<Integer> rulePoints, List<String> reasonLabels) {
@@ -117,7 +134,15 @@ public final class MatchingWorkspaceState {
         }
     }
 
-    /** Selected officer-only comparison; canonical reports remain immutable. */
+    /**
+     * Selected officer-only comparison; canonical reports remain immutable.
+     *
+     * @param pair canonical selected pair
+     * @param section selected section
+     * @param firstReport first current canonical endpoint
+     * @param secondReport second current canonical endpoint
+     * @param evaluation current evidence when the pair remains eligible
+     */
     public record SelectedComparison(PossibleMatchPair pair, Section section,
             Optional<ItemReport> firstReport, Optional<ItemReport> secondReport,
             Optional<MatchEvaluation> evaluation) {
@@ -130,7 +155,9 @@ public final class MatchingWorkspaceState {
             Objects.requireNonNull(evaluation, "evaluation");
         }
 
-        /** Returns a score only while the pair currently qualifies. */
+        /** Returns a score only while the pair currently qualifies.
+         * @return qualifying rule points, when applicable
+         */
         public Optional<Integer> qualifyingRulePoints() {
             return evaluation.filter(MatchEvaluation::qualifies)
                     .map(MatchEvaluation::totalPoints);
@@ -170,61 +197,83 @@ public final class MatchingWorkspaceState {
         lastKnownState = retainedLastKnownState;
     }
 
-    /** Returns the workspace load status. */
+    /** Returns the workspace load status.
+     * @return workspace availability
+     */
     public Availability availability() {
         return availability;
     }
 
-    /** Returns ordered currently qualifying unlinked suggestions. */
+    /** Returns ordered currently qualifying unlinked suggestions.
+     * @return immutable suggestion rows
+     */
     public List<PairRow> suggestions() {
         return suggestions;
     }
 
-    /** Returns ordered durable possible-match relationships. */
+    /** Returns ordered durable possible-match relationships.
+     * @return immutable linked rows
+     */
     public List<PairRow> linkedPairs() {
         return linkedPairs;
     }
 
-    /** Returns the exact successful suggestion-empty classification, when empty. */
+    /** Returns the exact successful suggestion-empty classification, when empty.
+     * @return successful empty reason, when applicable
+     */
     public Optional<SuggestionEmptyReason> suggestionEmptyReason() {
         return suggestionEmptyReason;
     }
 
-    /** Returns the selected officer-only comparison. */
+    /** Returns the selected officer-only comparison.
+     * @return selected comparison, when present
+     */
     public Optional<SelectedComparison> selectedComparison() {
         return selectedComparison;
     }
 
-    /** Returns current typed operation feedback. */
+    /** Returns current typed operation feedback.
+     * @return typed feedback, when present
+     */
     public Optional<Feedback> feedback() {
         return feedback;
     }
 
-    /** Returns whether rows describe explicitly retained last-known state. */
+    /** Returns whether rows describe explicitly retained last-known state.
+     * @return true when current rows are explicitly last-known
+     */
     public boolean lastKnownState() {
         return lastKnownState;
     }
 
-    /** Returns whether the selected pair can be explicitly linked. */
+    /** Returns whether the selected pair can be explicitly linked.
+     * @return true when Link is enabled
+     */
     public boolean linkEnabled() {
         return availability == Availability.READY
                 && selectedComparison.map(SelectedComparison::section)
                         .filter(Section.SUGGESTIONS::equals).isPresent();
     }
 
-    /** Returns whether the selected durable relationship can be explicitly unlinked. */
+    /** Returns whether the selected durable relationship can be explicitly unlinked.
+     * @return true when Unlink is enabled
+     */
     public boolean unlinkEnabled() {
         return availability == Availability.READY
                 && selectedComparison.map(SelectedComparison::section)
                         .filter(Section.LINKED::equals).isPresent();
     }
 
-    /** Returns whether the whole unavailable workspace supports an explicit Retry. */
+    /** Returns whether the whole unavailable workspace supports an explicit Retry.
+     * @return true when Retry is visible
+     */
     public boolean retryVisible() {
         return availability == Availability.UNAVAILABLE;
     }
 
-    /** Returns whether no durable possible-match relationships exist. */
+    /** Returns whether no durable possible-match relationships exist.
+     * @return true for a ready empty linked section
+     */
     public boolean linkedEmpty() {
         return availability == Availability.READY && linkedPairs.isEmpty();
     }

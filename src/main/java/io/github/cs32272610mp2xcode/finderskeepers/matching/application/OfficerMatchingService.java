@@ -45,7 +45,13 @@ public final class OfficerMatchingService {
 
     private Map<UUID, ItemReport> reportsById = Map.of();
 
-    /** Creates the workflow over shared report and relationship repositories. */
+    /**
+     * Creates the workflow over shared report and relationship repositories.
+     *
+     * @param reports shared canonical report repository
+     * @param relationships possible-match relationship repository
+     * @param deterministicMatcher fixed matching policy
+     */
     public OfficerMatchingService(ReportRepository reports,
             PossibleMatchRepository relationships, DeterministicMatcher deterministicMatcher) {
         reportRepository = Objects.requireNonNull(reports, "reports");
@@ -53,19 +59,25 @@ public final class OfficerMatchingService {
         matcher = Objects.requireNonNull(deterministicMatcher, "matcher");
     }
 
-    /** Starts a fresh authoritative workspace load. */
+    /** Starts a fresh authoritative workspace load.
+     * @return current immutable state
+     */
     public MatchingWorkspaceState enter() {
         clearInternal();
         return load(null, null);
     }
 
-    /** Explicitly reloads both stores and recomputes both sections. */
+    /** Explicitly reloads both stores and recomputes both sections.
+     * @return refreshed immutable state
+     */
     public MatchingWorkspaceState refresh() {
         SelectionKey selection = selectedKey();
         return load(selection, null);
     }
 
-    /** Retries an unavailable whole-workspace load. */
+    /** Retries an unavailable whole-workspace load.
+     * @return current immutable state
+     */
     public MatchingWorkspaceState retry() {
         if (state.availability() != Availability.UNAVAILABLE) {
             return state;
@@ -73,7 +85,14 @@ public final class OfficerMatchingService {
         return load(null, null);
     }
 
-    /** Selects a row in one exact section without performing I/O. */
+    /**
+     * Selects a row in one exact section without performing I/O.
+     *
+     * @param section section containing the row
+     * @param first one report identifier
+     * @param second the other report identifier
+     * @return current immutable state
+     */
     public MatchingWorkspaceState select(Section section, UUID first, UUID second) {
         Objects.requireNonNull(section, "section");
         if (state.availability() != Availability.READY) {
@@ -92,7 +111,13 @@ public final class OfficerMatchingService {
         return state;
     }
 
-    /** Authoritatively rechecks and durably links one possible-match pair. */
+    /**
+     * Authoritatively rechecks and durably links one possible-match pair.
+     *
+     * @param first one report identifier
+     * @param second the other report identifier
+     * @return resulting immutable state
+     */
     public MatchingWorkspaceState link(UUID first, UUID second) {
         PossibleMatchPair pair = validCommandPair(first, second);
         if (pair == null || state.availability() != Availability.READY) {
@@ -126,7 +151,13 @@ public final class OfficerMatchingService {
         return state;
     }
 
-    /** Durably removes only one possible-match relationship. */
+    /**
+     * Durably removes only one possible-match relationship.
+     *
+     * @param first one report identifier
+     * @param second the other report identifier
+     * @return resulting immutable state
+     */
     public MatchingWorkspaceState unlink(UUID first, UUID second) {
         PossibleMatchPair pair = validCommandPair(first, second);
         if (pair == null || state.availability() != Availability.READY) {
@@ -158,7 +189,9 @@ public final class OfficerMatchingService {
         return state;
     }
 
-    /** Clears all in-memory report and presentation state without writing storage. */
+    /** Clears all in-memory report and presentation state without writing storage.
+     * @return cleared immutable state
+     */
     public MatchingWorkspaceState clear() {
         clearInternal();
         return state;

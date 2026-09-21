@@ -4,10 +4,15 @@
 
 This guide describes the implemented project baseline, integrated Developer 2
 local-authentication module, S1-D2-02 report-persistence foundation, and
-Student report submission, Student report history/search, and the S1-D2-03 Desk
-Officer review queue for a primary-school lost-and-found application. The
+Student report submission, Student report history/search, the S1-D2-03 Desk
+Officer review queue, and the Developer 2-owned S2 possible-match module for a
+primary-school lost-and-found application. The
 application shell opens authentication at startup and routes each authenticated
 role to its workspace over one shared report repository.
+
+The possible-match engine, relationship store, service, and JavaFX workspace
+are implemented. Their final `FindersKeepersApp` composition is intentionally
+pending the separately approved Developer 1-owned shell edit described below.
 
 ## Development prerequisites
 
@@ -28,7 +33,15 @@ The current source tree keeps application startup separate from the shared repor
 - `review.application` owns submitted-queue state, filtering, selection,
   transition policy, stale-target reconciliation, and privacy-safe outcomes.
 - `review.ui` renders the separate Desk Officer queue and complete read-only
-  details view.
+  details view, and contains the tabbed Desk Officer workspace composition.
+- `matching.model` owns symmetric pair identity, the fixed four-rule evidence,
+  and deterministic suggestion generation.
+- `matching.persistence` stores only canonical report-ID pairs in a separate,
+  strict versioned file.
+- `matching.application` owns authoritative loading, section partitioning,
+  comparison state, Link/Unlink rechecks, and privacy-safe outcomes.
+- `matching.ui` renders suggestions, linked possible matches, read-only
+  comparison, reasons, actions, and explicit empty/unavailable states.
 
 `Launcher` delegates to `FindersKeepersApp`, which composes the authentication
 coordinator for `data/demo-users.json`, one application-lifetime
@@ -170,6 +183,117 @@ authenticated role. Logout clears the coordinator session and replaces the
 entire authenticated subtree, so a later Desk Officer login gets a fresh
 service/view and a new authoritative queue load over the same shared repository
 instance used by the Student workspace.
+
+## Officer possible-match components
+
+The S2 matching module consumes canonical `ItemReport` values and never parses
+report JSON or creates a competing report model. `DeterministicMatcher` is a
+pure concrete policy implementation. `OfficerMatchingService` combines its
+evidence with `ReportRepository` and `PossibleMatchRepository`, then returns
+immutable `MatchingWorkspaceState` values. Only an explicitly successful Link
+or Unlink changes relationship state; no matching operation writes a report or
+changes `ReportStatus`.
+
+### Deterministic policy
+
+Candidate identity is one unordered pair of distinct Report IDs containing one
+LOST and one FOUND report. Both `SUBMITTED` and `UNDER_REVIEW` are eligible.
+The approved rule table is:
+
+| Criterion | Rule | Points | Gate |
+| --- | --- | ---: | --- |
+| Category | Exact canonical `ItemCategory` equality; `OTHER` is ordinary | 40 | Required |
+| Item-name keywords | At least one exact shared normalized token | 20 | No |
+| Location | Complete normalized-location equality | 30 | No |
+| Occurrence date | FOUND is 0–7 calendar days after LOST, inclusive | 10 | Required |
+
+Text is lowercased with `Locale.ROOT`. Every maximal run of code points that
+are not Unicode letters or digits is a separator. Keyword tokens shorter than
+two code points are discarded and duplicates are removed; location keeps
+one-code-point runs and rejoins runs with one ordinary space. There is no
+stemming, singular/plural conversion, accent folding, Unicode normalization,
+substring, fuzzy, probabilistic, ML, or LLM comparison.
+
+The total is exactly the visible 40/20/30/10 component sum. A pair qualifies
+only when both gates pass and the total is at least 70. Rule points are evidence
+for a possible match, not confidence or ownership proof. Each positive
+component produces its corresponding reason, all component outcomes remain
+available in the selected comparison, and shared keywords are sorted.
+
+Suggestions use this total order:
+
+```text
+rule points descending
+-> canonical first Report ID string ascending
+-> canonical second Report ID string ascending
+```
+
+`PossibleMatchPair` orders the two UUIDs by their canonical lowercase string,
+so A-B and B-A have identical value identity. The same pair tuple resolves
+every score tie independently of repository, hash, or input iteration order.
+Deterministic rules were chosen because every suggestion must be reproducible
+and every point attributable to one of the four approved report fields.
+
+### Relationship storage
+
+`FilePossibleMatchRepository` stores links separately from report-store v1 at
+`data/possible-match-links.txt`. The file contains no report copy, Reporter ID,
+private detail, score, officer identity, or timestamp. Its canonical UTF-8
+shape is:
+
+```text
+FINDERS_KEEPERS_POSSIBLE_MATCH_LINKS 1
+10000000-0000-0000-0000-000000000001 20000000-0000-0000-0000-000000000002
+```
+
+Input is bounded to 16 MiB and strictly validates the header, UUID form,
+self-pairs, duplicates, and reverse duplicates. Missing storage means an empty
+new store; zero bytes or malformed storage is unavailable rather than empty.
+Every mutation rereads and validates the complete target, stages canonical
+sorted bytes in a sibling temporary file, forces them, and requires atomic
+replacement. There is no unsafe non-atomic fallback. A fresh repository
+instance observes a successful Link or Unlink. One report may participate in
+multiple links, and unknown report IDs remain stored so an officer can remove
+a stale relationship.
+
+### Workflow and interaction summary
+
+```text
+authenticated DESK_OFFICER route
+        -> DeskOfficerWorkspacePane
+        -> load canonical reports + possible-match links
+        -> deterministic LOST x FOUND evaluation
+        -> ordered unlinked suggestions | retained linked relationships
+        -> select pair: read-only canonical comparison + four rule outcomes
+        -> explicit Link: authoritative report/link recheck -> atomic commit
+        -> linked possible matches
+        -> explicit Unlink: authoritative relationship recheck -> atomic removal
+```
+
+The suggestion and linked sections are independent. A linked pair remains
+reachable for Unlink when it stops qualifying or an endpoint disappears; a
+missing side is never reconstructed. Link rechecks current report existence,
+type, status, gates, and threshold. Repeated or reversed Link/Unlink requests
+are idempotent no-ops with truthful feedback. A write failure retains clearly
+labelled last-known state and reports no success.
+
+Rows contain only type, item name, category, occurrence date, location, rule
+points, and brief positive reasons. Reporter ID and private identifying detail
+exist only in the selected authenticated comparison, with public and private
+descriptions separated. Whole-workspace load failure clears rows and private
+selection, disables mutations, and exposes Retry. Successful empty results
+distinguish no eligible pair, no qualifying pair, all qualifiers already
+linked, and no linked relationships. Detaching the view on logout clears its
+service snapshots and controls without unlinking durable relationships.
+
+`DeskOfficerWorkspacePane` composes the existing review queue as the default
+tab and the possible-match view as a second non-closable tab. The remaining
+cross-owner integration is deliberately small: `FindersKeepersApp` must create
+one application-lifetime `FilePossibleMatchRepository` and change only its
+lazy Desk Officer supplier to construct this workspace with the shared
+repositories. That Developer 1-owned edit is not present until separately
+approved; Student wiring, the report path, scene, stage, and release settings
+must remain unchanged.
 
 ## Student report-submission components
 
@@ -363,6 +487,12 @@ gradlew.bat release
   authoritative status-only replacement, invalid/repeat transition absence,
   stale targets, storage failures, Retry context, and fresh-instance
   durability. Real persistence evidence uses JUnit temporary directories.
+- Possible-match tests cover symmetric pair identity, exact category/keyword/
+  location/date rules, score thresholds, reasons, Unicode and locale boundaries,
+  repeated and shuffled determinism, stable UUID tie-breaking, strict link-file
+  parsing, fresh-instance Link/Unlink, non-exclusive links, storage failures,
+  stale/missing pairs, privacy-safe state, and unchanged canonical report bytes.
+  Every real matching persistence test uses a JUnit temporary directory.
 - Student report-history tests cover exact ownership filtering, newest-first
   ordering, deterministic ties, blank queries, item-name and public-description
   matches, case and whitespace normalization, empty histories, empty searches,
@@ -391,14 +521,15 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 
 - Student report submission and personal report history/status display —
   implemented and reachable through the shared Student workspace composition.
-- Desk Officer collection, matching, claiming, and return workflows — to be
-  designed and implemented separately from the delivered submitted-report
-  review queue.
+- Desk Officer deterministic possible matching and durable relationship modules
+  — implemented; application-shell composition remains pending separate
+  cross-owner approval. Collection, claiming, ownership verification, and
+  return remain future work.
 - Repository construction and startup wiring — implemented through the
   approved `data/reports.json` path with one application-lifetime repository.
 - Richer category and status vocabularies, submission validation, and report creation — to be extended through the shared canonical model without introducing a competing report type.
-- Additional role-specific JavaFX workflows beyond the delivered Student
-  workspace and Desk Officer review queue remain future work.
+- Additional role-specific JavaFX workflows beyond the delivered Student,
+  review, and possible-match modules remain future work.
 - Deciding how the external demo credential store is supplied with a
   distributable release — pending shared integration approval.
 

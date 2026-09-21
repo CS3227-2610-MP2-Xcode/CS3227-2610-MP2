@@ -41,12 +41,20 @@ public final class PossibleMatchPair {
         return new PossibleMatchPair(second, first);
     }
 
-    /** Returns the lexically first canonical report identifier. */
+    /**
+     * Returns the lexically first canonical report identifier.
+     *
+     * @return first canonical identifier
+     */
     public UUID firstId() {
         return firstId;
     }
 
-    /** Returns the lexically second canonical report identifier. */
+    /**
+     * Returns the lexically second canonical report identifier.
+     *
+     * @return second canonical identifier
+     */
     public UUID secondId() {
         return secondId;
     }

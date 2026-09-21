@@ -27,25 +27,36 @@ public final class MatchEvaluation {
             mandatoryGate = gate;
         }
 
-        /** Returns the fixed points awarded when this criterion passes. */
+        /** Returns the fixed points awarded when this criterion passes.
+         * @return fixed positive points
+         */
         public int points() {
             return points;
         }
 
-        /** Returns whether this criterion is also a mandatory gate. */
+        /** Returns whether this criterion is also a mandatory gate.
+         * @return true for a mandatory qualification gate
+         */
         public boolean mandatoryGate() {
             return mandatoryGate;
         }
     }
 
-    /** One fixed criterion outcome. */
+    /**
+     * One fixed criterion outcome.
+     *
+     * @param criterion fixed criterion identity
+     * @param passed whether the criterion passed
+     */
     public record CriterionResult(Criterion criterion, boolean passed) {
         /** Validates the fixed criterion identity. */
         public CriterionResult {
             Objects.requireNonNull(criterion, "criterion");
         }
 
-        /** Returns awarded points, or zero when the criterion failed. */
+        /** Returns awarded points, or zero when the criterion failed.
+         * @return awarded rule points
+         */
         public int points() {
             return passed ? criterion.points() : 0;
         }
@@ -78,49 +89,67 @@ public final class MatchEvaluation {
                 new CriterionResult(Criterion.DATE, dayGap >= 0 && dayGap <= 7));
     }
 
-    /** Returns the unordered pair identity. */
+    /** Returns the unordered pair identity.
+     * @return canonical pair
+     */
     public PossibleMatchPair pair() {
         return pair;
     }
 
-    /** Returns the LOST report identifier. */
+    /** Returns the LOST report identifier.
+     * @return LOST report identifier
+     */
     public UUID lostId() {
         return lostId;
     }
 
-    /** Returns the FOUND report identifier. */
+    /** Returns the FOUND report identifier.
+     * @return FOUND report identifier
+     */
     public UUID foundId() {
         return foundId;
     }
 
-    /** Returns all four outcomes in their fixed order. */
+    /** Returns all four outcomes in their fixed order.
+     * @return immutable component outcomes
+     */
     public List<CriterionResult> components() {
         return components;
     }
 
-    /** Returns shared normalized keywords in deterministic lexical order. */
+    /** Returns shared normalized keywords in deterministic lexical order.
+     * @return immutable shared-token list
+     */
     public List<String> sharedTokens() {
         return sharedTokens;
     }
 
-    /** Returns FOUND date minus LOST date in calendar days. */
+    /** Returns FOUND date minus LOST date in calendar days.
+     * @return signed calendar-day gap
+     */
     public long dayGap() {
         return dayGap;
     }
 
-    /** Returns the exact sum of the four rule components. */
+    /** Returns the exact sum of the four rule components.
+     * @return aggregate rule points
+     */
     public int totalPoints() {
         return components.stream().mapToInt(CriterionResult::points).sum();
     }
 
-    /** Returns whether mandatory gates and the inclusive 70-point threshold pass. */
+    /** Returns whether mandatory gates and the inclusive 70-point threshold pass.
+     * @return true when the pair qualifies as a suggestion
+     */
     public boolean qualifies() {
         return component(Criterion.CATEGORY).passed()
                 && component(Criterion.DATE).passed()
                 && totalPoints() >= 70;
     }
 
-    /** Returns brief positive labels suitable for privacy-safe rows. */
+    /** Returns brief positive labels suitable for privacy-safe rows.
+     * @return immutable positive-reason labels
+     */
     public List<String> positiveReasonLabels() {
         return components.stream()
                 .filter(CriterionResult::passed)
@@ -133,7 +162,9 @@ public final class MatchEvaluation {
                 .toList();
     }
 
-    /** Returns all four detailed component outcomes in fixed order. */
+    /** Returns all four detailed component outcomes in fixed order.
+     * @return immutable detailed reasons
+     */
     public List<String> componentReasons() {
         return components.stream().map(this::componentReason).toList();
     }

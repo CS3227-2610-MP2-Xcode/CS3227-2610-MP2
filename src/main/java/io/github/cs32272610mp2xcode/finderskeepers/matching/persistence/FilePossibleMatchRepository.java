@@ -38,7 +38,9 @@ public final class FilePossibleMatchRepository implements PossibleMatchRepositor
 
     private final int maximumBytes;
 
-    /** Creates a repository for one relationship-store path without performing I/O. */
+    /** Creates a repository for one relationship-store path without performing I/O.
+     * @param path relationship-store path
+     */
     public FilePossibleMatchRepository(Path path) {
         this(path, new NioPossibleMatchStoreFiles(), MAX_STORE_BYTES);
     }

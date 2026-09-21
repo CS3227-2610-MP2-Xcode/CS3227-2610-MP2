@@ -24,7 +24,16 @@ public final class DeterministicMatcher {
             Comparator.comparingInt(MatchEvaluation::totalPoints).reversed()
                     .thenComparing(MatchEvaluation::pair, PossibleMatchPair.CANONICAL_ORDER);
 
-    /** Immutable generated result before relationship-state partitioning. */
+    /** Creates the fixed deterministic matcher. */
+    public DeterministicMatcher() {
+    }
+
+    /**
+     * Immutable generated result before relationship-state partitioning.
+     *
+     * @param hasEligiblePairs whether at least one eligible LOST-to-FOUND pair exists
+     * @param qualifyingPairs ordered qualifying evidence
+     */
     public record Generation(boolean hasEligiblePairs,
             List<MatchEvaluation> qualifyingPairs) {
         /** Defensively copies generated evidence. */
@@ -82,6 +91,8 @@ public final class DeterministicMatcher {
     /**
      * Evaluates one pair in either input order.
      *
+     * @param first first canonical report
+     * @param second second canonical report
      * @return complete four-rule evidence, or empty when the pair is ineligible
      */
     public Optional<MatchEvaluation> evaluate(ItemReport first, ItemReport second) {
@@ -98,7 +109,9 @@ public final class DeterministicMatcher {
         return Optional.of(evaluateEligible(lost, found, normalize(lost), normalize(found)));
     }
 
-    /** Returns the exact deterministic comparator used for suggestions. */
+    /** Returns the exact deterministic comparator used for suggestions.
+     * @return score-first canonical-pair comparator
+     */
     public Comparator<MatchEvaluation> suggestionOrder() {
         return SUGGESTION_ORDER;
     }
