@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.AuthenticatedUser;
+import io.github.cs32272610mp2xcode.finderskeepers.auth.model.UserRole;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
 import io.github.cs32272610mp2xcode.finderskeepers.report.application.ReportSubmissionException;
 import io.github.cs32272610mp2xcode.finderskeepers.report.application.ReportSubmissionService;
@@ -40,7 +41,7 @@ public final class StudentReportWorkspaceFactory {
 
     private static Node createView(AuthenticatedUser user,
             ReportRepository repository) {
-        AuthenticatedUser authenticatedUser = Objects.requireNonNull(user, "user");
+        AuthenticatedUser authenticatedUser = requireStudent(user);
         StudentReportWorkspaceComponents components = compose(
                 authenticatedUser, repository);
         StudentReportFormController formController = new StudentReportFormController(
@@ -55,7 +56,7 @@ public final class StudentReportWorkspaceFactory {
 
     static StudentReportWorkspaceComponents compose(AuthenticatedUser user,
             ReportRepository repository) {
-        Objects.requireNonNull(user, "user");
+        requireStudent(user);
         ReportRepository reportStore = Objects.requireNonNull(repository, "repository");
         ReportSubmitter submissionService = new ReportSubmissionService(
                 Clock.systemDefaultZone(), UUID::randomUUID,
@@ -63,6 +64,15 @@ public final class StudentReportWorkspaceFactory {
         return new StudentReportWorkspaceComponents(
                 submissionService,
                 new StudentReportHistoryService(reportStore));
+    }
+
+    private static AuthenticatedUser requireStudent(AuthenticatedUser user) {
+        AuthenticatedUser authenticatedUser = Objects.requireNonNull(user, "user");
+        if (authenticatedUser.role() != UserRole.STUDENT) {
+            throw new IllegalArgumentException(
+                    "Student report workspace requires a Student identity");
+        }
+        return authenticatedUser;
     }
 
     private static Consumer<ItemReport> reportSaver(ReportRepository repository) {

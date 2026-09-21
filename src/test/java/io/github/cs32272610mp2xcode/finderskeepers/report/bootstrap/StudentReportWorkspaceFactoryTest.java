@@ -28,6 +28,9 @@ class StudentReportWorkspaceFactoryTest {
     private static final AuthenticatedUser STUDENT = new AuthenticatedUser(
             "student-synthetic-001", "synthetic.student", UserRole.STUDENT);
 
+    private static final AuthenticatedUser DESK_OFFICER = new AuthenticatedUser(
+            "officer-synthetic-001", "synthetic.officer", UserRole.DESK_OFFICER);
+
     @TempDir
     private Path temporaryDirectory;
 
@@ -62,6 +65,17 @@ class StudentReportWorkspaceFactoryTest {
                 () -> StudentReportWorkspaceFactory.compose(STUDENT, null));
         assertThrows(NullPointerException.class,
                 () -> StudentReportWorkspaceFactory.create(null));
+    }
+
+    @Test
+    void publicWorkspaceFactoryRejectsDeskOfficerIdentity() {
+        Path reportStore = temporaryDirectory.resolve("reports.json");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> StudentReportWorkspaceFactory.create(reportStore).apply(DESK_OFFICER));
+        assertThrows(IllegalArgumentException.class,
+                () -> StudentReportWorkspaceFactory.compose(
+                        DESK_OFFICER, new JsonReportRepository(reportStore)));
     }
 
     @Test
