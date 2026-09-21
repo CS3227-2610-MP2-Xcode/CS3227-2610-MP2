@@ -7,10 +7,9 @@ Application startup opens the local login, with Student and Desk Officer
 routing and logout available after authentication. The Desk Officer route now
 opens the submitted-report review queue backed by `data/reports.json`.
 
-The Desk Officer possible-match workspace is implemented but is not yet
-reachable from the current launcher because its small application-shell hookup
-is awaiting separate cross-owner approval. The instructions below describe the
-implemented workspace for verification after that hookup is approved.
+The Desk Officer route also provides the possible-match workspace and stores
+officer-created relationships separately in
+`data/possible-match-links.txt`.
 
 The Student report form and personal report-history/search components are
 available from the authenticated Student workspace. Reports are stored in the
@@ -234,11 +233,11 @@ Officer login starts again with the All filter and reloads the report store.
 Report editing, returning a report to Submitted, collection, ownership
 verification, and return workflows remain outside this feature.
 
-#### Review possible matches (pending launcher hookup)
+#### Review possible matches
 
-When the separately approved shell integration is present, Desk Officer login
-opens a tabbed workspace. **Report review** remains the default tab. Open
-**Possible matches** to load current reports and officer-created links.
+Desk Officer login opens a tabbed workspace. **Report review** remains the
+default tab. Open **Possible matches** to load current reports and
+officer-created links.
 
 The Suggestions list contains deterministic LOST-to-FOUND possible matches.
 Rows show each report's type, item name, category, occurrence date, and

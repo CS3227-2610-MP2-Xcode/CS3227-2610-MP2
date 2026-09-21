@@ -10,9 +10,8 @@ primary-school lost-and-found application. The
 application shell opens authentication at startup and routes each authenticated
 role to its workspace over one shared report repository.
 
-The possible-match engine, relationship store, service, and JavaFX workspace
-are implemented. Their final `FindersKeepersApp` composition is intentionally
-pending the separately approved Developer 1-owned shell edit described below.
+The possible-match engine, relationship store, service, JavaFX workspace, and
+approved `FindersKeepersApp` composition are implemented.
 
 ## Development prerequisites
 
@@ -287,13 +286,12 @@ linked, and no linked relationships. Detaching the view on logout clears its
 service snapshots and controls without unlinking durable relationships.
 
 `DeskOfficerWorkspacePane` composes the existing review queue as the default
-tab and the possible-match view as a second non-closable tab. The remaining
-cross-owner integration is deliberately small: `FindersKeepersApp` must create
-one application-lifetime `FilePossibleMatchRepository` and change only its
-lazy Desk Officer supplier to construct this workspace with the shared
-repositories. That Developer 1-owned edit is not present until separately
-approved; Student wiring, the report path, scene, stage, and release settings
-must remain unchanged.
+tab and the possible-match view as a second non-closable tab.
+`FindersKeepersApp` creates one application-lifetime
+`FilePossibleMatchRepository` at `data/possible-match-links.txt` and its lazy
+Desk Officer supplier constructs this workspace with the shared repositories.
+Student wiring, the report path, scene, stage, and release settings remain
+unchanged.
 
 ## Student report-submission components
 
@@ -521,10 +519,9 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 
 - Student report submission and personal report history/status display —
   implemented and reachable through the shared Student workspace composition.
-- Desk Officer deterministic possible matching and durable relationship modules
-  — implemented; application-shell composition remains pending separate
-  cross-owner approval. Collection, claiming, ownership verification, and
-  return remain future work.
+- Desk Officer deterministic possible matching, durable relationships, and
+  application-shell composition — implemented. Collection, claiming,
+  ownership verification, and return remain future work.
 - Repository construction and startup wiring — implemented through the
   approved `data/reports.json` path with one application-lifetime repository.
 - Richer category and status vocabularies, submission validation, and report creation — to be extended through the shared canonical model without introducing a competing report type.

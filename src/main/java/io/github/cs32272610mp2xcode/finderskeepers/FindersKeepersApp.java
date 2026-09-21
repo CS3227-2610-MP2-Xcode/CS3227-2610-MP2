@@ -5,11 +5,12 @@ import java.util.Objects;
 
 import io.github.cs32272610mp2xcode.finderskeepers.auth.bootstrap.AuthenticationFactory;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.ui.AuthenticationPane;
+import io.github.cs32272610mp2xcode.finderskeepers.matching.persistence.FilePossibleMatchRepository;
+import io.github.cs32272610mp2xcode.finderskeepers.matching.persistence.PossibleMatchRepository;
 import io.github.cs32272610mp2xcode.finderskeepers.report.bootstrap.StudentReportWorkspaceFactory;
 import io.github.cs32272610mp2xcode.finderskeepers.report.persistence.JsonReportRepository;
 import io.github.cs32272610mp2xcode.finderskeepers.report.persistence.ReportRepository;
-import io.github.cs32272610mp2xcode.finderskeepers.review.application.DeskOfficerReviewService;
-import io.github.cs32272610mp2xcode.finderskeepers.review.ui.DeskOfficerReviewPane;
+import io.github.cs32272610mp2xcode.finderskeepers.review.ui.DeskOfficerWorkspacePane;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -34,12 +35,15 @@ public final class FindersKeepersApp extends Application {
     public void start(Stage stage) {
         ReportRepository reportRepository = new JsonReportRepository(
                 Path.of("data", "reports.json"));
+        PossibleMatchRepository possibleMatchRepository =
+                new FilePossibleMatchRepository(
+                        Path.of("data", "possible-match-links.txt"));
         AuthenticationPane content = new AuthenticationPane(
                 AuthenticationFactory.createCoordinator(
                         Path.of("data", "demo-users.json")),
                 StudentReportWorkspaceFactory.create(reportRepository),
-                () -> new DeskOfficerReviewPane(
-                        new DeskOfficerReviewService(reportRepository)));
+                () -> new DeskOfficerWorkspacePane(
+                        reportRepository, possibleMatchRepository));
         Scene scene = new Scene(content, 720, 420);
         scene.getStylesheets().add(Objects.requireNonNull(
                 FindersKeepersApp.class.getResource("app.css")).toExternalForm());
