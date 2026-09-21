@@ -73,6 +73,28 @@ contains no officer-review package or queue UI.
 | Report review might require persistence changes. | `ReportRepository` already exposes ordered `loadAll()` and complete `replace(...)`; `JsonReportRepository` already provides safe durable replacement. | Keep query and transition policy in the review application module; do not extend persistence. |
 | Role navigation might require a new router or session abstraction. | `AuthenticationCoordinator` already derives `LOGIN`, `STUDENT`, and `DESK_OFFICER`; `AuthenticationPane` already mounts role content and owns logout. | Inject only a lazy Desk Officer destination into the existing pane. |
 
+### Merge-reconciliation amendment (2026-09-21)
+
+Developer 1's subsequently merged Student report-history work made the Student
+submission/history workspace reachable from `AuthenticationPane` through
+`StudentReportWorkspaceFactory.create(Path)`. The earlier assumption that the
+Student destination was still a placeholder and required no integration change
+therefore became stale during the merge from `main`.
+
+The repository owner explicitly approved one narrow cross-owner correction for
+this merge: add `StudentReportWorkspaceFactory.create(ReportRepository)` and
+have the existing path-based overload delegate through it. `FindersKeepersApp`
+constructs the single application-lifetime `JsonReportRepository` and passes
+that same instance to the Student factory and each freshly created Desk Officer
+review service. This is dependency injection of the existing persistence
+contract, not a new abstraction or workflow redesign.
+
+The amendment preserves Student-visible submission and history behavior, role
+separation, the canonical report domain, and the approved one-shared-repository
+architecture. It supersedes only the statements below that describe the
+Student route as a placeholder or list Student composition as entirely
+unchanged; the approved product requirements and test strategy remain intact.
+
 No approved product requirement contradicts the current code. No assumption in
 this design depends on the removed temporary report implementation.
 
@@ -182,11 +204,13 @@ role, and clears the user and validation message on logout.
 
 **Existing behavior:** `AuthenticationPane` authenticates, displays one of the
 two role destinations, and replaces the authenticated subtree with the login
-form after logout. Its role destinations are currently placeholders.
+form after logout. The Student route now mounts its submission/history
+workspace.
 
 **Approved requirement:** Only `DESK_OFFICER` may mount the review workflow.
-The Student destination remains unchanged. Logout removes the review view and
-its selected private detail; the next officer login performs a fresh load.
+Student-visible behavior remains unchanged by S1-D2-03. Logout removes the
+review view and its selected private detail; the next officer login performs a
+fresh load.
 
 ### UI and testing patterns
 
@@ -312,11 +336,12 @@ shell does not load or know about the review stylesheet.
 
 ### Authentication destination factory
 
-**Proposed technical change:** Extend `AuthenticationPane` with one required,
-lazy `Supplier<? extends Node>` for Desk Officer content. The pane invokes the
-supplier only after successful authentication when
-`coordinator.route() == DESK_OFFICER`. It keeps its existing identity/title and
-logout chrome and preserves the Student placeholder path unchanged.
+**Proposed technical change:** Extend `AuthenticationPane` with a lazy
+`Supplier<? extends Node>` for Desk Officer content alongside the merged Student
+view function. The pane invokes the officer supplier only after successful
+authentication when `coordinator.route() == DESK_OFFICER`. It keeps its
+existing identity/title and logout chrome and preserves the Student workspace
+behavior unchanged.
 
 This uses a JDK functional interface rather than introducing a generalized
 route registry or application router. `AuthenticationPane` remains unaware of
@@ -330,14 +355,15 @@ report, persistence, and review classes.
 JsonReportRepository(Path.of("data", "reports.json"))
 ```
 
-It passes a lazy factory to `AuthenticationPane`. Each factory invocation
-constructs a new `DeskOfficerReviewService` over that shared repository and a
-new `DeskOfficerReviewPane`. The repository therefore has application lifetime,
-while selection/filter/presentation state has one authenticated-view lifetime.
+It passes the shared repository to
+`StudentReportWorkspaceFactory.create(ReportRepository)` and passes a lazy Desk
+Officer factory to `AuthenticationPane`. Each officer-factory invocation
+constructs a new `DeskOfficerReviewService` over that same repository and a new
+`DeskOfficerReviewPane`. The repository therefore has application lifetime,
+while role-specific view state has one authenticated-view lifetime.
 
-Repository construction performs no I/O, so startup and Student login do not
-load the report store. The first report load occurs only after a Desk Officer
-has authenticated and the view is mounted.
+Repository construction performs no I/O. The report store is accessed only by
+an authenticated role's explicit submission, history, or review operation.
 
 ## Components and files likely affected
 
@@ -363,6 +389,7 @@ behavior easier to follow. It must not change the agreed public seams.
 | --- | --- | --- |
 | `src/main/java/.../auth/ui/AuthenticationPane.java` | Accept and lazily mount opaque Desk Officer content; preserve Student route and existing logout | Developer 2 owns role navigation |
 | `src/main/java/.../FindersKeepersApp.java` | Construct one shared report repository and supply the fresh Desk Officer view factory | Developer 1-owned shell; this exact minimal composition change is pre-approved by the Mission Brief |
+| `src/main/java/.../report/bootstrap/StudentReportWorkspaceFactory.java` | Add a repository-accepting overload while preserving and delegating the path-based API | Developer 1-owned composition; explicitly approved during merge reconciliation |
 | `.gitignore` | Add the precise root-relative rule `/data/reports.json` | Explicit S1-D2-03 deliverable; do not ignore all of `data/` |
 | `docs/UserGuide.md` | Add delivered officer steps, states, recovery, and screenshot | Developer 2 documentation |
 | `docs/DeveloperGuide.md` | Document review modules, flows, transition policy, path, privacy, and integration | Developer 2 documentation |
@@ -373,7 +400,7 @@ behavior easier to follow. It must not change the agreed public seams.
 - `ItemReport`, `ReportType`, `ItemCategory`, `ReportStatus`, and
   `ReportConstraints`
 - `ReportRepository`, `JsonReportRepository`, its codec, or storage adapters
-- Student submission classes or Student route composition
+- Student behavior or composition beyond the approved repository-injection overload
 - `AuthenticationCoordinator`, session records, or authentication persistence
 - `build.gradle`, dependencies, CI, release configuration, or `Launcher`
 - scene dimensions, smoke-test behavior, or application lifecycle
@@ -983,6 +1010,8 @@ The repository owner approved this TDD on 2026-09-21. This approval confirms:
 - the exact authoritative recheck and status-only replacement flow;
 - the context-sensitive failure and stale-retry design;
 - the lazy Desk Officer destination integration;
+- the 2026-09-21 merge-reconciliation amendment for the explicitly approved
+  Student workspace repository-injection overload;
 - the proposed public test seams; and
 - the listed ownership boundaries and rejected alternatives.
 

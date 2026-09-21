@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import io.github.cs32272610mp2xcode.finderskeepers.auth.bootstrap.AuthenticationFactory;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.ui.AuthenticationPane;
+import io.github.cs32272610mp2xcode.finderskeepers.report.bootstrap.StudentReportWorkspaceFactory;
 import io.github.cs32272610mp2xcode.finderskeepers.report.persistence.JsonReportRepository;
 import io.github.cs32272610mp2xcode.finderskeepers.report.persistence.ReportRepository;
 import io.github.cs32272610mp2xcode.finderskeepers.review.application.DeskOfficerReviewService;
@@ -36,6 +37,7 @@ public final class FindersKeepersApp extends Application {
         AuthenticationPane content = new AuthenticationPane(
                 AuthenticationFactory.createCoordinator(
                         Path.of("data", "demo-users.json")),
+                StudentReportWorkspaceFactory.create(reportRepository),
                 () -> new DeskOfficerReviewPane(
                         new DeskOfficerReviewService(reportRepository)));
         Scene scene = new Scene(content, 720, 420);

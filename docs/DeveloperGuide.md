@@ -4,9 +4,10 @@
 
 This guide describes the implemented project baseline, integrated Developer 2
 local-authentication module, S1-D2-02 report-persistence foundation, and
-S1-D2-03 Desk Officer review queue for a primary-school lost-and-found
-application. Application startup opens authentication and owns one shared
-report repository for the Desk Officer workflow.
+Student report submission, Student report history/search, and the S1-D2-03 Desk
+Officer review queue for a primary-school lost-and-found application. The
+application shell opens authentication at startup and routes each authenticated
+role to its workspace over one shared report repository.
 
 ## Development prerequisites
 
@@ -31,11 +32,13 @@ The current source tree keeps application startup separate from the shared repor
 
 `Launcher` delegates to `FindersKeepersApp`, which composes the authentication
 coordinator for `data/demo-users.json`, one application-lifetime
-`JsonReportRepository` for `data/reports.json`, and `AuthenticationPane`.
-The authentication pane lazily creates a fresh Desk Officer service and view
-only after the stored role routes to `DESK_OFFICER`. Future features should use
-simple, age-appropriate language for students and keep shared services
-independent of the role-specific user interfaces.
+`JsonReportRepository` for `data/reports.json`, the injected Student workspace
+factory, and `AuthenticationPane`. The same repository instance backs Student
+submission/history and every fresh Desk Officer review service. The
+authentication pane constructs only the destination selected by the stored
+role and lazily creates a fresh Desk Officer service and view after routing to
+`DESK_OFFICER`. Future features should use simple, age-appropriate language for
+students and keep shared services independent of role-specific interfaces.
 
 The repository stores all canonical report fields and preserves insertion order
 across reconstruction. It performs bounded strict reads and all-or-nothing
@@ -76,8 +79,9 @@ AuthenticationService -> PasswordHasher
 
 - `AuthenticationFactory.createCoordinator(Path)` owns production wiring for
   the JSON repository, PBKDF2 hasher, authentication service, and coordinator.
-  The JavaFX pane accepts only an `AuthenticationCoordinator` and does not know
-  concrete persistence or hashing types.
+  The JavaFX pane accepts an `AuthenticationCoordinator` plus opaque Student
+  and Desk Officer view factories; it does not know concrete report,
+  persistence, review, or hashing types.
 - `AuthenticationCoordinator` stores only the current authenticated user and a
   validation message. It derives the route from the user's role. A failed login
   preserves an existing authenticated session; logout clears it and returns to
@@ -160,17 +164,17 @@ filter, and explicit Start review retry. The UI receives only fixed contextual
 copy; paths, JSON, persistence reason names, exception text, and report values
 are not included in error messages.
 
-`AuthenticationPane` receives only an opaque lazy `Supplier<? extends Node>`.
-It invokes that supplier only for the existing Desk Officer route. The Student
-placeholder remains unchanged. Logout clears the coordinator session and
-replaces the entire authenticated subtree, so a later Desk Officer login gets a
-fresh service/view and a new authoritative queue load over the same shared
-repository instance.
+`AuthenticationPane` receives an opaque Student view function and a lazy Desk
+Officer `Supplier<? extends Node>`. It invokes only the factory for the
+authenticated role. Logout clears the coordinator session and replaces the
+entire authenticated subtree, so a later Desk Officer login gets a fresh
+service/view and a new authoritative queue load over the same shared repository
+instance used by the Student workspace.
 
 ## Student report-submission components
 
-The Student submission slice is implemented as a UI/application boundary, but
-it is not yet wired into the running application. Its components are:
+The Student submission slice is implemented as a UI/application boundary and
+is reachable through the authenticated Student workspace. Its components are:
 
 - `report.application.ReportSubmitter` is the application boundary for creating
   and saving one report. It accepts a `ReportCreationRequest` and
@@ -221,13 +225,70 @@ AuthenticatedUser.userId()
         -> StudentReportForm feedback and field messages
 ```
 
-`ReportRepository`, concrete JSON persistence, and the adapter from its save
-operation into `ReportSubmissionService` are Developer 2/shared integration
-dependencies. That adapter must translate storage failures into
-`ReportSubmissionException`. Authentication route wiring (including the
-Student route in `AuthenticationPane`) is also still required. Until those
-dependencies are connected, the form is not reachable from the current
-application startup.
+`StudentReportWorkspaceFactory` owns Student composition. Its path-based API
+constructs a repository for standalone callers, while its repository-based API
+accepts the application-lifetime `ReportRepository`. Both APIs adapt `insert`
+failures into `ReportSubmissionException` and pass one repository to submission
+and history services. `AuthenticationPane` receives a Student-view factory so
+authentication remains responsible only for session state, role routing, and
+logout. The authenticated `userId()` is passed to both controllers; the
+username is display-only.
+
+## Student report-history and search components
+
+S2-D1-01 implements a personal history use case without expanding the shared
+`ReportRepository` interface:
+
+- `report.application.StudentReportHistoryService` calls
+  `ReportRepository.loadAll()`, selects the exact authenticated `reporterId`,
+  searches item names and public descriptions, and returns newest-first rows.
+- Search strips surrounding query whitespace, lowercases with `Locale.ROOT`,
+  and performs case-insensitive substring matching. Either the item name or
+  public description may match. A blank query returns the full personal list.
+- `report.application.ReportHistoryEntry` is the privacy-safe projection passed
+  toward JavaFX. It deliberately contains no reporter identity, location, or
+  private identifying detail.
+- `report.application.ReportHistorySearchResult` distinguishes a Student with
+  no reports from a Student whose current search has no matches.
+- `report.application.ReportHistoryException` retains the repository failure
+  for diagnostics while keeping it outside presentation text.
+- `report.ui.StudentReportHistoryController` binds one authenticated Student to
+  the use case and maps results into normal, no-history, no-match, or safe
+  load-failure presentation states.
+- `report.ui.ReportHistoryViewState` owns those immutable presentation states.
+- `report.ui.StudentReportHistoryPane` renders the search controls, readable
+  report statuses, public report summaries, and empty/failure feedback.
+- `report.ui.StudentReportHomePane` places submission and personal history in
+  fixed **Report an item** and **My reports** tabs. Selecting **My reports**
+  refreshes storage before showing the current history.
+
+The history flow is:
+
+```text
+AuthenticatedUser.userId()
+        -> StudentReportHistoryController.search(query)
+        -> StudentReportHistoryService.search(reporterId, query)
+        -> ReportRepository.loadAll()
+        -> exact reporter filtering
+        -> item-name OR public-description matching
+        -> newest-first ReportHistoryEntry rows
+        -> ReportHistoryViewState
+        -> StudentReportHistoryPane
+```
+
+Search never reads `privateIdentifyingDetail`, and the JavaFX layer never
+receives that field. `ReportStoreException` becomes a safe load-failure state;
+it is not presented as an empty history. The service reloads the repository on
+each search or clear action so newly submitted reports and persisted status
+changes can appear without restarting the application.
+
+The startup path now constructs one `JsonReportRepository` at
+`data/reports.json`, adapts `repository.insert(report)` into the submission
+service while translating `ReportStoreException` to
+`ReportSubmissionException`, and passes the same repository to
+`StudentReportHistoryService`. `AuthenticationPane` receives the injected
+Student-view factory and passes `AuthenticatedUser.userId()` to both Student
+controllers and the display-only username to `StudentReportHomePane`.
 
 The version 1 credential store has this shape; values below are descriptive placeholders, not credentials:
 
@@ -302,10 +363,19 @@ gradlew.bat release
   authoritative status-only replacement, invalid/repeat transition absence,
   stale targets, storage failures, Retry context, and fresh-instance
   durability. Real persistence evidence uses JUnit temporary directories.
+- Student report-history tests cover exact ownership filtering, newest-first
+  ordering, deterministic ties, blank queries, item-name and public-description
+  matches, case and whitespace normalization, empty histories, empty searches,
+  private-detail exclusion, storage failures, immutable presentation state,
+  and reconstruction through a real temporary JSON repository.
+- Student workspace-composition tests verify that submission and history share
+  one canonical repository and that write failures cross the composition
+  boundary as `ReportSubmissionException` without real user data.
 - Java compilation enables all lint warnings and treats warnings as errors.
 - Checkstyle runs against production and test sources.
 - Javadoc warnings fail the build.
-- JaCoCo writes HTML and XML coverage reports; a numerical coverage threshold will be introduced when testable feature logic exists.
+- JaCoCo writes HTML and XML coverage reports. A project-wide numerical
+  coverage threshold is not yet configured.
 
 ## Release packaging
 
@@ -319,18 +389,16 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 
 ## Planned areas
 
-- Student report submission UI/controller components — implemented in an
-  isolated slice; repository/service composition and authenticated route wiring
-  remain to be integrated.
-- Student status features — to be designed and implemented.
+- Student report submission and personal report history/status display —
+  implemented and reachable through the shared Student workspace composition.
 - Desk Officer collection, matching, claiming, and return workflows — to be
   designed and implemented separately from the delivered submitted-report
   review queue.
-- Student-side repository construction and route wiring — to be integrated by
-  its owning workflow; the Desk Officer path already owns the shared report
-  repository lifetime.
+- Repository construction and startup wiring — implemented through the
+  approved `data/reports.json` path with one application-lifetime repository.
 - Richer category and status vocabularies, submission validation, and report creation — to be extended through the shared canonical model without introducing a competing report type.
-- Role-specific JavaFX views and navigation — to be documented with the feature implementation.
+- Additional role-specific JavaFX workflows beyond the delivered Student
+  workspace and Desk Officer review queue remain future work.
 - Deciding how the external demo credential store is supplied with a
   distributable release — pending shared integration approval.
 
