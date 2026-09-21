@@ -257,6 +257,26 @@ class DeskOfficerReviewServiceTest {
     }
 
     @Test
+    void replacementTargetRaceReconcilesWhenReloadSucceeds() {
+        ItemReport selected = report(1, ReportType.LOST, ReportStatus.SUBMITTED);
+        InMemoryRepository repository = new InMemoryRepository(List.of(selected));
+        DeskOfficerReviewService service = new DeskOfficerReviewService(repository);
+        service.enter();
+        service.select(selected.reportId());
+        repository.failNextReplace(
+                ReportStoreException.Reason.REPLACEMENT_TARGET_NOT_FOUND);
+
+        ReviewQueueState reconciled = service.startReview();
+
+        assertTrue(reconciled.available());
+        assertEquals("This report is no longer available for review.",
+                reconciled.feedbackMessage().orElseThrow());
+        assertTrue(reconciled.selectedReport().isEmpty());
+        assertEquals(List.of(selected), reconciled.visibleReports());
+        assertEquals(0, repository.replacements);
+    }
+
+    @Test
     void initialLoadFailureRequiresExplicitRetry() {
         InMemoryRepository repository = new InMemoryRepository(List.of());
         repository.failNextLoad(ReportStoreException.Reason.CORRUPT_OR_UNSUPPORTED_STORE);
@@ -276,6 +296,42 @@ class DeskOfficerReviewServiceTest {
         assertTrue(recovered.available());
         assertEquals(2, repository.loads);
         assertEquals("No submitted reports.", recovered.queueMessage().orElseThrow());
+    }
+
+    @Test
+    void everyInitialLoadFailureMapsToTheSamePrivacySafeState() {
+        for (ReportStoreException.Reason reason : ReportStoreException.Reason.values()) {
+            InMemoryRepository repository = new InMemoryRepository(List.of());
+            repository.failNextLoad(reason);
+
+            ReviewQueueState state = new DeskOfficerReviewService(repository).enter();
+
+            assertFalse(state.available());
+            assertEquals("Reports are unavailable. Please try again.",
+                    state.detailsMessage());
+            assertTrue(state.visibleReports().isEmpty());
+            assertTrue(state.feedbackMessage().isEmpty());
+            assertTrue(state.retryVisible());
+        }
+    }
+
+    @Test
+    void startReviewPrecheckFailureRetainsRetryableSelection() {
+        ItemReport selected = report(1, ReportType.FOUND, ReportStatus.SUBMITTED);
+        InMemoryRepository repository = new InMemoryRepository(List.of(selected));
+        DeskOfficerReviewService service = new DeskOfficerReviewService(repository);
+        service.enter();
+        service.select(selected.reportId());
+        repository.failNextLoad(
+                ReportStoreException.Reason.STORAGE_IO_OR_SAFE_REPLACEMENT_FAILURE);
+
+        ReviewQueueState state = service.startReview();
+
+        assertSame(selected, state.selectedReport().orElseThrow());
+        assertTrue(state.startReviewEnabled());
+        assertEquals("Review could not be started because reports are unavailable. "
+                + "Please try again.", state.feedbackMessage().orElseThrow());
+        assertEquals(0, repository.replacements);
     }
 
     @Test
