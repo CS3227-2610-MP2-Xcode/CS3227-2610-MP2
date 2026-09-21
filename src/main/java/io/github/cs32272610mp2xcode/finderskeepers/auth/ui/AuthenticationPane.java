@@ -1,19 +1,23 @@
 package io.github.cs32272610mp2xcode.finderskeepers.auth.ui;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import io.github.cs32272610mp2xcode.finderskeepers.AppMetadata;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.application.AuthenticationCoordinator;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.application.AuthenticationResult;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.application.AuthenticationStatus;
+import io.github.cs32272610mp2xcode.finderskeepers.auth.application.ApplicationRoute;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.AuthenticatedUser;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
@@ -21,14 +25,20 @@ import javafx.scene.layout.VBox;
 public final class AuthenticationPane extends StackPane {
     private final AuthenticationCoordinator coordinator;
 
+    private final Supplier<? extends Node> deskOfficerContentFactory;
+
     /**
      * Creates and displays the login interface.
      *
      * @param authenticationCoordinator authentication and navigation module
+     * @param officerContentFactory lazy factory for authenticated Desk Officer content
      */
-    public AuthenticationPane(AuthenticationCoordinator authenticationCoordinator) {
+    public AuthenticationPane(AuthenticationCoordinator authenticationCoordinator,
+            Supplier<? extends Node> officerContentFactory) {
         coordinator = Objects.requireNonNull(
                 authenticationCoordinator, "authenticationCoordinator");
+        deskOfficerContentFactory = Objects.requireNonNull(
+                officerContentFactory, "officerContentFactory");
         getStyleClass().add("app-root");
         showLogin();
     }
@@ -87,13 +97,19 @@ public final class AuthenticationPane extends StackPane {
             coordinator.logout();
             showLogin();
         });
-        VBox view = new VBox(16,
+        VBox view = new VBox(12,
                 heading(presentation.title()),
                 identity,
-                new Label(presentation.description()),
-                logout);
-        view.setAlignment(Pos.CENTER);
-        view.setPadding(new Insets(32));
+                new Label(presentation.description()));
+        if (coordinator.route() == ApplicationRoute.DESK_OFFICER) {
+            Node officerContent = Objects.requireNonNull(
+                    deskOfficerContentFactory.get(), "officerContentFactory result");
+            VBox.setVgrow(officerContent, Priority.ALWAYS);
+            view.getChildren().add(officerContent);
+        }
+        view.getChildren().add(logout);
+        view.setAlignment(Pos.TOP_CENTER);
+        view.setPadding(new Insets(20));
         getChildren().setAll(view);
     }
 

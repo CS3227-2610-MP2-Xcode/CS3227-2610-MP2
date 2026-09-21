@@ -5,6 +5,10 @@ import java.util.Objects;
 
 import io.github.cs32272610mp2xcode.finderskeepers.auth.bootstrap.AuthenticationFactory;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.ui.AuthenticationPane;
+import io.github.cs32272610mp2xcode.finderskeepers.report.persistence.JsonReportRepository;
+import io.github.cs32272610mp2xcode.finderskeepers.report.persistence.ReportRepository;
+import io.github.cs32272610mp2xcode.finderskeepers.review.application.DeskOfficerReviewService;
+import io.github.cs32272610mp2xcode.finderskeepers.review.ui.DeskOfficerReviewPane;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -27,9 +31,13 @@ public final class FindersKeepersApp extends Application {
     /** Creates and displays the initial project window. */
     @Override
     public void start(Stage stage) {
+        ReportRepository reportRepository = new JsonReportRepository(
+                Path.of("data", "reports.json"));
         AuthenticationPane content = new AuthenticationPane(
                 AuthenticationFactory.createCoordinator(
-                        Path.of("data", "demo-users.json")));
+                        Path.of("data", "demo-users.json")),
+                () -> new DeskOfficerReviewPane(
+                        new DeskOfficerReviewService(reportRepository)));
         Scene scene = new Scene(content, 720, 420);
         scene.getStylesheets().add(Objects.requireNonNull(
                 FindersKeepersApp.class.getResource("app.css")).toExternalForm());

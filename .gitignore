@@ -17,3 +17,6 @@ out/
 Thumbs.db
 *.swp
 *.swo
+
+# Application-owned local report store
+/data/reports.json
