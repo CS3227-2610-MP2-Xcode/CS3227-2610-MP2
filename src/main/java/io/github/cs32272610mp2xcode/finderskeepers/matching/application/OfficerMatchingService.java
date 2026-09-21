@@ -98,7 +98,7 @@ public final class OfficerMatchingService {
         if (pair == null || state.availability() != Availability.READY) {
             return state;
         }
-        Snapshot snapshot = readSnapshotForAction(Feedback.LINK_FAILED);
+        Snapshot snapshot = readSnapshotForAction();
         if (snapshot == null) {
             return state;
         }
@@ -132,7 +132,7 @@ public final class OfficerMatchingService {
         if (pair == null || state.availability() != Availability.READY) {
             return state;
         }
-        Snapshot snapshot = readSnapshotForAction(Feedback.UNLINK_FAILED);
+        Snapshot snapshot = readSnapshotForAction();
         if (snapshot == null) {
             return state;
         }
@@ -188,13 +188,17 @@ public final class OfficerMatchingService {
         return state;
     }
 
-    private Snapshot readSnapshotForAction(Feedback failureFeedback) {
+    private Snapshot readSnapshotForAction() {
         try {
             List<ItemReport> reports = reportRepository.loadAll();
-            Set<PossibleMatchPair> links = matchRepository.loadAll();
-            return createSnapshot(reports, links);
-        } catch (ReportStoreException | PossibleMatchStoreException failure) {
-            state = copyState(state, failureFeedback, true);
+            try {
+                Set<PossibleMatchPair> links = matchRepository.loadAll();
+                return createSnapshot(reports, links);
+            } catch (PossibleMatchStoreException failure) {
+                state = copyState(state, Feedback.RELATIONSHIP_LOAD_FAILED, true);
+            }
+        } catch (ReportStoreException failure) {
+            state = copyState(state, Feedback.REPORT_LOAD_FAILED, true);
         } catch (IllegalArgumentException | NullPointerException failure) {
             state = copyState(state, Feedback.EVALUATION_FAILED, true);
         }

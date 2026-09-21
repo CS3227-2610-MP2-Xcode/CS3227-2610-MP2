@@ -181,6 +181,29 @@ class OfficerMatchingServiceTest {
     }
 
     @Test
+    void relationshipLoadFailureIsUnavailableAndActionPrechecksAreTyped() {
+        ItemReport lost = report(1, ReportType.LOST, "Bottle", "Library");
+        ItemReport found = report(2, ReportType.FOUND, "Bottle", "Library");
+        Repositories repositories = repositories(List.of(lost, found), Set.of());
+        OfficerMatchingService service = repositories.service();
+        repositories.links.failLoad = true;
+
+        MatchingWorkspaceState unavailable = service.enter();
+        assertEquals(Availability.UNAVAILABLE, unavailable.availability());
+        assertEquals(Feedback.RELATIONSHIP_LOAD_FAILED,
+                unavailable.feedback().orElseThrow());
+
+        repositories.links.failLoad = false;
+        service.retry();
+        service.select(Section.SUGGESTIONS, lost.reportId(), found.reportId());
+        repositories.reports.failLoad = true;
+        MatchingWorkspaceState retained = service.link(lost.reportId(), found.reportId());
+        assertEquals(Feedback.REPORT_LOAD_FAILED, retained.feedback().orElseThrow());
+        assertTrue(retained.lastKnownState());
+        assertTrue(retained.linkEnabled());
+    }
+
+    @Test
     void refreshPreservesSelectionOnlyInSameSectionAndClearDropsEverything() {
         ItemReport lost = report(1, ReportType.LOST, "Bottle", "Library");
         ItemReport found = report(2, ReportType.FOUND, "Bottle", "Library");
@@ -262,12 +285,18 @@ class OfficerMatchingServiceTest {
 
         private boolean failWrite;
 
+        private boolean failLoad;
+
         private ScriptedMatchRepository(Set<PossibleMatchPair> initialLinks) {
             links = new HashSet<>(initialLinks);
         }
 
         @Override
-        public Set<PossibleMatchPair> loadAll() {
+        public Set<PossibleMatchPair> loadAll() throws PossibleMatchStoreException {
+            if (failLoad) {
+                throw new PossibleMatchStoreException(
+                        PossibleMatchStoreException.Reason.READ_FAILURE);
+            }
             return Set.copyOf(links);
         }
 
