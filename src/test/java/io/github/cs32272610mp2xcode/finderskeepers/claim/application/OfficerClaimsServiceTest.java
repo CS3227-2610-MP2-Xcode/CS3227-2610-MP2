@@ -163,6 +163,7 @@ class OfficerClaimsServiceTest {
 
         assertThrows(ClaimValidationException.class,
                 () -> service.reviewDecision(handle, DecisionKind.REJECT, "  "));
+        assertEquals(ClaimStatus.PENDING_REVIEW, claims.loadAll().getFirst().status());
         var approval = service.reviewDecision(handle, DecisionKind.APPROVE, "  ");
         assertTrue(approval.normalizedReason().isEmpty());
         var rejection = service.reviewDecision(handle, DecisionKind.REJECT,

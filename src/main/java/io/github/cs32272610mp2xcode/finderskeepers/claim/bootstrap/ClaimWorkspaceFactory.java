@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.AuthenticatedUser;
+import io.github.cs32272610mp2xcode.finderskeepers.claim.application.ApprovedClaimReportService;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.application.OfficerClaimsService;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.application.StudentClaimsService;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.ClaimRepository;
@@ -62,12 +63,14 @@ public final class ClaimWorkspaceFactory {
      * Creates one fresh authenticated Desk Officer Claims feature.
      *
      * @param user authenticated Desk Officer
-     * @return neutral workspace feature
+     * @return Claims workspace and approved-report read contract
      */
-    public WorkspaceFeature createDeskOfficerFeature(AuthenticatedUser user) {
+    public DeskOfficerClaimFeature createDeskOfficerFeature(AuthenticatedUser user) {
         DeskOfficerClaimsPane pane = new DeskOfficerClaimsPane(
                 new OfficerClaimsService(user, claimRepository, reportRepository, clock));
-        return new WorkspaceFeature(pane, pane::enter, pane::hasUnsavedText,
-                pane::clearSessionState);
+        WorkspaceFeature workspace = new WorkspaceFeature(pane, pane::enter,
+                pane::hasUnsavedText, pane::clearSessionState);
+        return new DeskOfficerClaimFeature(workspace,
+                new ApprovedClaimReportService(claimRepository));
     }
 }

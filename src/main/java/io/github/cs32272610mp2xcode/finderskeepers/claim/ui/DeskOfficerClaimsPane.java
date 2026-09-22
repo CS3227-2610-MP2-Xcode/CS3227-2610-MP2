@@ -15,6 +15,7 @@ import io.github.cs32272610mp2xcode.finderskeepers.claim.application.OfficerClai
 import io.github.cs32272610mp2xcode.finderskeepers.claim.application.OfficerClaimsState.OfficerClaimHandle;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.application.OfficerClaimsState.PendingClaimRow;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.application.OfficerClaimsState.View;
+import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimValidationException;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ReportConstraints;
 import javafx.geometry.Insets;
@@ -265,10 +266,19 @@ public final class DeskOfficerClaimsPane extends BorderPane {
         final DecisionReview review;
         try {
             review = service.reviewDecision(reasonTarget, kind, reason.getText());
+        } catch (ClaimValidationException failure) {
+            if (kind == DecisionKind.REJECT && reason.getText().strip().isEmpty()) {
+                pendingFeedback.setText("A reason is required to reject this claim.");
+            } else {
+                pendingFeedback.setText(kind == DecisionKind.REJECT
+                        ? "The rejection reason must be valid and at most 500 characters."
+                        : "The approval reason must be valid and at most 500 characters.");
+            }
+            show(pendingFeedback, true);
+            return;
         } catch (IllegalArgumentException failure) {
-            pendingFeedback.setText(kind == DecisionKind.REJECT
-                    ? "A valid rejection reason of at most 500 characters is required."
-                    : "The approval reason must be valid and at most 500 characters.");
+            pendingFeedback.setText(
+                    "Refresh and select a current Pending Claim before deciding it.");
             show(pendingFeedback, true);
             return;
         }

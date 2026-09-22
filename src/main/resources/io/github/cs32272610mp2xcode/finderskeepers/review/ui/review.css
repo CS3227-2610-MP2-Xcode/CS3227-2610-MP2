@@ -8,13 +8,6 @@
     -fx-text-fill: #1f5136;
 }
 
-.review-feedback {
-    -fx-padding: 7px 10px;
-    -fx-background-color: #e6f2ea;
-    -fx-background-radius: 7px;
-    -fx-text-fill: #245c3d;
-}
-
 .review-row-primary,
 .review-field-label,
 .review-section-title {
