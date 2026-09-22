@@ -35,11 +35,23 @@ Developer 2 owns:
 - `ReportRepository` interface and JSON persistence
 - Storage failure and recovery behaviour
 - Desk Officer report queue, filtering, details, and review workflow
+- The complete Sprint 3 Claims and Verification feature, including the claim
+  domain and persistence, Student claim submission, evidence, validation,
+  tracking, and withdrawal, and Desk Officer claim review, approval, rejection,
+  decision reasons, and repeated-decision prevention
+- Claim-specific tests and documentation
 - Architecture, storage, authentication, and officer-review documentation
 
 Developer 2 delivery work must follow the repository's
 `.agents/skills/mp2-dev2-delivery/SKILL.md` workflow and stop when one of its
 required planning or approval gates is missing.
+
+Sprint 3 Claims work is governed by
+`docs/mission-briefs/S3-D2-01-claims-and-verification.md` and only the
+subsequently approved artifacts for that mission. Claims are a separate domain
+from reports. Developer 2's Claims ownership does not authorize changes to
+Developer 1's report domain, existing Student report submission/history
+functionality, application shell, or other cross-owner production files.
 
 ### Shared integration
 
