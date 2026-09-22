@@ -86,6 +86,29 @@ class JsonClaimRepositoryFormatTest {
         assertTrue(!failure.getMessage().contains(store.toString()));
     }
 
+    @Test
+    void invalidUtf8AndBomFailWithoutChangingBytes() throws Exception {
+        assertInvalidBytes(new byte[] {(byte) 0xc3, 0x28});
+        byte[] canonical = CANONICAL_DOCUMENT.getBytes(StandardCharsets.UTF_8);
+        byte[] withBom = new byte[canonical.length + 3];
+        withBom[0] = (byte) 0xef;
+        withBom[1] = (byte) 0xbb;
+        withBom[2] = (byte) 0xbf;
+        System.arraycopy(canonical, 0, withBom, 3, canonical.length);
+        assertInvalidBytes(withBom);
+    }
+
+    private void assertInvalidBytes(byte[] bytes) throws Exception {
+        Path store = temporaryDirectory.resolve("invalid-" + bytes.length + ".json");
+        Files.write(store, bytes);
+
+        ClaimStoreException failure = assertThrows(ClaimStoreException.class,
+                () -> new JsonClaimRepository(store).loadAll());
+
+        assertEquals(ClaimStoreException.Reason.CORRUPT_STORE, failure.reason());
+        assertTrue(java.util.Arrays.equals(bytes, Files.readAllBytes(store)));
+    }
+
     private static Stream<Arguments> invalidDocuments() {
         return Stream.of(
                 Arguments.of("", ClaimStoreException.Reason.CORRUPT_STORE),
@@ -93,6 +116,17 @@ class JsonClaimRepositoryFormatTest {
                 Arguments.of(CANONICAL_DOCUMENT.replace("\"schemaVersion\": 1",
                         "\"schemaVersion\": 2"),
                         ClaimStoreException.Reason.UNSUPPORTED_VERSION),
+                Arguments.of(CANONICAL_DOCUMENT.replace("\"schemaVersion\": 1",
+                        "\"schemaVersion\": 01"),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace("\"schemaVersion\": 1",
+                        "\"schemaVersion\": ١"),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace("\"schemaVersion\": 1",
+                        "\"schemaVersion\": \"1\""),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of("\u00a0" + CANONICAL_DOCUMENT,
+                        ClaimStoreException.Reason.CORRUPT_STORE),
                 Arguments.of(CANONICAL_DOCUMENT.replace("\"claims\": [",
                         "\"unknown\": 1, \"claims\": ["),
                         ClaimStoreException.Reason.CORRUPT_STORE),
@@ -100,6 +134,26 @@ class JsonClaimRepositoryFormatTest {
                         "\"claimId\": \"duplicate\", \"claimId\":"),
                         ClaimStoreException.Reason.CORRUPT_STORE),
                 Arguments.of(CANONICAL_DOCUMENT.replace("PENDING_REVIEW", "UNKNOWN"),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
+                        "\"ownershipEvidence\": \"Synthetic identifying detail.\"",
+                        "\"ownershipEvidence\": null"),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
+                        "Synthetic identifying detail.", "Synthetic \\q detail."),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
+                        "Synthetic identifying detail.", "Synthetic \\uD800 detail."),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
+                        "00000000-0000-0000-0000-000000000001",
+                        "AAAAAAAA-0000-0000-0000-000000000001"),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace("\"terminalAt\": null",
+                        "\"terminalAt\": \"2026-09-22T02:02:03.456Z\""),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace("\"decisionReason\": null",
+                        "\"decisionReason\": \"Synthetic reason.\""),
                         ClaimStoreException.Reason.CORRUPT_STORE),
                 Arguments.of(CANONICAL_DOCUMENT.replace(".456Z", "Z"),
                         ClaimStoreException.Reason.CORRUPT_STORE),

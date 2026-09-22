@@ -270,11 +270,18 @@ final class ClaimStoreJsonCodec {
 
         private void parseSchemaVersion() throws InvalidStoreException {
             int start = index;
-            while (index < json.length() && Character.isDigit(json.charAt(index))) {
-                index++;
-            }
-            if (start == index) {
+            if (index >= json.length() || !isAsciiDigit(json.charAt(index))) {
                 corrupt();
+            }
+            if (json.charAt(index) == '0') {
+                index++;
+                if (index < json.length() && isAsciiDigit(json.charAt(index))) {
+                    corrupt();
+                }
+            } else {
+                while (index < json.length() && isAsciiDigit(json.charAt(index))) {
+                    index++;
+                }
             }
             String token = json.substring(start, index);
             if (!"1".equals(token)) {
@@ -479,6 +486,10 @@ final class ClaimStoreJsonCodec {
                 return value - 'A' + 10;
             }
             return -1;
+        }
+
+        private static boolean isAsciiDigit(char value) {
+            return value >= '0' && value <= '9';
         }
 
         private void expect(char expected) throws InvalidStoreException {
