@@ -32,6 +32,7 @@ import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimId;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimStatus;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimValidationException;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.ClaimRepository;
+import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.ClaimStoreException;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.JsonClaimRepository;
 import io.github.cs32272610mp2xcode.finderskeepers.matching.model.PossibleMatchPair;
 import io.github.cs32272610mp2xcode.finderskeepers.matching.persistence.PossibleMatchRepository;
@@ -230,6 +231,58 @@ class StudentClaimsServiceTest {
         assertEquals(Availability.READY, service.retryAvailable().availableAvailability());
     }
 
+    @Test
+    void committedSubmissionRemainsSuccessWhenPostCommitRefreshFails()
+            throws Exception {
+        JsonClaimRepository durable = new JsonClaimRepository(
+                temporaryDirectory.resolve("post-commit-claims.json"));
+        SwitchableClaims claims = new SwitchableClaims(durable);
+        claims.failLoadsAfterSubmission = true;
+        MutableReports reports = standardReports();
+        MutableMatches matches = standardMatches();
+        StudentClaimsService service = service(claims, reports, matches, ids(1));
+        var handle = service.enter().availableGroups().getFirst().cards().getFirst().handle();
+        SubmissionReview review = service.reviewSubmission(handle, "Synthetic evidence.");
+
+        StudentClaimsState result = service.submit(review);
+
+        assertEquals(Optional.of(Feedback.SUBMITTED), result.feedback());
+        assertEquals(Availability.UNAVAILABLE, result.availableAvailability());
+        assertEquals(Availability.UNAVAILABLE, result.myClaimsAvailability());
+        assertEquals(ClaimStatus.PENDING_REVIEW,
+                result.selectedClaim().orElseThrow().status());
+        assertEquals(1, durable.loadAll().size());
+    }
+
+    @Test
+    void clearDropsTransientStateAndFreshLoginRestoresOnlyDurableClaims()
+            throws Exception {
+        ClaimRepository repository = claims();
+        Claim durable = Claim.createPending(ClaimId.of(uuid(1)), STUDENT_ID,
+                LOST_NEW, FOUND_NEW, "Synthetic durable evidence.", NOW.minusSeconds(10));
+        repository.submit(durable);
+        MutableReports reports = standardReports();
+        MutableMatches matches = standardMatches();
+        StudentClaimsService service = service(repository, reports, matches, ids(2));
+        var handle = service.refreshMyClaims().myClaimRows().getFirst().handle();
+        service.selectMyClaim(handle);
+
+        StudentClaimsState cleared = service.clear();
+
+        assertEquals(Availability.NOT_LOADED, cleared.availableAvailability());
+        assertEquals(Availability.NOT_LOADED, cleared.myClaimsAvailability());
+        assertTrue(cleared.availableGroups().isEmpty());
+        assertTrue(cleared.myClaimRows().isEmpty());
+        assertTrue(cleared.selectedClaim().isEmpty());
+        assertTrue(cleared.feedback().isEmpty());
+        assertEquals(1, repository.loadAll().size());
+        StudentClaimsState fresh = service(repository, reports, matches, ids(3))
+                .refreshMyClaims();
+        assertEquals(1, fresh.myClaimRows().size());
+        assertTrue(fresh.selectedClaim().isEmpty());
+        assertTrue(fresh.feedback().isEmpty());
+    }
+
     private StudentClaimsService service(MutableReports reports,
             MutableMatches matches, Supplier<UUID> ids) {
         return service(claims(), reports, matches, ids);
@@ -332,6 +385,53 @@ class StudentClaimsServiceTest {
         @Override
         public boolean unlink(PossibleMatchPair pair) {
             throw new AssertionError("Student Claims must not write links");
+        }
+    }
+
+    private static final class SwitchableClaims implements ClaimRepository {
+        private final ClaimRepository delegate;
+
+        private boolean failLoads;
+
+        private boolean failLoadsAfterSubmission;
+
+        SwitchableClaims(ClaimRepository repository) {
+            delegate = repository;
+        }
+
+        @Override
+        public List<Claim> loadAll() throws ClaimStoreException {
+            if (failLoads) {
+                throw new ClaimStoreException(ClaimStoreException.Reason.READ_FAILURE);
+            }
+            return delegate.loadAll();
+        }
+
+        @Override
+        public SubmissionResult submit(Claim pending) throws ClaimStoreException {
+            SubmissionResult result = delegate.submit(pending);
+            if (result.outcome() == SubmissionOutcome.CREATED) {
+                failLoads = failLoadsAfterSubmission;
+            }
+            return result;
+        }
+
+        @Override
+        public TerminalResult withdraw(ClaimId id, String claimantUserId,
+                Instant terminalAt) throws ClaimStoreException {
+            return delegate.withdraw(id, claimantUserId, terminalAt);
+        }
+
+        @Override
+        public TerminalResult approve(ClaimId id, Optional<String> decisionReason,
+                Instant terminalAt) throws ClaimStoreException {
+            return delegate.approve(id, decisionReason, terminalAt);
+        }
+
+        @Override
+        public TerminalResult reject(ClaimId id, String decisionReason,
+                Instant terminalAt) throws ClaimStoreException {
+            return delegate.reject(id, decisionReason, terminalAt);
         }
     }
 }

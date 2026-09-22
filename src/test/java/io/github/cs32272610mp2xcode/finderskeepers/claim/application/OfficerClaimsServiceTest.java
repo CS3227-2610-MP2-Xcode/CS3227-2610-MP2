@@ -266,6 +266,32 @@ class OfficerClaimsServiceTest {
         assertEquals(ClaimStatus.APPROVED, durable.loadAll().getFirst().status());
     }
 
+    @Test
+    void clearDropsPrivateSnapshotsAndFreshLoginRestoresOnlyDurableClaims()
+            throws Exception {
+        JsonClaimRepository claims = claims("clear.json");
+        Claim claim = pending(1, 101, 201, NOW.minusSeconds(20));
+        submitAll(claims, claim);
+        MutableReports reports = reportsFor(claim);
+        OfficerClaimsService service = service(claims, reports);
+        var handle = service.enter().pendingRows().getFirst().handle();
+        service.selectPending(handle);
+
+        OfficerClaimsState cleared = service.clear();
+
+        assertEquals(Availability.NOT_LOADED, cleared.pendingAvailability());
+        assertEquals(Availability.NOT_LOADED, cleared.historyAvailability());
+        assertTrue(cleared.pendingRows().isEmpty());
+        assertTrue(cleared.historyRows().isEmpty());
+        assertTrue(cleared.selectedDetail().isEmpty());
+        assertTrue(cleared.feedback().isEmpty());
+        assertEquals(1, claims.loadAll().size());
+        OfficerClaimsState fresh = service(claims("clear.json"), reports).enter();
+        assertEquals(1, fresh.pendingRows().size());
+        assertTrue(fresh.selectedDetail().isEmpty());
+        assertTrue(fresh.feedback().isEmpty());
+    }
+
     private OfficerClaimsService service(ClaimRepository claims,
             ReportRepository reports) {
         return new OfficerClaimsService(
