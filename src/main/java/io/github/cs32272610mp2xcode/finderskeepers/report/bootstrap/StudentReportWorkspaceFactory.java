@@ -20,6 +20,7 @@ import io.github.cs32272610mp2xcode.finderskeepers.report.persistence.ReportStor
 import io.github.cs32272610mp2xcode.finderskeepers.report.ui.StudentReportFormController;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ui.StudentReportHistoryController;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ui.StudentReportHomePane;
+import io.github.cs32272610mp2xcode.finderskeepers.workspace.WorkspaceFeature;
 import javafx.scene.Node;
 
 /** Production composition for the authenticated Student report workspace. */
@@ -48,11 +49,29 @@ public final class StudentReportWorkspaceFactory {
             ReportRepository repository) {
         ReportRepository reportStore = Objects.requireNonNull(
                 repository, "repository");
-        return user -> createView(user, reportStore);
+        return user -> createView(user, reportStore, null);
+    }
+
+    /**
+     * Creates a Student-view factory with an authenticated workspace feature.
+     *
+     * @param repository application-lifetime report repository
+     * @param featureFactory authenticated neutral feature factory
+     * @return factory that binds each view to its authenticated identity
+     */
+    public static Function<AuthenticatedUser, Node> create(
+            ReportRepository repository,
+            Function<AuthenticatedUser, WorkspaceFeature> featureFactory) {
+        ReportRepository reportStore = Objects.requireNonNull(
+                repository, "repository");
+        Function<AuthenticatedUser, WorkspaceFeature> features =
+                Objects.requireNonNull(featureFactory, "featureFactory");
+        return user -> createView(user, reportStore, features);
     }
 
     private static Node createView(AuthenticatedUser user,
-            ReportRepository repository) {
+            ReportRepository repository,
+            Function<AuthenticatedUser, WorkspaceFeature> featureFactory) {
         AuthenticatedUser authenticatedUser = requireStudent(user);
         StudentReportWorkspaceComponents components = compose(
                 authenticatedUser, repository);
@@ -62,8 +81,14 @@ public final class StudentReportWorkspaceFactory {
                 new StudentReportHistoryController(
                         authenticatedUser.userId(),
                         components.historyService());
-        return new StudentReportHomePane(
-                authenticatedUser.username(), formController, historyController);
+        if (featureFactory == null) {
+            return new StudentReportHomePane(
+                    authenticatedUser.username(), formController, historyController);
+        }
+        WorkspaceFeature feature = Objects.requireNonNull(
+                featureFactory.apply(authenticatedUser), "featureFactory result");
+        return new StudentReportHomePane(authenticatedUser.username(), formController,
+                historyController, feature);
     }
 
     static StudentReportWorkspaceComponents compose(AuthenticatedUser user,

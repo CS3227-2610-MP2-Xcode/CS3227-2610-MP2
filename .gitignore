@@ -22,3 +22,5 @@ Thumbs.db
 /data/reports.json
 /data/possible-match-links.txt
 /data/.possible-match-links-*.tmp
+/data/claims.json
+/data/.claim-store-*.tmp
