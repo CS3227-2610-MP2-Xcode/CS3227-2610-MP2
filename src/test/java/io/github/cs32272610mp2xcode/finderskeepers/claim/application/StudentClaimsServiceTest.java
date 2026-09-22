@@ -163,6 +163,29 @@ class StudentClaimsServiceTest {
     }
 
     @Test
+    void submissionStopsAfterThreeIdCollisionsWithoutCreatingAClaim()
+            throws Exception {
+        ClaimRepository repository = claims();
+        repository.submit(Claim.createPending(ClaimId.of(uuid(1)), "other-1",
+                uuid(1001), uuid(2001), "Synthetic one.", NOW.minusSeconds(30)));
+        repository.submit(Claim.createPending(ClaimId.of(uuid(2)), "other-2",
+                uuid(1002), uuid(2002), "Synthetic two.", NOW.minusSeconds(20)));
+        repository.submit(Claim.createPending(ClaimId.of(uuid(3)), "other-3",
+                uuid(1003), uuid(2003), "Synthetic three.", NOW.minusSeconds(10)));
+        StudentClaimsService service = service(repository, standardReports(),
+                standardMatches(), ids(1, 2, 3));
+        var handle = service.enter().availableGroups().getFirst().cards().getFirst().handle();
+        SubmissionReview review = service.reviewSubmission(handle, "Synthetic evidence.");
+
+        StudentClaimsState result = service.submit(review);
+
+        assertEquals(Optional.of(Feedback.SUBMISSION_FAILED), result.feedback());
+        assertEquals(3, repository.loadAll().size());
+        assertTrue(repository.loadAll().stream()
+                .noneMatch(claim -> claim.claimantUserId().equals(STUDENT_ID)));
+    }
+
+    @Test
     void myClaimsFiltersByClaimantUsesFoundCategoryAndRetainsMissingContext()
             throws Exception {
         MutableReports reports = standardReports();
@@ -212,6 +235,47 @@ class StudentClaimsServiceTest {
         assertEquals(ClaimStatus.WITHDRAWN,
                 repository.loadAll().getFirst().status());
         assertEquals(NOW, repository.loadAll().getFirst().terminalAt().orElseThrow());
+    }
+
+    @Test
+    void staleAndFailedWithdrawalsRemainTruthfulAndNonMutating() throws Exception {
+        JsonClaimRepository durable = new JsonClaimRepository(
+                temporaryDirectory.resolve("withdrawal-claims.json"));
+        Claim pending = Claim.createPending(ClaimId.of(uuid(1)), STUDENT_ID,
+                LOST_NEW, FOUND_NEW, "Synthetic evidence.", NOW.minusSeconds(10));
+        durable.submit(pending);
+        MutableReports reports = standardReports();
+        MutableMatches matches = standardMatches();
+        StudentClaimsService staleService = service(durable, reports, matches, ids(2));
+        StudentClaimHandle staleHandle = staleService.refreshMyClaims()
+                .myClaimRows().getFirst().handle();
+        durable.approve(pending.claimId(), Optional.empty(), NOW.minusSeconds(1));
+
+        StudentClaimsState stale = staleService.withdraw(staleHandle);
+
+        assertEquals(Optional.of(Feedback.ALREADY_TERMINAL), stale.feedback());
+        assertEquals(ClaimStatus.APPROVED,
+                stale.selectedClaim().orElseThrow().status());
+
+        JsonClaimRepository failureDurable = new JsonClaimRepository(
+                temporaryDirectory.resolve("failed-withdrawal-claims.json"));
+        Claim failurePending = Claim.createPending(ClaimId.of(uuid(3)), STUDENT_ID,
+                LOST_NEW, FOUND_NEW, "Synthetic evidence.", NOW.minusSeconds(10));
+        failureDurable.submit(failurePending);
+        SwitchableClaims failing = new SwitchableClaims(failureDurable);
+        failing.failWithdrawals = true;
+        StudentClaimsService failureService = service(failing, reports, matches, ids(4));
+        StudentClaimHandle failureHandle = failureService.refreshMyClaims()
+                .myClaimRows().getFirst().handle();
+        failureService.selectMyClaim(failureHandle);
+
+        StudentClaimsState failed = failureService.withdraw(failureHandle);
+
+        assertEquals(Optional.of(Feedback.WITHDRAWAL_FAILED), failed.feedback());
+        assertEquals(ClaimStatus.PENDING_REVIEW,
+                failed.selectedClaim().orElseThrow().status());
+        assertEquals(ClaimStatus.PENDING_REVIEW,
+                failureDurable.loadAll().getFirst().status());
     }
 
     @Test
@@ -395,6 +459,8 @@ class StudentClaimsServiceTest {
 
         private boolean failLoadsAfterSubmission;
 
+        private boolean failWithdrawals;
+
         SwitchableClaims(ClaimRepository repository) {
             delegate = repository;
         }
@@ -419,6 +485,9 @@ class StudentClaimsServiceTest {
         @Override
         public TerminalResult withdraw(ClaimId id, String claimantUserId,
                 Instant terminalAt) throws ClaimStoreException {
+            if (failWithdrawals) {
+                throw new ClaimStoreException(ClaimStoreException.Reason.WRITE_FAILURE);
+            }
             return delegate.withdraw(id, claimantUserId, terminalAt);
         }
 
