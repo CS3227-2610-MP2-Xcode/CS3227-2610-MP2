@@ -72,6 +72,29 @@ class ClaimTest {
     }
 
     @Test
+    void restorationRejectsNoncanonicalReasonsAndIncompleteTerminalEvents() {
+        assertThrows(IllegalArgumentException.class, () -> Claim.restore(
+                CLAIM_ID, "student-1", LOST_ID, FOUND_ID, "Synthetic evidence.",
+                ClaimStatus.APPROVED, SUBMITTED, Optional.of(TERMINAL),
+                Optional.of(" Synthetic reason. ")));
+        assertThrows(IllegalArgumentException.class, () -> Claim.restore(
+                CLAIM_ID, "student-1", LOST_ID, FOUND_ID, "Synthetic evidence.",
+                ClaimStatus.APPROVED, SUBMITTED, Optional.empty(), Optional.empty()));
+        assertThrows(IllegalArgumentException.class, () -> Claim.restore(
+                CLAIM_ID, "student-1", LOST_ID, FOUND_ID, "Synthetic evidence.",
+                ClaimStatus.REJECTED, SUBMITTED, Optional.empty(),
+                Optional.of("Synthetic reason.")));
+        assertThrows(IllegalArgumentException.class, () -> Claim.restore(
+                CLAIM_ID, "student-1", LOST_ID, FOUND_ID, "Synthetic evidence.",
+                ClaimStatus.WITHDRAWN, SUBMITTED, Optional.empty(), Optional.empty()));
+        assertThrows(IllegalArgumentException.class, () -> Claim.restore(
+                CLAIM_ID, "student-1", LOST_ID, FOUND_ID, "Synthetic evidence.",
+                ClaimStatus.APPROVED, SUBMITTED,
+                Optional.of(Instant.parse("2026-09-22T02:03:04.567890Z")),
+                Optional.empty()));
+    }
+
+    @Test
     void transitionsRetainImmutableIdentityTargetEvidenceAndSubmission() {
         Claim original = pending();
         Claim changed = original.approve(Optional.empty(), TERMINAL);

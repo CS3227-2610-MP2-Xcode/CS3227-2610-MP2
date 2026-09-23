@@ -100,6 +100,53 @@ class StudentClaimsServiceTest {
     }
 
     @Test
+    void equalOrderingValuesUseStableIdsAndLinksOrientInEitherStoredOrder()
+            throws Exception {
+        UUID highLost = uuid(500);
+        UUID lowFound = uuid(50);
+        MutableReports reports = new MutableReports(List.of(
+                report(LOST_OLD, STUDENT_ID, ReportType.LOST, "Lost B",
+                        ItemCategory.BOOKS, LocalDate.of(2026, 9, 20), 10),
+                report(LOST_NEW, STUDENT_ID, ReportType.LOST, "Lost A",
+                        ItemCategory.BAGS, LocalDate.of(2026, 9, 20), 10),
+                report(FOUND_OLD, "finder-2", ReportType.FOUND, "Found B",
+                        ItemCategory.STATIONERY, LocalDate.of(2026, 9, 21), 20),
+                report(FOUND_NEW, "finder-1", ReportType.FOUND, "Found A",
+                        ItemCategory.ELECTRONICS, LocalDate.of(2026, 9, 21), 20),
+                report(highLost, STUDENT_ID, ReportType.LOST, "Reverse lost",
+                        ItemCategory.OTHER, LocalDate.of(2026, 9, 19), 30),
+                report(lowFound, "finder-3", ReportType.FOUND, "Reverse found",
+                        ItemCategory.OTHER, LocalDate.of(2026, 9, 19), 30)));
+        MutableMatches matches = new MutableMatches(Set.of(
+                PossibleMatchPair.of(LOST_NEW, FOUND_OLD),
+                PossibleMatchPair.of(LOST_NEW, FOUND_NEW),
+                PossibleMatchPair.of(LOST_OLD, FOUND_OLD),
+                PossibleMatchPair.of(highLost, lowFound)));
+        ClaimRepository repository = new JsonClaimRepository(
+                temporaryDirectory.resolve("ordering.json"));
+        StudentClaimsService service = service(repository, reports, matches, ids(3));
+
+        StudentClaimsState available = service.enter();
+
+        assertEquals(List.of("Lost A", "Lost B", "Reverse lost"),
+                available.availableGroups().stream()
+                        .map(StudentClaimsState.AvailableMatchGroup::lostItemName).toList());
+        assertEquals(List.of("Found A", "Found B"),
+                available.availableGroups().getFirst().cards().stream()
+                        .map(StudentClaimsState.AvailableMatchCard::foundItemName).toList());
+        assertEquals("Reverse found", available.availableGroups().getLast()
+                .cards().getFirst().foundItemName());
+
+        repository.submit(Claim.createPending(ClaimId.of(uuid(2)), STUDENT_ID,
+                LOST_OLD, FOUND_OLD, "Synthetic B.", NOW.minusSeconds(5)));
+        repository.submit(Claim.createPending(ClaimId.of(uuid(1)), STUDENT_ID,
+                LOST_NEW, FOUND_NEW, "Synthetic A.", NOW.minusSeconds(5)));
+        assertEquals(List.of(ClaimId.of(uuid(1)), ClaimId.of(uuid(2))),
+                service.refreshMyClaims().myClaimRows().stream()
+                        .map(row -> row.handle().claimId()).toList());
+    }
+
+    @Test
     void reviewIsReadOnlyAndValidatedThenConfirmedSubmissionSurvivesRestart()
             throws Exception {
         MutableReports reports = standardReports();
@@ -183,6 +230,85 @@ class StudentClaimsServiceTest {
         assertEquals(3, repository.loadAll().size());
         assertTrue(repository.loadAll().stream()
                 .noneMatch(claim -> claim.claimantUserId().equals(STUDENT_ID)));
+    }
+
+    @Test
+    void competingClaimsReturnOnlyOwnClaimOrGenericBlockedFeedback() throws Exception {
+        MutableReports reports = standardReports();
+        MutableMatches matches = standardMatches();
+        ClaimRepository ownRepository = new JsonClaimRepository(
+                temporaryDirectory.resolve("own-blocker.json"));
+        StudentClaimsService ownService = service(
+                ownRepository, reports, matches, ids(2));
+        var ownHandle = ownService.enter().availableGroups().getFirst()
+                .cards().getFirst().handle();
+        SubmissionReview ownReview = ownService.reviewSubmission(
+                ownHandle, "Synthetic evidence.");
+        Claim ownBlocker = Claim.createPending(ClaimId.of(uuid(1)), STUDENT_ID,
+                LOST_NEW, FOUND_NEW, "Existing synthetic evidence.",
+                NOW.minusSeconds(1));
+        ownRepository.submit(ownBlocker);
+
+        StudentClaimsState ownResult = ownService.submit(ownReview);
+
+        assertEquals(Optional.of(Feedback.OWN_ACTIVE_CLAIM), ownResult.feedback());
+        assertEquals(ownBlocker.claimId(), ownResult.selectedClaim().orElseThrow()
+                .handle().claimId());
+        assertEquals(1, ownRepository.loadAll().size());
+
+        ClaimRepository otherRepository = new JsonClaimRepository(
+                temporaryDirectory.resolve("other-blocker.json"));
+        StudentClaimsService otherService = service(
+                otherRepository, reports, matches, ids(4));
+        var otherHandle = otherService.enter().availableGroups().getFirst()
+                .cards().getFirst().handle();
+        SubmissionReview otherReview = otherService.reviewSubmission(
+                otherHandle, "Synthetic evidence.");
+        otherRepository.submit(Claim.createPending(ClaimId.of(uuid(3)),
+                "other-student", uuid(303), FOUND_NEW, "Other synthetic evidence.",
+                NOW.minusSeconds(1)));
+
+        StudentClaimsState otherResult = otherService.submit(otherReview);
+
+        assertEquals(Optional.of(Feedback.MATCH_NO_LONGER_AVAILABLE),
+                otherResult.feedback());
+        assertTrue(otherResult.selectedClaim().isEmpty());
+        assertEquals(1, otherRepository.loadAll().size());
+    }
+
+    @Test
+    void staleReportChangesAndSubmissionFailureCreateNoClaim() throws Exception {
+        assertStaleReportBlocksSubmission(List.of(
+                report(LOST_NEW, "other-student", ReportType.LOST, "Lost item",
+                        ItemCategory.BAGS, LocalDate.of(2026, 9, 20), 10),
+                report(FOUND_NEW, "finder-1", ReportType.FOUND, "Found item",
+                        ItemCategory.ELECTRONICS, LocalDate.of(2026, 9, 21), 20)),
+                "changed-owner.json");
+        assertStaleReportBlocksSubmission(List.of(
+                report(LOST_NEW, STUDENT_ID, ReportType.LOST, "Lost item",
+                        ItemCategory.BAGS, LocalDate.of(2026, 9, 20), 10),
+                report(FOUND_NEW, "finder-1", ReportType.LOST, "Found item",
+                        ItemCategory.ELECTRONICS, LocalDate.of(2026, 9, 21), 20)),
+                "changed-direction.json");
+        assertStaleReportBlocksSubmission(List.of(
+                report(LOST_NEW, STUDENT_ID, ReportType.LOST, "Lost item",
+                        ItemCategory.BAGS, LocalDate.of(2026, 9, 20), 10)),
+                "missing-report.json");
+
+        JsonClaimRepository durable = new JsonClaimRepository(
+                temporaryDirectory.resolve("failed-submission.json"));
+        SwitchableClaims failing = new SwitchableClaims(durable);
+        StudentClaimsService service = service(
+                failing, standardReports(), standardMatches(), ids(10));
+        var handle = service.enter().availableGroups().getFirst().cards().getFirst().handle();
+        SubmissionReview review = service.reviewSubmission(handle, "Synthetic evidence.");
+        failing.failSubmissions = true;
+
+        StudentClaimsState failed = service.submit(review);
+
+        assertEquals(Optional.of(Feedback.SUBMISSION_FAILED), failed.feedback());
+        assertTrue(durable.loadAll().isEmpty());
+        assertTrue(service.beginSubmission(handle).isPresent());
     }
 
     @Test
@@ -279,6 +405,31 @@ class StudentClaimsServiceTest {
     }
 
     @Test
+    void staleAndCrossStudentHandlesCannotSelectOrWithdrawClaims() throws Exception {
+        ClaimRepository repository = new JsonClaimRepository(
+                temporaryDirectory.resolve("authorization.json"));
+        Claim other = Claim.createPending(ClaimId.of(uuid(11)), "other-student",
+                uuid(111), uuid(211), "Other synthetic evidence.", NOW.minusSeconds(10));
+        repository.submit(other);
+        StudentClaimsService service = service(
+                repository, standardReports(), standardMatches(), ids(12));
+        StudentClaimHandle otherHandle = new StudentClaimHandle(other.claimId());
+
+        assertEquals(Optional.of(Feedback.INVALID_SELECTION),
+                service.withdraw(null).feedback());
+        assertEquals(Optional.of(Feedback.INVALID_SELECTION),
+                service.withdraw(otherHandle).feedback());
+        assertEquals(ClaimStatus.PENDING_REVIEW,
+                repository.loadAll().getFirst().status());
+        StudentClaimHandle unknown = new StudentClaimHandle(ClaimId.of(uuid(99)));
+        assertEquals(Optional.of(Feedback.INVALID_SELECTION),
+                service.withdraw(unknown).feedback());
+        assertEquals(Optional.of(Feedback.INVALID_SELECTION),
+                service.selectMyClaim(unknown).feedback());
+        assertTrue(service.selectMyClaim(null).selectedClaim().isEmpty());
+    }
+
+    @Test
     void loadFailureIsUnavailableNotEmptyAndRetryRecovers() {
         MutableReports reports = standardReports();
         MutableMatches matches = standardMatches();
@@ -293,6 +444,36 @@ class StudentClaimsServiceTest {
         assertTrue(failed.availableGroups().isEmpty());
         reports.failLoads = false;
         assertEquals(Availability.READY, service.retryAvailable().availableAvailability());
+    }
+
+    @Test
+    void myClaimsAndConfirmationReloadFailuresAreRetryableWithoutMutation()
+            throws Exception {
+        JsonClaimRepository durable = new JsonClaimRepository(
+                temporaryDirectory.resolve("reload-failures.json"));
+        SwitchableClaims claims = new SwitchableClaims(durable);
+        StudentClaimsService service = service(
+                claims, standardReports(), standardMatches(), ids(1));
+        claims.failLoads = true;
+
+        StudentClaimsState myClaimsFailed = service.refreshMyClaims();
+
+        assertEquals(Availability.UNAVAILABLE, myClaimsFailed.myClaimsAvailability());
+        assertTrue(myClaimsFailed.myClaimsRetryVisible());
+        claims.failLoads = false;
+        assertEquals(Availability.READY,
+                service.retryMyClaims().myClaimsAvailability());
+
+        var handle = service.refreshAvailable().availableGroups().getFirst()
+                .cards().getFirst().handle();
+        SubmissionReview review = service.reviewSubmission(handle, "Synthetic evidence.");
+        claims.failLoads = true;
+
+        StudentClaimsState submissionFailed = service.submit(review);
+
+        assertEquals(Optional.of(Feedback.SUBMISSION_FAILED), submissionFailed.feedback());
+        claims.failLoads = false;
+        assertTrue(durable.loadAll().isEmpty());
     }
 
     @Test
@@ -391,6 +572,23 @@ class StudentClaimsServiceTest {
         return queue::remove;
     }
 
+    private void assertStaleReportBlocksSubmission(List<ItemReport> changedReports,
+            String storeName) throws Exception {
+        MutableReports reports = standardReports();
+        ClaimRepository repository = new JsonClaimRepository(
+                temporaryDirectory.resolve(storeName));
+        StudentClaimsService service = service(
+                repository, reports, standardMatches(), ids(20));
+        var handle = service.enter().availableGroups().getFirst().cards().getFirst().handle();
+        SubmissionReview review = service.reviewSubmission(handle, "Synthetic evidence.");
+        reports.values.clear();
+        reports.values.addAll(changedReports);
+
+        assertEquals(Optional.of(Feedback.MATCH_NO_LONGER_AVAILABLE),
+                service.submit(review).feedback());
+        assertTrue(repository.loadAll().isEmpty());
+    }
+
     private static UUID uuid(long value) {
         return new UUID(0L, value);
     }
@@ -459,6 +657,8 @@ class StudentClaimsServiceTest {
 
         private boolean failLoadsAfterSubmission;
 
+        private boolean failSubmissions;
+
         private boolean failWithdrawals;
 
         SwitchableClaims(ClaimRepository repository) {
@@ -475,6 +675,9 @@ class StudentClaimsServiceTest {
 
         @Override
         public SubmissionResult submit(Claim pending) throws ClaimStoreException {
+            if (failSubmissions) {
+                throw new ClaimStoreException(ClaimStoreException.Reason.WRITE_FAILURE);
+            }
             SubmissionResult result = delegate.submit(pending);
             if (result.outcome() == SubmissionOutcome.CREATED) {
                 failLoads = failLoadsAfterSubmission;
