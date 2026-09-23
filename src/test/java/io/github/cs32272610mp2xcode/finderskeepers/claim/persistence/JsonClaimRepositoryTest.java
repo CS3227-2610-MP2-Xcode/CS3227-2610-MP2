@@ -125,6 +125,30 @@ class JsonClaimRepositoryTest {
         assertFalse(Files.exists(store));
     }
 
+    @Test
+    void terminalClaimCannotBeSubmittedOrCreateStorage() {
+        Path store = temporaryDirectory.resolve("claims.json");
+        Claim terminal = pending(1, "student-1", 101, 201, 0)
+                .withdraw(BASE_TIME.plusSeconds(1));
+        ClaimRepository repository = new JsonClaimRepository(store);
+
+        assertThrows(IllegalArgumentException.class, () -> repository.submit(terminal));
+        assertFalse(Files.exists(store));
+    }
+
+    @Test
+    void accessFailureOnReadMapsToPrivacySafeReadFailure() {
+        ClaimRepository repository = new JsonClaimRepository(
+                temporaryDirectory.resolve("claims.json"), new FailingReadFiles(),
+                JsonClaimRepository.MAX_STORE_BYTES);
+
+        ClaimStoreException failure = assertThrows(
+                ClaimStoreException.class, repository::loadAll);
+
+        assertEquals(ClaimStoreException.Reason.READ_FAILURE, failure.reason());
+        assertFalse(failure.getMessage().contains(temporaryDirectory.toString()));
+    }
+
     private static Claim pending(int id, String claimant, long lost, long found,
             long seconds) {
         return Claim.createPending(ClaimId.of(uuid(id)), claimant, uuid(lost), uuid(found),
@@ -151,6 +175,19 @@ class JsonClaimRepositoryTest {
         public void replaceAtomically(Path target, byte[] completeDocument)
                 throws StoreFileFailure {
             throw new StoreFileFailure(StoreFileFailure.Kind.ACCESS);
+        }
+    }
+
+    private static final class FailingReadFiles implements ClaimStoreFiles {
+        @Override
+        public Optional<byte[]> readBounded(Path target, int maximumBytes)
+                throws StoreFileFailure {
+            throw new StoreFileFailure(StoreFileFailure.Kind.ACCESS);
+        }
+
+        @Override
+        public void replaceAtomically(Path target, byte[] completeDocument) {
+            throw new AssertionError("Read failure must prevent mutation");
         }
     }
 }
