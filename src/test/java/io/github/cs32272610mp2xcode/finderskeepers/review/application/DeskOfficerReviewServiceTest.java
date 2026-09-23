@@ -19,6 +19,7 @@ import io.github.cs32272610mp2xcode.finderskeepers.claim.application.ApprovedCla
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.Claim;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimId;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.ClaimRepository;
+import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.ClaimStoreException;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.JsonClaimRepository;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ItemCategory;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
@@ -161,6 +162,22 @@ class DeskOfficerReviewServiceTest {
     }
 
     @Test
+    void unavailableApprovedClaimEndpointSourceClearsQueueAndSupportsRetry() {
+        ItemReport report = report(1, ReportType.LOST, ReportStatus.SUBMITTED);
+        SwitchableClaimRepository claims = new SwitchableClaimRepository();
+        DeskOfficerReviewService service = service(new InMemoryReports(List.of(report)), claims);
+        claims.failLoads = true;
+
+        ReviewQueueState unavailable = service.enter();
+
+        assertFalse(unavailable.available());
+        assertTrue(unavailable.visibleReports().isEmpty());
+        assertTrue(unavailable.retryVisible());
+        claims.failLoads = false;
+        assertEquals(List.of(report), service.retry().visibleReports());
+    }
+
+    @Test
     void stateIsImmutableAndUnknownSelectionIsIgnored() {
         ItemReport report = report(1, ReportType.LOST, ReportStatus.SUBMITTED);
         DeskOfficerReviewService service = new DeskOfficerReviewService(
@@ -225,6 +242,38 @@ class DeskOfficerReviewServiceTest {
         @Override
         public void replace(UUID targetId, ItemReport replacement) {
             throw new AssertionError("Report review must not replace reports");
+        }
+    }
+
+    private static final class SwitchableClaimRepository implements ClaimRepository {
+        private boolean failLoads;
+
+        @Override
+        public List<Claim> loadAll() throws ClaimStoreException {
+            if (failLoads) {
+                throw new ClaimStoreException(ClaimStoreException.Reason.READ_FAILURE);
+            }
+            return List.of();
+        }
+
+        @Override
+        public SubmissionResult submit(Claim claim) {
+            throw new AssertionError("Review only reads approved Claim endpoints");
+        }
+
+        @Override
+        public TerminalResult withdraw(ClaimId id, String claimantUserId, Instant terminalAt) {
+            throw new AssertionError("Review only reads approved Claim endpoints");
+        }
+
+        @Override
+        public TerminalResult approve(ClaimId id, Optional<String> reason, Instant terminalAt) {
+            throw new AssertionError("Review only reads approved Claim endpoints");
+        }
+
+        @Override
+        public TerminalResult reject(ClaimId id, String reason, Instant terminalAt) {
+            throw new AssertionError("Review only reads approved Claim endpoints");
         }
     }
 }

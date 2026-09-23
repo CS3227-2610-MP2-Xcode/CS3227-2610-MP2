@@ -75,4 +75,28 @@ class Pbkdf2PasswordHasherTest {
         assertEquals(1, credential.salt()[0]);
         assertEquals(2, credential.hash()[0]);
     }
+
+    @Test
+    void rejectsCredentialMetadataOutsideTheSupportedStoreContract() {
+        byte[] salt = new byte[PasswordCredential.SALT_LENGTH_BYTES];
+        byte[] hash = new byte[PasswordCredential.HASH_LENGTH_BYTES];
+
+        assertThrows(IllegalArgumentException.class, () -> new PasswordCredential(
+                PasswordAlgorithm.PBKDF2_HMAC_SHA256,
+                PasswordCredential.MIN_ITERATIONS - 1, PasswordCredential.KEY_LENGTH_BITS,
+                salt, hash));
+        assertThrows(IllegalArgumentException.class, () -> new PasswordCredential(
+                PasswordAlgorithm.PBKDF2_HMAC_SHA256,
+                PasswordCredential.MAX_ITERATIONS + 1, PasswordCredential.KEY_LENGTH_BITS,
+                salt, hash));
+        assertThrows(IllegalArgumentException.class, () -> new PasswordCredential(
+                PasswordAlgorithm.PBKDF2_HMAC_SHA256, PasswordCredential.MIN_ITERATIONS,
+                128, salt, hash));
+        assertThrows(IllegalArgumentException.class, () -> new PasswordCredential(
+                PasswordAlgorithm.PBKDF2_HMAC_SHA256, PasswordCredential.MIN_ITERATIONS,
+                PasswordCredential.KEY_LENGTH_BITS, new byte[15], hash));
+        assertThrows(IllegalArgumentException.class, () -> new PasswordCredential(
+                PasswordAlgorithm.PBKDF2_HMAC_SHA256, PasswordCredential.MIN_ITERATIONS,
+                PasswordCredential.KEY_LENGTH_BITS, salt, new byte[31]));
+    }
 }
