@@ -18,6 +18,8 @@ import javafx.scene.control.TabPane;
 public final class DeskOfficerWorkspacePane extends TabPane implements SessionView {
     private final WorkspaceFeature claimsFeature;
 
+    private final WorkspaceFeature appointmentsFeature;
+
     /**
      * Creates fresh per-login review and matching workflows over shared repositories.
      *
@@ -38,7 +40,7 @@ public final class DeskOfficerWorkspacePane extends TabPane implements SessionVi
      */
     public DeskOfficerWorkspacePane(ReportRepository reports,
             PossibleMatchRepository relationships, WorkspaceFeature claims) {
-        this(reports, relationships, claims, null);
+        this(reports, relationships, claims, null, null);
     }
 
     /**
@@ -50,15 +52,30 @@ public final class DeskOfficerWorkspacePane extends TabPane implements SessionVi
      */
     public DeskOfficerWorkspacePane(ReportRepository reports,
             PossibleMatchRepository relationships, DeskOfficerClaimFeature claims) {
-        this(reports, relationships, claims.workspace(), claims);
+        this(reports, relationships, claims.workspace(), claims, null);
+    }
+
+    /**
+     * Creates a Desk Officer workspace with Claims and appointments.
+     *
+     * @param reports shared report repository
+     * @param relationships shared possible-match repository
+     * @param claims Desk Officer Claims feature and report-visibility contract
+     * @param appointments neutral authenticated appointment feature
+     */
+    public DeskOfficerWorkspacePane(ReportRepository reports,
+            PossibleMatchRepository relationships, DeskOfficerClaimFeature claims,
+            WorkspaceFeature appointments) {
+        this(reports, relationships, claims.workspace(), claims, appointments);
     }
 
     private DeskOfficerWorkspacePane(ReportRepository reports,
             PossibleMatchRepository relationships, WorkspaceFeature claims,
-            DeskOfficerClaimFeature officerClaims) {
+            DeskOfficerClaimFeature officerClaims, WorkspaceFeature appointments) {
         Objects.requireNonNull(reports, "reports");
         Objects.requireNonNull(relationships, "relationships");
         claimsFeature = claims;
+        appointmentsFeature = appointments;
         DeskOfficerReviewPane reviewPane = new DeskOfficerReviewPane(
                 officerClaims == null
                         ? new DeskOfficerReviewService(reports)
@@ -88,6 +105,17 @@ public final class DeskOfficerWorkspacePane extends TabPane implements SessionVi
                         }
                     });
         }
+        if (appointmentsFeature != null) {
+            Tab appointmentsTab = new Tab("Appointments", appointmentsFeature.content());
+            appointmentsTab.setClosable(false);
+            getTabs().add(appointmentsTab);
+            getSelectionModel().selectedItemProperty().addListener(
+                    (observable, previous, selected) -> {
+                        if (selected == appointmentsTab) {
+                            appointmentsFeature.onEnter().run();
+                        }
+                    });
+        }
     }
 
     @Override
@@ -99,6 +127,9 @@ public final class DeskOfficerWorkspacePane extends TabPane implements SessionVi
     public void clearSessionState() {
         if (claimsFeature != null) {
             claimsFeature.clearSessionState().run();
+        }
+        if (appointmentsFeature != null) {
+            appointmentsFeature.clearSessionState().run();
         }
     }
 }

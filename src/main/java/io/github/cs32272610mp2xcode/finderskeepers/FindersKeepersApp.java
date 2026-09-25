@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import io.github.cs32272610mp2xcode.finderskeepers.auth.bootstrap.AuthenticationFactory;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.ui.AuthenticationPane;
+import io.github.cs32272610mp2xcode.finderskeepers.appointment.bootstrap.AppointmentWorkspaceFactory;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.bootstrap.ClaimWorkspaceFactory;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.ClaimRepository;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.JsonClaimRepository;
@@ -48,16 +49,21 @@ public final class FindersKeepersApp extends Application {
         ClaimWorkspaceFactory claimWorkspaceFactory = new ClaimWorkspaceFactory(
                 claimRepository, reportRepository, possibleMatchRepository,
                 Clock.systemUTC(), UUID::randomUUID);
+        AppointmentWorkspaceFactory appointmentWorkspaceFactory =
+                new AppointmentWorkspaceFactory(Path.of("data", "appointments.json"),
+                        claimWorkspaceFactory);
         AuthenticationPane content = new AuthenticationPane(
                 AuthenticationFactory.createCoordinator(
                         Path.of("data", "demo-users.json")),
                 StudentReportWorkspaceFactory.create(
                         reportRepository,
-                        claimWorkspaceFactory::createStudentFeature),
+                        claimWorkspaceFactory::createStudentFeature,
+                        appointmentWorkspaceFactory::createStudentFeature),
                 user -> new DeskOfficerWorkspacePane(
                         reportRepository,
                         possibleMatchRepository,
-                        claimWorkspaceFactory.createDeskOfficerFeature(user)));
+                        claimWorkspaceFactory.createDeskOfficerFeature(user),
+                        appointmentWorkspaceFactory.createOfficerFeature(user)));
         Scene scene = new Scene(content, 720, 420);
         scene.getStylesheets().add(Objects.requireNonNull(
                 FindersKeepersApp.class.getResource("app.css")).toExternalForm());
