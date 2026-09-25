@@ -2,6 +2,7 @@ package io.github.cs32272610mp2xcode.finderskeepers.appointment.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -118,7 +119,7 @@ public final class StudentAppointmentService {
                     AppointmentRepository.BookingOutcome.NOT_AUTHORIZED,
                     java.util.Optional.empty());
         }
-        Instant now = clock.instant();
+        Instant now = operationTime();
         return repository.book(claimId, user.userId(), slotId,
                 AppointmentId.of(appointmentIds.get()), user.userId(), UserRole.STUDENT, now);
     }
@@ -139,7 +140,7 @@ public final class StudentAppointmentService {
                     java.util.Optional.empty());
         }
         return repository.reschedule(appointmentId, user.userId(), slotId, user.userId(),
-                UserRole.STUDENT, clock.instant());
+                UserRole.STUDENT, operationTime());
     }
 
     /** Attempts to cancel one owned active appointment.
@@ -149,7 +150,11 @@ public final class StudentAppointmentService {
     public AppointmentRepository.AppointmentResult cancel(AppointmentId appointmentId)
             throws AppointmentStoreException {
         return repository.cancel(appointmentId, user.userId(), user.userId(), UserRole.STUDENT,
-                clock.instant());
+                operationTime());
+    }
+
+    private Instant operationTime() {
+        return clock.instant().truncatedTo(ChronoUnit.MILLIS);
     }
 
     private ApprovedClaimSummary findApprovedClaim(ClaimId claimId)

@@ -2,6 +2,7 @@ package io.github.cs32272610mp2xcode.finderskeepers.appointment.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -73,7 +74,7 @@ public final class OfficerAppointmentService {
      * @throws AppointmentStoreException when storage is unavailable */
     public AppointmentRepository.SlotResult createSlot(Instant startsAt)
             throws AppointmentStoreException {
-        Instant now = clock.instant();
+        Instant now = operationTime();
         return repository.createSlot(CollectionSlot.create(SlotId.of(slotIds.get()), startsAt,
                 now, user.userId()));
     }
@@ -84,7 +85,7 @@ public final class OfficerAppointmentService {
      * @throws AppointmentStoreException when storage is unavailable */
     public AppointmentRepository.SlotResult disableSlot(SlotId slotId)
             throws AppointmentStoreException {
-        return repository.disableSlot(slotId, user.userId(), clock.instant());
+        return repository.disableSlot(slotId, user.userId(), operationTime());
     }
 
     /** Records that a booked appointment was missed.
@@ -93,7 +94,7 @@ public final class OfficerAppointmentService {
      * @throws AppointmentStoreException when storage is unavailable */
     public AppointmentRepository.AppointmentResult recordNoShow(AppointmentId appointmentId)
             throws AppointmentStoreException {
-        return repository.recordNoShow(appointmentId, user.userId(), clock.instant());
+        return repository.recordNoShow(appointmentId, user.userId(), operationTime());
     }
 
     /** Records the officer-only storage location.
@@ -104,7 +105,7 @@ public final class OfficerAppointmentService {
     public AppointmentRepository.CaseResult recordStorageLocation(ClaimId claimId,
             String location) throws AppointmentStoreException {
         return repository.recordStorageLocation(claimId, user.userId(), location,
-                clock.instant());
+                operationTime());
     }
 
     /** Marks stored custody ready for collection.
@@ -113,7 +114,7 @@ public final class OfficerAppointmentService {
      * @throws AppointmentStoreException when storage is unavailable */
     public AppointmentRepository.CaseResult markReadyForCollection(ClaimId claimId)
             throws AppointmentStoreException {
-        return repository.markReadyForCollection(claimId, user.userId(), clock.instant());
+        return repository.markReadyForCollection(claimId, user.userId(), operationTime());
     }
 
     /** Confirms attendance and records collection time.
@@ -122,7 +123,7 @@ public final class OfficerAppointmentService {
      * @throws AppointmentStoreException when storage is unavailable */
     public AppointmentRepository.AppointmentResult confirmCollection(
             AppointmentId appointmentId) throws AppointmentStoreException {
-        return repository.confirmCollection(appointmentId, user.userId(), clock.instant());
+        return repository.confirmCollection(appointmentId, user.userId(), operationTime());
     }
 
     /** Records that custody was returned to the Student.
@@ -131,7 +132,7 @@ public final class OfficerAppointmentService {
      * @throws AppointmentStoreException when storage is unavailable */
     public AppointmentRepository.CaseResult markReturned(ClaimId claimId)
             throws AppointmentStoreException {
-        return repository.markReturned(claimId, user.userId(), clock.instant());
+        return repository.markReturned(claimId, user.userId(), operationTime());
     }
 
     /** Closes a returned case.
@@ -140,7 +141,11 @@ public final class OfficerAppointmentService {
      * @throws AppointmentStoreException when storage is unavailable */
     public AppointmentRepository.CaseResult closeCase(ClaimId claimId)
             throws AppointmentStoreException {
-        return repository.closeCase(claimId, user.userId(), clock.instant());
+        return repository.closeCase(claimId, user.userId(), operationTime());
+    }
+
+    private Instant operationTime() {
+        return clock.instant().truncatedTo(ChronoUnit.MILLIS);
     }
 
     private static AuthenticatedUser requireOfficer(AuthenticatedUser candidate) {
