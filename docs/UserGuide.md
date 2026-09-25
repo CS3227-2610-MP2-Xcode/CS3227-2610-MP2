@@ -400,6 +400,13 @@ case**. Invalid orderings are rejected and do not change stored data. If the
 Student does not attend, use **NO_SHOW** after the slot has ended; the slot is
 released and the Student may book another appointment.
 
+**NO_SHOW** is for a missed appointment, not a step in returning an item. It
+cannot be recorded before the 30-minute slot ends or after collection has been
+confirmed. If the screen says the custody order is invalid, record a storage
+location and mark the item ready before confirming collection. Confirm
+collection before marking the item returned, and mark it returned before
+closing the case.
+
 The officer audit history records booking, rescheduling, cancellation,
 no-show, custody, collection, return, and closure events. Officer identities
 are visible in this officer-only history. Evidence, report descriptions, and
