@@ -147,3 +147,13 @@ For every completed task, report:
 - Known limitations
 - Cross-owner integration still required
 - Any requirement that remains unverified
+
+## Lessons from appointment implementation
+
+- A hand-written JSON writer must test a persisted document immediately after
+  every mutation; the first appointment codec omitted field separators and the
+  parser then failed only on the next command. Keep canonical writer tests and
+  round-trip tests beside every new store.
+- Injected UUID suppliers must be unique across a complete command sequence,
+  including audit events. Test fixtures that return one constant UUID create
+  false persistence failures; use a deterministic sequence or distinct IDs.

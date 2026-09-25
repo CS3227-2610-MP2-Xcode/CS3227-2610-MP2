@@ -24,3 +24,5 @@ Thumbs.db
 /data/.possible-match-links-*.tmp
 /data/claims.json
 /data/.claim-store-*.tmp
+/data/appointments.json
+/data/.appointment-store-*.tmp
