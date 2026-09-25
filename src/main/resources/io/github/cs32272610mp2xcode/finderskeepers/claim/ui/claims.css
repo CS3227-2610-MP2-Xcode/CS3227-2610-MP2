@@ -1,0 +1,40 @@
+.claims-root {
+    -fx-background-color: -fx-control-inner-background;
+}
+
+.claims-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.claims-section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.claims-field-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #52606d;
+}
+
+.claims-field-value {
+    -fx-text-fill: #1f2933;
+}
+
+.claims-card,
+.claims-row,
+.claims-editor,
+.claims-detail,
+.claims-report-group {
+    -fx-padding: 10px;
+    -fx-background-color: #f5f7fa;
+    -fx-background-radius: 6px;
+    -fx-border-color: #d9e2ec;
+    -fx-border-radius: 6px;
+}
+
+.claims-scroll {
+    -fx-background-color: transparent;
+    -fx-fit-to-width: true;
+}

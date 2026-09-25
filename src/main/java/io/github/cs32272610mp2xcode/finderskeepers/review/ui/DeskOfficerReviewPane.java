@@ -25,7 +25,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-/** JavaFX view for the authenticated Desk Officer submitted-report queue. */
+/** JavaFX view for the authenticated Desk Officer active report-review queue. */
 public final class DeskOfficerReviewPane extends BorderPane {
     private final DeskOfficerReviewService service;
 
@@ -38,11 +38,7 @@ public final class DeskOfficerReviewPane extends BorderPane {
 
     private final Label queueMessage = new Label();
 
-    private final Label feedback = new Label();
-
     private final VBox details = new VBox(8);
-
-    private final Button startReview = new Button("Start review");
 
     private final Button retry = new Button("Retry");
 
@@ -65,11 +61,9 @@ public final class DeskOfficerReviewPane extends BorderPane {
         getStylesheets().add(Objects.requireNonNull(
                 DeskOfficerReviewPane.class.getResource("review.css")).toExternalForm());
 
-        Label title = new Label("Submitted reports");
+        Label title = new Label("Report review");
         title.getStyleClass().add("review-title");
-        feedback.getStyleClass().add("review-feedback");
-        feedback.setWrapText(true);
-        VBox header = new VBox(6, title, feedback, createFilters());
+        VBox header = new VBox(6, title, createFilters());
         header.setPadding(new Insets(0, 0, 10, 0));
         setTop(header);
 
@@ -93,10 +87,8 @@ public final class DeskOfficerReviewPane extends BorderPane {
         VBox.setVgrow(content, Priority.ALWAYS);
         setCenter(content);
 
-        startReview.getStyleClass().add("primary-button");
-        startReview.setOnAction(event -> render(service.startReview()));
         retry.setOnAction(event -> render(service.retry()));
-        HBox actions = new HBox(10, retry, startReview);
+        HBox actions = new HBox(10, retry);
         actions.setAlignment(Pos.CENTER_RIGHT);
         actions.setPadding(new Insets(10, 0, 0, 0));
         setBottom(actions);
@@ -135,15 +127,16 @@ public final class DeskOfficerReviewPane extends BorderPane {
                     queue.getSelectionModel()::select,
                     queue.getSelectionModel()::clearSelection);
             renderDetails(state);
-            feedback.setText(state.feedbackMessage().orElse(""));
-            feedback.setVisible(state.feedbackMessage().isPresent());
-            feedback.setManaged(state.feedbackMessage().isPresent());
-            startReview.setDisable(!state.startReviewEnabled());
             retry.setVisible(state.retryVisible());
             retry.setManaged(state.retryVisible());
         } finally {
             rendering = false;
         }
+    }
+
+    /** Reloads the active queue when its workspace tab is entered. */
+    public void enter() {
+        render(service.refresh());
     }
 
     private void renderDetails(ReviewQueueState state) {

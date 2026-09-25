@@ -5,13 +5,13 @@ import io.github.cs32272610mp2xcode.finderskeepers.report.ReportType;
 
 /** Non-persisted filters available in the Desk Officer review queue. */
 public enum ReviewQueueFilter {
-    /** Every submitted report. */
+    /** Every active report. */
     ALL("All", null),
 
-    /** Submitted lost-item reports. */
+    /** Active lost-item reports. */
     LOST(ReportType.LOST.displayName(), ReportType.LOST),
 
-    /** Submitted found-item reports. */
+    /** Active found-item reports. */
     FOUND(ReportType.FOUND.displayName(), ReportType.FOUND);
 
     private final String displayName;
@@ -33,7 +33,7 @@ public enum ReviewQueueFilter {
     }
 
     /**
-     * Returns whether a submitted report belongs in this filter.
+     * Returns whether an active report belongs in this filter.
      *
      * @param report canonical report to test
      * @return whether the report matches

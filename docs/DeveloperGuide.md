@@ -2,16 +2,17 @@
 
 ## Scope
 
-This guide describes the implemented project baseline, integrated Developer 2
-local-authentication module, S1-D2-02 report-persistence foundation, and
-Student report submission, Student report history/search, the S1-D2-03 Desk
-Officer review queue, and the Developer 2-owned S2 possible-match module for a
-primary-school lost-and-found application. The
+This guide describes the implemented project baseline, local authentication,
+report persistence, Student report submission and history, Desk Officer report
+review, deterministic possible matching, and the Sprint 3 Claims and
+Verification feature for a primary-school lost-and-found application. The
 application shell opens authentication at startup and routes each authenticated
-role to its workspace over one shared report repository.
+role to a fresh workspace over shared application-lifetime repositories.
 
-The possible-match engine, relationship store, service, JavaFX workspace, and
-approved `FindersKeepersApp` composition are implemented.
+Claims are implemented end to end: Students can submit, track, and withdraw
+ownership claims from durable possible-match links, while Desk Officers can
+review, approve, reject, and inspect retained claim history. Appointment,
+collection, handover, return, and other Sprint 4 workflows are not implemented.
 
 ## Development prerequisites
 
@@ -41,22 +42,42 @@ The current source tree keeps application startup separate from the shared repor
   comparison state, Link/Unlink rechecks, and privacy-safe outcomes.
 - `matching.ui` renders suggestions, linked possible matches, read-only
   comparison, reasons, actions, and explicit empty/unavailable states.
+- `claim.model` owns Claim identity, lifecycle, text validation, and the
+  derived lock/closure rules enforced by `ClaimLedger`.
+- `claim.persistence` exposes atomic Claim commands and a strict, bounded,
+  versioned JSON implementation independent of report and link storage.
+- `claim.application` contains role-bound Student and Desk Officer workflows,
+  immutable role-narrow projections, and the approved-report endpoint adapter.
+- `claim.ui` renders the Student and Desk Officer Claims subworkspaces.
+- `claim.bootstrap` creates fresh per-login Claim services and views over the
+  shared repositories.
+- `workspace` supplies neutral authenticated-feature and session-lifecycle
+  seams used to compose Claims without coupling authentication to Claim UI.
 
 `Launcher` delegates to `FindersKeepersApp`, which composes the authentication
-coordinator for `data/demo-users.json`, one application-lifetime
-`JsonReportRepository` for `data/reports.json`, the injected Student workspace
-factory, and `AuthenticationPane`. The same repository instance backs Student
-submission/history and every fresh Desk Officer review service. The
-authentication pane constructs only the destination selected by the stored
-role and lazily creates a fresh Desk Officer service and view after routing to
-`DESK_OFFICER`. Future features should use simple, age-appropriate language for
-students and keep shared services independent of role-specific interfaces.
+coordinator for `data/demo-users.json` and one application-lifetime repository
+for each durable domain: `JsonReportRepository` at `data/reports.json`,
+`FilePossibleMatchRepository` at `data/possible-match-links.txt`, and
+`JsonClaimRepository` at `data/claims.json`. `ClaimWorkspaceFactory` receives
+all three repositories, a UTC clock, and a Claim UUID supplier. Authentication
+constructs only the workspace selected by the stored role; every login gets
+fresh stateful services and views over those shared repositories.
+
+The Student workspace keeps **Report an item** and **My reports**, then appends
+**Claims**. The Desk Officer workspace keeps **Report review** and **Possible
+matches**, then appends **Claims**. `WorkspaceFeature` carries a feature's JavaFX
+node, authoritative entry callback, unsaved-text query, and session-clear
+callback. `SessionView` lets authentication warn before discarding unsaved
+Claim text and clear per-login state on confirmed logout without changing
+durable storage.
 
 The repository stores all canonical report fields and preserves insertion order
 across reconstruction. It performs bounded strict reads and all-or-nothing
 atomic replacement with no unsafe fallback. The application-owned
 `data/reports.json` remains plaintext and is excluded from Git by the exact
-root-relative ignore rule `/data/reports.json`. See
+root-relative ignore rule `/data/reports.json`. The Claim and relationship
+stores and their temporary files have equally precise root-relative ignore
+rules. See
 [S1-D2-02 Report Storage Format](features/S1-D2-02/StorageFormat.md) for the
 public boundary, JSON contract, failure behavior, privacy limits, and operating
 assumptions.
@@ -133,9 +154,10 @@ and persistence:
 
 - `DeskOfficerReviewService` is one stateful, plain-Java application service
   per mounted Desk Officer view. It loads ordered reports through
-  `ReportRepository`, retains only `SUBMITTED` reports, applies the exact
-  All/Lost/Found filters in memory, owns visible selection, and returns an
-  immutable `ReviewQueueState`.
+  `ReportRepository`, retains the active `SUBMITTED` and `UNDER_REVIEW`
+  reports, excludes both endpoints of every Approved Claim when Claims are
+  integrated, applies the exact All/Lost/Found filters in memory, owns visible
+  selection, and returns an immutable `ReviewQueueState`.
 - `ReviewQueueFilter` is a non-persisted UI filter. Lost and Found delegate to
   canonical `ReportType` values and display labels; no stored token or report
   enum is duplicated.
@@ -147,41 +169,35 @@ and persistence:
   only in the selected authenticated details section. Review-specific styling
   is scoped to `review.css`.
 
-The main flow is:
+The current read-only flow is:
 
 ```text
 authenticated DESK_OFFICER route
         -> lazy DeskOfficerReviewPane and DeskOfficerReviewService
         -> shared ReportRepository.loadAll()
-        -> ordered SUBMITTED snapshot and active type filter
+        -> ApprovedClaimReportService.loadApprovedReportIds()
+        -> ordered active snapshot minus approved Claim endpoints
+        -> active type filter
         -> selected canonical ItemReport details
-        -> authoritative loadAll() recheck
-        -> authoritative.withStatus(UNDER_REVIEW)
-        -> ReportRepository.replace(...)
-        -> success state only after durable replacement returns
 ```
 
-The service permits only `SUBMITTED -> UNDER_REVIEW`; it accepts no caller-
-selected target status and exposes no reverse action. The authoritative report
-produces the status-only replacement, so every other canonical value remains
-unchanged. A missing or non-submitted target is reconciled as stale without a
-replacement. A replacement target that disappears triggers one authoritative
-reload. If that reload fails, Retry retains the active filter and restores the
-stale notice after recovery.
+The former **Start review** report-status mutation is no longer part of this
+view. Selecting and refreshing are read-only. Approved Claims do not mutate or
+delete reports; `ApprovedClaimReportService` exposes only the immutable set of
+their LOST and FOUND endpoint IDs so the active report queue can hide them.
 
-Load failure is distinct from an empty queue. Initial or reconciliation load
-failure removes report values, disables Start review, and exposes Retry.
-Precheck or replacement failure retains the current row, selection, details,
-filter, and explicit Start review retry. The UI receives only fixed contextual
-copy; paths, JSON, persistence reason names, exception text, and report values
-are not included in error messages.
+Load failure is distinct from an empty queue. A report-store or Claim-store
+failure clears report values and selection, disables filters and selection,
+and exposes Retry. Retry preserves the active filter. The UI receives only
+fixed contextual copy; paths, JSON, persistence reason names, exception text,
+and report values are not included in error messages.
 
 `AuthenticationPane` receives an opaque Student view function and a lazy Desk
 Officer `Supplier<? extends Node>`. It invokes only the factory for the
 authenticated role. Logout clears the coordinator session and replaces the
 entire authenticated subtree, so a later Desk Officer login gets a fresh
-service/view and a new authoritative queue load over the same shared repository
-instance used by the Student workspace.
+service/view and a new authoritative queue load over the same shared
+repositories used by the Student workspace.
 
 ## Officer possible-match components
 
@@ -285,13 +301,182 @@ distinguish no eligible pair, no qualifying pair, all qualifiers already
 linked, and no linked relationships. Detaching the view on logout clears its
 service snapshots and controls without unlinking durable relationships.
 
-`DeskOfficerWorkspacePane` composes the existing review queue as the default
-tab and the possible-match view as a second non-closable tab.
+`DeskOfficerWorkspacePane` composes the review queue as the default tab, the
+possible-match view as the second non-closable tab, and the injected Claims
+feature as the third.
 `FindersKeepersApp` creates one application-lifetime
 `FilePossibleMatchRepository` at `data/possible-match-links.txt` and its lazy
 Desk Officer supplier constructs this workspace with the shared repositories.
-Student wiring, the report path, scene, stage, and release settings remain
-unchanged.
+Claims consume links read-only: submitting or deciding a Claim does not add or
+remove a possible-match relationship.
+
+## Claims and Verification
+
+Sprint 3 implements Claims as a separate durable domain under
+`finderskeepers.claim`. A Claim records a human ownership assertion and a human
+decision; it is not a report status, possible-match link, collection record, or
+appointment.
+
+### Domain and lifecycle
+
+`Claim` is immutable and retains exactly these values:
+
+```text
+ClaimId claimId()
+String claimantUserId()
+UUID lostReportId()
+UUID foundReportId()
+String ownershipEvidence()
+ClaimStatus status()
+Instant submittedAt()
+Optional<Instant> terminalAt()
+Optional<String> decisionReason()
+```
+
+`ClaimId` wraps a UUID and derives the visible reference `CLM-` followed by the
+UUID's 32 uppercase hexadecimal digits. `ClaimStatus` has exactly
+`PENDING_REVIEW`, `APPROVED`, `REJECTED`, and `WITHDRAWN`. Only Pending review
+is active. The other statuses are terminal, and a terminal Claim cannot
+transition again. Pending Claims have no terminal fields; Approved Claims
+require a terminal time and may have a reason; Rejected Claims require both;
+Withdrawn Claims require a terminal time and no reason. Event times use
+millisecond precision.
+
+Ownership evidence and decision reasons are normalized through
+`ClaimTextPolicy`. Required text is stripped, must contain a visible code point,
+may contain approved line breaks, rejects control/format characters, and is
+limited to 500 Unicode code points. Approval reasons are optional; rejection
+reasons are required. Claim and result `toString()` methods are redacted.
+
+`ClaimLedger` validates each complete retained snapshot and derives the Claim
+locks and closures:
+
+- at most one pending Claim may use a LOST endpoint or FOUND endpoint;
+- a pending or Approved Claim blocks either endpoint for every competing Claim;
+- approval permanently closes both endpoints;
+- rejection permanently closes that FOUND endpoint only to the same claimant;
+- withdrawal releases its active locks; and
+- the same claimant and pair can be submitted again only after the previous
+  Claim was Withdrawn and current reports/link remain eligible.
+
+These are Claim-domain restrictions only. No Claim command mutates an
+`ItemReport`, `ReportStatus`, or `PossibleMatchPair`.
+
+### Claim persistence
+
+`ClaimRepository` is the atomic boundary for `loadAll`, `submit`, `withdraw`,
+`approve`, and `reject`. Commands return typed outcomes rather than relying on
+exception text. Submission distinguishes created, Claim-ID collision, the
+same Student's active blocker, and a non-disclosable competing block. Terminal
+commands distinguish changed, already terminal, missing, and unauthorized.
+The repository returns no Claim value for a blocked submission or unauthorized
+withdrawal, preventing disclosure of another Student's data.
+
+`JsonClaimRepository` stores the complete retained ledger in stable submission
+order at `data/claims.json`. The strict UTF-8 version-one document contains
+`schemaVersion` and a `claims` array. Each Claim object has exactly
+`claimId`, `claimantUserId`, `lostReportId`, `foundReportId`,
+`ownershipEvidence`, `status`, `submittedAt`, `terminalAt`, and
+`decisionReason`. UUIDs, status names, timestamps, members, lifecycle
+invariants, and ledger consistency are validated on every read. Missing storage
+means an empty ledger; malformed, oversized, unsupported-version, or
+contradictory storage is unavailable rather than silently replaced.
+
+Reads and generated documents are bounded to 16 MiB. Each synchronized mutation
+rereads authoritative storage, applies its conditional transition, validates
+the complete candidate ledger, and atomically replaces the target through a
+sibling temporary file. There is no unsafe non-atomic fallback. A failed write
+does not report success or replace the target. Synchronization serializes
+commands issued through the shared repository instance; cross-process locking
+is not provided.
+
+### Student Claims service and projection
+
+`StudentClaimsService` is constructed for exactly one authenticated `STUDENT`
+and receives the shared Claim, report, and possible-match repositories. Its
+two independently loaded views are **Available matches** and **My claims**:
+
+- Available matches begin only from durable Desk Officer-created links. The
+  service orients each link LOST-to-FOUND, requires the authenticated Student
+  to own the LOST report, and evaluates current Claim locks and closures.
+- Cards expose only the Student's LOST item name and the FOUND item's name,
+  category, occurrence date, and location. Report IDs, reporter identities,
+  descriptions, private identifying details, matching scores/reasons, and
+  blocker identities are absent. Opaque handles have no public ID accessors.
+- Another Student's blocker or a closure silently removes the card. The current
+  Student's own active blocker yields only a safe direction to that Claim.
+- Submission validates evidence, creates a read-only confirmation value, then
+  rereads reports, links, and Claims before committing. It verifies current
+  report existence, types, LOST ownership, and link existence. Claim UUID
+  collisions are retried at most three times.
+- My claims filters by exact authenticated claimant ID, orders newest first,
+  and exposes restricted rows. Selected detail adds the visible Claim
+  reference, the Student's immutable evidence, status, event times, decision
+  reason, and only the approved safe current-report summary.
+- Withdrawal is owner-bound and available only for Pending review. It does not
+  require the original reports or link because the durable Claim is the
+  authorization target.
+
+The Student state distinguishes `NOT_LOADED`, `READY`, and `UNAVAILABLE` per
+subview. Entry, Refresh, and Retry perform authoritative loads. A dependency
+failure clears the affected rows instead of presenting a false empty result.
+Submission and withdrawal success are shown only after the atomic Claim command
+returns. If the post-commit refresh fails, the committed Claim and truthful
+success remain visible through a minimal retained projection so a successful
+operation is not misreported as failed.
+
+### Desk Officer Claims service and projection
+
+`OfficerClaimsService` accepts only an authenticated `DESK_OFFICER`. It exposes
+**Pending review** and read-only **Claim history** subviews:
+
+- Pending Claims are ordered oldest first. Rows contain an opaque handle,
+  visible reference, current LOST/FOUND names when available, FOUND category,
+  and submission time.
+- History contains terminal Claims ordered by newest terminal time first and
+  supports All, Approved, Rejected, and Withdrawn filters.
+- Selected detail is the only officer projection that contains claimant ID,
+  submitted evidence, decision data, and complete current canonical reports.
+  Missing reports remain explicit optionals and disable a decision.
+- Approval permits an optional normalized reason. Rejection requires one.
+  Both actions require a validated confirmation value and reread current Claim
+  and report state before issuing the atomic repository command.
+- The first durable approval, rejection, or withdrawal wins. Repeated or stale
+  decisions return the authoritative terminal Claim and make no second write.
+
+Pending and history availability are independent. Load failures clear only the
+affected view and offer Retry. A decision read/write failure retains truthful
+state and reports no success; a stale selection, missing Claim, missing report,
+or already-terminal Claim receives a distinct privacy-safe outcome.
+
+### Privacy and composition boundaries
+
+Student and Desk Officer rows, details, handles, and feedback are different
+types rather than one broad DTO. Student-facing state and JavaFX never receive
+another claimant's Claim or a complete report. Desk Officer queue rows do not
+receive evidence or private report detail; those values appear only after
+authenticated selection. Fixed feedback enums keep paths, JSON, exception text,
+and hidden Claim data out of JavaFX messages.
+
+`ClaimWorkspaceFactory` creates fresh per-login role-bound services and panes
+over one application-lifetime Claim repository. It supplies the Student Claim
+feature to `StudentReportWorkspaceFactory` and a `DeskOfficerClaimFeature` to
+`DeskOfficerWorkspacePane`. The latter bundles the Claims workspace with
+`ApprovedClaimReportService`, whose only output is the set of report endpoints
+closed by Approved Claims. The report-review service uses that narrow adapter
+to hide those reports without depending on Claim rows, evidence, claimant
+identity, or persistence details.
+
+Claims UI state and unsaved evidence/decision text are cleared on confirmed
+logout; cancelled logout preserves them. Durable Claims are never deleted.
+An Approved Claim is the upstream ownership-verification result that a future
+Sprint 4 workflow may use when determining appointment eligibility; it does not
+itself create an appointment or make appointment behavior available.
+The implemented feature does not provide appointment eligibility, booking,
+collection, handover, return, report closure, notifications, background
+polling, or an appointment-specific Approved-Claim API. The proposed Sprint 4
+handoff is documented separately in
+[Sprint 3 Claims to Sprint 4 Appointment Handover](features/S3-D2-01/Sprint4AppointmentHandover.md).
 
 ## Student report-submission components
 
@@ -480,11 +665,11 @@ gradlew.bat release
   bounds, atomic-write failures, recovery behavior, and supported
   shared-instance concurrency. Persistence tests use JUnit temporary
   directories only.
-- Desk Officer review tests cover submitted-only membership and order, exact
-  filters, global and filtered empty states, selection, immutable state,
-  authoritative status-only replacement, invalid/repeat transition absence,
-  stale targets, storage failures, Retry context, and fresh-instance
-  durability. Real persistence evidence uses JUnit temporary directories.
+- Desk Officer review tests cover active `SUBMITTED`/`UNDER_REVIEW` membership
+  and order, exact filters, global and filtered empty states, selection,
+  immutable state, Approved-Claim endpoint
+  exclusion, Claim-store failure, Retry context, and read-only behavior. Real
+  persistence evidence uses JUnit temporary directories.
 - Possible-match tests cover symmetric pair identity, exact category/keyword/
   location/date rules, score thresholds, reasons, Unicode and locale boundaries,
   repeated and shuffled determinism, stable UUID tie-breaking, strict link-file
@@ -499,6 +684,26 @@ gradlew.bat release
 - Student workspace-composition tests verify that submission and history share
   one canonical repository and that write failures cross the composition
   boundary as `ReportSubmissionException` without real user data.
+- Claim model and ledger tests cover lifecycle invariants, text normalization,
+  redaction, active locks, approval and rejection closures, withdrawal release,
+  duplicate/contradictory ledgers, and first-terminal-action behavior.
+- Claim persistence tests cover strict version-one JSON, canonical UUIDs and
+  millisecond UTC timestamps, Unicode handling, size bounds, atomic replacement
+  failures, fresh-instance reconstruction, conditional command outcomes, and
+  shared-instance concurrent submissions and terminal actions. They use only
+  JUnit temporary directories.
+- Student Claims tests cover durable-link discovery, role and ownership checks,
+  safe projections, grouping and ordering, authoritative submission rechecks,
+  UUID collision retries, own-Claim redirection, blocker privacy, tracking,
+  withdrawal, unavailable/retry states, and post-commit refresh failures.
+- Desk Officer Claims tests cover pending/history ordering and filters,
+  selected-only complete report detail, reason validation, missing-report
+  decision blocking, approval/rejection durability, repeated-decision
+  prevention, stale selections, failure mapping, and retry behavior.
+- Claim privacy and composition tests verify structurally narrow role
+  projections, absent private values in rows and feedback, fresh per-login
+  workspaces over shared repositories, Approved-Claim report-queue exclusion,
+  and session-state clearing without durable deletion.
 - Java compilation enables all lint warnings and treats warnings as errors.
 - Checkstyle runs against production and test sources.
 - Javadoc warnings fail the build.
@@ -520,13 +725,20 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 - Student report submission and personal report history/status display —
   implemented and reachable through the shared Student workspace composition.
 - Desk Officer deterministic possible matching, durable relationships, and
-  application-shell composition — implemented. Collection, claiming,
-  ownership verification, and return remain future work.
+  application-shell composition — implemented.
+- Claims and Verification — implemented for Student submission, tracking, and
+  withdrawal; Desk Officer review, approval, rejection, and history; durable
+  atomic storage; role-narrow privacy projections; and active report-queue
+  exclusion after approval.
+- Appointment booking, collection, handover, return, notifications, and report
+  closure remain future work. No Sprint 4 behavior should be inferred from an
+  Approved Claim beyond the separately documented handoff contract.
 - Repository construction and startup wiring — implemented through the
-  approved `data/reports.json` path with one application-lifetime repository.
+  approved report, possible-match, and Claim paths with one
+  application-lifetime repository instance per durable domain.
 - Richer category and status vocabularies, submission validation, and report creation — to be extended through the shared canonical model without introducing a competing report type.
 - Additional role-specific JavaFX workflows beyond the delivered Student,
-  review, and possible-match modules remain future work.
+  review, possible-match, and Claims modules remain future work.
 - Deciding how the external demo credential store is supplied with a
   distributable release — pending shared integration approval.
 
