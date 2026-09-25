@@ -1,6 +1,7 @@
 package io.github.cs32272610mp2xcode.finderskeepers.report.bootstrap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -8,6 +9,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -64,7 +66,9 @@ class StudentReportWorkspaceFactoryTest {
         assertThrows(NullPointerException.class,
                 () -> StudentReportWorkspaceFactory.compose(STUDENT, null));
         assertThrows(NullPointerException.class,
-                () -> StudentReportWorkspaceFactory.create(null));
+                () -> StudentReportWorkspaceFactory.create((Path) null));
+        assertThrows(NullPointerException.class,
+                () -> StudentReportWorkspaceFactory.create((ReportRepository) null));
     }
 
     @Test
@@ -76,6 +80,24 @@ class StudentReportWorkspaceFactoryTest {
         assertThrows(IllegalArgumentException.class,
                 () -> StudentReportWorkspaceFactory.compose(
                         DESK_OFFICER, new JsonReportRepository(reportStore)));
+    }
+
+    @Test
+    void claimsFeatureIsCreatedOnlyAfterStudentIdentityValidation() {
+        JsonReportRepository repository = new JsonReportRepository(
+                temporaryDirectory.resolve("reports.json"));
+        AtomicBoolean featureFactoryCalled = new AtomicBoolean();
+
+        var workspaceFactory = StudentReportWorkspaceFactory.create(
+                repository,
+                user -> {
+                    featureFactoryCalled.set(true);
+                    throw new AssertionError("Feature factory must not be called");
+                });
+
+        assertThrows(IllegalArgumentException.class,
+                () -> workspaceFactory.apply(DESK_OFFICER));
+        assertFalse(featureFactoryCalled.get());
     }
 
     @Test

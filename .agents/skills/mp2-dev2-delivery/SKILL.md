@@ -1,6 +1,6 @@
 ---
 name: mp2-dev2-delivery
-description: Implement or continue delivery of a fully planned, approved, and separately authorized Developer 2 mission in the Finders Keepers CS3227 MP2 repository, including authentication, role navigation, persistence, or Desk Officer review. Use for implementation requests for Dev 2-owned changes, including continuation by mission ID; do not use for planning, skill evaluation, explanation, read-only review, Dev 1 implementation, unrelated Java work, or other non-delivery requests.
+description: Implement or continue delivery of a fully planned, approved, and separately authorized Developer 2 mission in the Finders Keepers CS3227 MP2 repository, including authentication, role navigation, persistence, Desk Officer review, or the complete Student- and Desk Officer-facing Claims and Verification feature. Use for implementation requests for Dev 2-owned changes, including continuation by mission ID; do not use for planning, skill evaluation, explanation, read-only review, Dev 1 implementation, unrelated Java work, or other non-delivery requests.
 metadata:
   short-description: Deliver fully approved MP2 Dev 2 features
 ---
@@ -82,7 +82,9 @@ Begin the response with a concise preflight summary covering:
 - planned tests;
 - planned documentation.
 
-Treat authentication, role navigation, persistence, storage recovery, and Desk Officer review according to the ownership boundaries in `AGENTS.md` and the selected mission brief.
+Treat authentication, role navigation, persistence, storage recovery, Desk Officer
+review, and Claims and Verification according to the ownership boundaries in
+`AGENTS.md` and the selected mission brief.
 
 ## Respect ownership and authorization
 
@@ -97,6 +99,14 @@ Before modifying a Developer 1-owned area or another cross-owner boundary:
 5. stop and request explicit approval for that modification.
 
 Continue independent, approved Developer 2 work when possible. Do not duplicate shared or Developer 1-owned types to bypass an ownership boundary.
+
+For Sprint 3 Claims and Verification, Developer 2 owns the complete claim
+feature across the Student and Desk Officer experiences. Claims remain a
+separate domain from reports. Consume Developer 1's existing report contracts
+without adding claim state to `ItemReport`, `ReportStatus`, report persistence,
+or existing Student report workflows unless the exact cross-owner change has
+been separately proposed and authorized. Feature ownership alone is not
+cross-owner production-change authorization.
 
 For report persistence, use the approved canonical `ItemReport` contract. It
 may come from Developer 1 or from a recorded, repository-owner-approved

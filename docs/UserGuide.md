@@ -2,12 +2,24 @@
 
 ## Current status
 
-Finders Keepers is intended for a primary school's lost-and-found desk. Application startup now opens the local login, with Student and Desk Officer routing and logout available after authentication.
+Finders Keepers is intended for a primary school's lost-and-found desk.
+Application startup opens the local login, with Student and Desk Officer
+routing and logout available after authentication. The Desk Officer route now
+opens the active report-review queue backed by `data/reports.json`.
+
+The Desk Officer route also provides the possible-match workspace and stores
+officer-created relationships separately in
+`data/possible-match-links.txt`.
 
 The Student report form and personal report-history/search components are
 available from the authenticated Student workspace. Reports are stored in the
 project-local `data/reports.json` file. The application creates this local,
 untracked runtime file after the first successful report submission.
+
+Both workspaces also include **Claims**. A Student can submit and track an
+ownership claim for an officer-created possible match; a Desk Officer can
+review, approve, or reject that claim. Claims are retained separately in the
+local `data/claims.json` runtime file after the first successful submission.
 
 ## Requirements
 
@@ -141,6 +153,47 @@ description matches the query. If report storage cannot be read safely, the
 screen shows a retry/help message instead of incorrectly claiming the history
 is empty.
 
+#### Submit and track an ownership claim
+
+Open **Claims** from the Student workspace. **Available matches** lists only
+officer-created possible-match links where one of your lost reports is paired
+with a found report. It shows your lost item and the found item's name,
+category, occurrence date, and location; it does not show another person's
+identity, descriptions, or private identifying details. A possible match is a
+lead for review, not proof that an item belongs to you.
+
+To submit a claim:
+
+1. Select **Claim this found item** for the relevant found-item card.
+2. Enter ownership evidence, such as a synthetic description of a distinctive
+   feature. Evidence is required, is trimmed, and must be valid and at most 500
+   characters.
+3. Select **Review claim**, verify the displayed match summary and evidence,
+   then confirm **Submit claim**.
+
+A successful submission opens **My claims** and shows `Claim submitted for
+Desk Officer review.` The claim is then **Pending review**. You can have only
+one active claim involving a particular lost or found report. If you already
+have an active claim for a lost item, **Available matches** directs you to that
+existing claim instead of offering another submission.
+
+**My claims** shows only your claims, newest first. Select a row to see its
+reference, status, submitted/finalized time, your evidence, and the safe match
+summary. The possible statuses are **Pending review**, **Approved**,
+**Rejected**, and **Withdrawn**. Approval and rejection reasons are shown when
+one was recorded.
+
+You may select **Withdraw claim** only while the claim is **Pending review**.
+Confirming withdrawal is final, records no withdrawal reason, and cannot be
+undone. It does not alter either report or the possible-match link. Approved,
+rejected, and withdrawn claims are final and cannot be decided or withdrawn
+again.
+
+Use **Refresh** to load current matches or claims, and **Retry** after an
+unavailable-load message. A failure to submit or withdraw does not show a
+false success. Logging out clears the on-screen claim data and unfinished
+evidence text; saved claims remain available after a later login.
+
 ## Report domain rules (Sprint 1)
 
 The report domain is the shared contract used by the Student submission form,
@@ -190,7 +243,120 @@ Invalid examples:
 
 ### Desk Officer
 
-Successful Desk Officer login reaches a distinct Desk Officer home. Report review and collection features remain planned for later sprints.
+Successful Desk Officer login automatically loads the active report queue.
+Reports whose status is **Submitted** or **Under review** appear in their stored
+insertion order, except that both reports involved in an approved claim are
+hidden from this queue. Approval does not change or delete either report. The
+row summary contains only the report's Lost/Found type, item name, category,
+occurrence date, and location.
+
+Use the review queue as follows:
+
+1. Choose **All**, **Lost**, or **Found**. **All** is selected on entry.
+2. Select a row to display its complete read-only report details. The public
+   description and the private identifying detail appear in separate sections;
+   the private section is reserved for Desk Officer verification.
+
+Changing filters retains a selection only while the selected report remains
+visible. Without a selection, the details area asks you to select a report.
+This view does not change report statuses.
+
+An empty All queue shows `No active reports.` A Lost or Found filter with no
+matching active report shows the corresponding filter-specific message. These
+empty states are not storage errors.
+
+If reports cannot be loaded, the view shows
+`Reports are unavailable. Please try again.` and an explicit **Retry** button.
+This unavailable state can result from either report storage or claim storage;
+technical storage details and report values are not included in error messages.
+
+Logging out removes the queue and any selected private detail. A later Desk
+Officer login starts again with the All filter and reloads the report store.
+Report editing, returning a report to Submitted, collection, ownership
+verification, and return workflows remain outside this feature.
+
+#### Review possible matches
+
+Desk Officer login opens a tabbed workspace. **Report review** remains the
+default tab. Open **Possible matches** to load current reports and
+officer-created links.
+
+The Suggestions list contains deterministic LOST-to-FOUND possible matches.
+Rows show each report's type, item name, category, occurrence date, and
+location, plus rule points and brief reasons. Rows never show Reporter ID,
+descriptions, status, creation time, or private identifying detail. A score is
+rule evidence only; it is not confidence and does not prove ownership.
+
+The four rules are exact category equality (40 points), shared item-name
+keyword (20), same normalized location (30), and FOUND occurring zero to seven
+days after LOST (10). Category and date are mandatory. At least 70 points are
+required, so a qualifying pair must also share a keyword or normalized
+location. Punctuation and whitespace separate words; the workflow does not use
+fuzzy, probabilistic, AI, description, or private-detail matching.
+
+Use the workspace as follows:
+
+1. Select a suggestion to compare both canonical reports side by side. The
+   comparison is read only and shows all report fields, separates public and
+   private descriptions, and labels private detail as officer-only verification
+   information.
+2. Review all four component outcomes and their rule points. Selecting or
+   refreshing a pair changes neither report nor link state.
+3. Select **Link as Possible Match** only when the pair should remain recorded
+   for officer review. Success appears only after the separate relationship is
+   saved. Linking does not change either report or confirm ownership.
+4. Select a row under **Linked possible matches** and use **Unlink Possible
+   Match** to remove only that relationship. Unlinking does not assert that the
+   items differ and does not affect another link.
+5. Use **Refresh** for a new authoritative report/link load. Use **Retry** when
+   loading is unavailable. There is no automatic polling or retry.
+
+A report may appear in several links. Linked pairs stay available for Unlink
+even if they later stop qualifying or one report is unavailable. The workspace
+distinguishes no eligible LOST-to-FOUND pair, no qualifying pair, all qualifying
+pairs already linked, no linked relationships, and unavailable storage.
+Failed Link or Unlink keeps clearly labelled last-known state and never shows
+success.
+
+Logging out removes suggestions, comparisons, reasons, Reporter IDs, and
+private details from the screen. Durable links remain stored. A later Desk
+Officer login performs a fresh load and restores no previous selection.
+
+#### Review Claims
+
+Open **Claims** from the Desk Officer workspace. **Pending review** lists
+pending claims from oldest to newest. Select a claim to view the claimant,
+ownership evidence, claim timestamps, and the current full lost and found
+reports, including their private identifying details. Treat the evidence and
+private details as officer-only verification information.
+
+To decide a selected pending claim:
+
+1. Review the claim and both reports.
+2. Enter an optional approval reason, or a required rejection reason. A reason
+   that is provided must be valid and at most 500 characters.
+3. Select **Approve** or **Reject**, then confirm the final action.
+
+If **Reject** is selected without a valid reason, the screen shows a validation
+message and does not open the confirmation or save a decision.
+
+Approval or rejection is final and moves the claim out of **Pending review**.
+A rejected claim always has a reason; an approved claim can omit one. If
+another decision has already finalized the claim, the workspace refreshes its
+current final status instead of recording a second decision. Decisions are
+disabled if either current report cannot be loaded.
+
+Open **Claim history** to view final claims. Use **All**, **Approved**,
+**Rejected**, or **Withdrawn** to filter the history; it is ordered newest
+finalized first. Selecting a history entry shows its retained claim details
+and any available current reports. An approved claim removes both of its
+reports from the active **Report review** queue, but does not change the
+reports themselves or a possible-match relationship.
+
+Use **Refresh** for a current load and **Retry** after an unavailable-load
+message. If a decision cannot be saved, the claim remains pending and the
+application reports no success. Logging out clears claim and report details
+from the screen; saved claim decisions remain available after a later login.
 
 ## Troubleshooting
 

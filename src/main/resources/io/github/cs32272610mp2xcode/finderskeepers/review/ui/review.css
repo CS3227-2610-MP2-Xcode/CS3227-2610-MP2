@@ -1,0 +1,40 @@
+.review-root {
+    -fx-background-color: transparent;
+}
+
+.review-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f5136;
+}
+
+.review-row-primary,
+.review-field-label,
+.review-section-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: #263d31;
+}
+
+.review-row-secondary,
+.review-details-message,
+.review-private-notice {
+    -fx-text-fill: #53685c;
+}
+
+.review-details,
+.review-details-scroll,
+.review-details-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.review-section-title {
+    -fx-font-size: 16px;
+}
+
+.review-private-notice {
+    -fx-font-style: italic;
+}
+
+.review-field-value {
+    -fx-text-fill: #17261e;
+}
