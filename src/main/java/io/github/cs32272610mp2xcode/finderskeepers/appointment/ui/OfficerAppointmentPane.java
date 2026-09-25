@@ -12,11 +12,13 @@ import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CollectionC
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CollectionSlot;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.persistence.AppointmentRepository;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.persistence.AppointmentStoreException;
+import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimId;
 import io.github.cs32272610mp2xcode.finderskeepers.workspace.SessionView;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
@@ -79,6 +81,10 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
         cases.getSelectionModel().selectedItemProperty().addListener(
                 (observable, previous, selected) -> audit.getItems().setAll(
                         selected == null ? java.util.List.of() : selected.auditEvents()));
+        slots.setMinHeight(100);
+        cases.setMinHeight(140);
+        audit.setMinHeight(100);
+        feedback.setWrapText(true);
         Button create = new Button("Create 30-minute slot");
         Button disable = new Button("Disable selected slot");
         Button refresh = new Button("Refresh");
@@ -103,7 +109,9 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
                 new Label("Audit history (officer view)"), audit, location, store, ready,
                 confirm, noShow, returned, close, refresh, feedback);
         content.setPadding(new Insets(12));
-        setCenter(content);
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        setCenter(scroll);
     }
 
     /** Refreshes slots and cases from authoritative storage. */
@@ -116,8 +124,15 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
             feedback.setText("");
         }
         try {
+            ClaimId selectedClaim = cases.getSelectionModel().getSelectedItem() == null
+                    ? null : cases.getSelectionModel().getSelectedItem().claimId();
             slots.getItems().setAll(service.loadSlots());
             cases.getItems().setAll(service.loadCases());
+            if (selectedClaim != null) {
+                cases.getItems().stream()
+                        .filter(caseState -> caseState.claimId().equals(selectedClaim))
+                        .findFirst().ifPresent(cases.getSelectionModel()::select);
+            }
         } catch (AppointmentStoreException failure) {
             slots.getSelectionModel().clearSelection();
             slots.getItems().clear();
@@ -198,7 +213,9 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
             feedback.setText("Select a case first.");
             return;
         }
-        runCaseAction(() -> service.markReadyForCollection(selected.claimId()).outcome());
+        runCaseAction(() -> service.markReadyForCollection(selected.claimId()),
+                "Item ready for collection.",
+                "Record a storage location before marking the item ready.");
     }
 
     private void confirmCollection() {
@@ -208,8 +225,15 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
             return;
         }
         try {
-            feedback.setText("Collection update: " + service.confirmCollection(
-                    selected.activeAppointment().orElseThrow().appointmentId()).outcome());
+            AppointmentRepository.AppointmentOutcome outcome = service.confirmCollection(
+                    selected.activeAppointment().orElseThrow().appointmentId()).outcome();
+            feedback.setText(switch (outcome) {
+                case CHANGED -> "Collection confirmed. You can now mark the item returned.";
+                case TOO_EARLY -> "Collection can be confirmed only after the slot starts.";
+                case INVALID_CUSTODY ->
+                    "Record the storage location and mark the item ready first.";
+                default -> "Collection was not confirmed (" + outcome + "). Refresh and retry.";
+            });
             refresh(false);
         } catch (AppointmentStoreException failure) {
             feedback.setText("Collection could not be confirmed. Retry later.");
@@ -222,7 +246,9 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
             feedback.setText("Select a case first.");
             return;
         }
-        runCaseAction(() -> service.markReturned(selected.claimId()).outcome());
+        runCaseAction(() -> service.markReturned(selected.claimId()),
+                "Item marked returned. You can now close the case.",
+                "Mark the item ready and confirm collection before marking it returned.");
     }
 
     private void recordNoShow() {
@@ -232,8 +258,14 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
             return;
         }
         try {
-            feedback.setText("Appointment update: " + service.recordNoShow(
-                    selected.activeAppointment().orElseThrow().appointmentId()).outcome());
+            AppointmentRepository.AppointmentOutcome outcome = service.recordNoShow(
+                    selected.activeAppointment().orElseThrow().appointmentId()).outcome();
+            feedback.setText(switch (outcome) {
+                case CHANGED -> "NO_SHOW recorded. The Student may book another slot.";
+                case TOO_EARLY -> "Wait until the 30-minute slot ends to record NO_SHOW.";
+                case ALREADY_TERMINAL -> "This appointment is already completed or ended.";
+                default -> "NO_SHOW was not recorded (" + outcome + "). Refresh and retry.";
+            });
             refresh(false);
         } catch (AppointmentStoreException failure) {
             feedback.setText("NO_SHOW could not be recorded. Retry later.");
@@ -246,12 +278,21 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
             feedback.setText("Select a case first.");
             return;
         }
-        runCaseAction(() -> service.closeCase(selected.claimId()).outcome());
+        runCaseAction(() -> service.closeCase(selected.claimId()),
+                "Case closed.",
+                "Confirm collection and mark the item returned before closing the case.");
     }
 
-    private void runCaseAction(CaseAction action) {
+    private void runCaseAction(CaseAction action, String successMessage,
+            String invalidCustodyMessage) {
         try {
-            feedback.setText("Case update: " + action.run());
+            AppointmentRepository.CaseOutcome outcome = action.run().outcome();
+            feedback.setText(switch (outcome) {
+                case CHANGED -> successMessage;
+                case INVALID_CUSTODY -> invalidCustodyMessage;
+                case CASE_CLOSED, ALREADY_CLOSED -> "This case is already closed.";
+                default -> "The case was not updated (" + outcome + "). Refresh and retry.";
+            });
             refresh(false);
         } catch (AppointmentStoreException failure) {
             feedback.setText("The case could not be updated. Retry later.");
@@ -260,6 +301,6 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
 
     @FunctionalInterface
     private interface CaseAction {
-        AppointmentRepository.CaseOutcome run() throws AppointmentStoreException;
+        AppointmentRepository.CaseResult run() throws AppointmentStoreException;
     }
 }
