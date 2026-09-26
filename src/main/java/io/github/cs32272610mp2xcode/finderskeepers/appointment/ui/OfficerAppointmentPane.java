@@ -73,9 +73,7 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
             @Override
             protected void updateItem(AuditEvent item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : DISPLAY.withZone(ZONE)
-                        .format(item.occurredAt()) + " — " + item.eventType().name()
-                        + " — officer " + item.actorUserId());
+                setText(empty || item == null ? null : formatAuditEvent(item));
             }
         });
         cases.getSelectionModel().selectedItemProperty().addListener(
@@ -112,6 +110,19 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
         setCenter(scroll);
+    }
+
+    /** Formats an officer-visible audit row with the recorded actor role.
+     * @param event recorded audit event
+     * @return role-accurate audit text */
+    static String formatAuditEvent(AuditEvent event) {
+        Objects.requireNonNull(event, "event");
+        String role = switch (event.actorRole()) {
+            case STUDENT -> "Student";
+            case DESK_OFFICER -> "Desk Officer";
+        };
+        return DISPLAY.withZone(ZONE).format(event.occurredAt()) + " — "
+                + event.eventType().name() + " — " + role + " " + event.actorUserId();
     }
 
     /** Refreshes slots and cases from authoritative storage. */
