@@ -413,8 +413,9 @@ closing the case.
 
 The officer audit history records booking, rescheduling, cancellation,
 no-show, custody, collection, return, and closure events. Officer identities
-are visible in this officer-only history. Evidence, report descriptions, and
-storage locations are not copied into audit-event text.
+are visible in this officer-only history, and each actor is labelled as a
+Student or Desk Officer according to the recorded role. Evidence, report
+descriptions, and storage locations are not copied into audit-event text.
 
 ## Troubleshooting
 

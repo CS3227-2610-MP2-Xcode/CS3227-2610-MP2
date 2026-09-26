@@ -169,3 +169,5 @@ For every completed task, report:
   latest status; test repeated booking after cancellation and no-show.
 - A JavaFX ComboBox needs both popup cells and a button cell when its value has
   a redacted `toString()`; verify the selected reference remains readable.
+- Audit rows must derive the actor label from the event's stored role, not from
+  the role of the viewer; cover Student and Desk Officer events in tests.
