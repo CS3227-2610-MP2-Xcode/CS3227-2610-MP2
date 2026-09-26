@@ -17,6 +17,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
@@ -44,13 +45,8 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
      * @param appointmentService authenticated Student service */
     public StudentAppointmentPane(StudentAppointmentService appointmentService) {
         service = Objects.requireNonNull(appointmentService, "service");
-        claims.setCellFactory(view -> new javafx.scene.control.ListCell<>() {
-            @Override
-            protected void updateItem(ApprovedClaimSummary item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.claimReference());
-            }
-        });
+        claims.setCellFactory(view -> claimReferenceCell());
+        claims.setButtonCell(claimReferenceCell());
         slots.setCellFactory(view -> new javafx.scene.control.ListCell<>() {
             @Override
             protected void updateItem(CollectionSlot item, boolean empty) {
@@ -104,6 +100,16 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
         setCenter(scroll);
+    }
+
+    private static ListCell<ApprovedClaimSummary> claimReferenceCell() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(ApprovedClaimSummary item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.claimReference());
+            }
+        };
     }
 
     /** Refreshes authoritative Claims, slots, active appointment, and history. */
