@@ -157,3 +157,6 @@ For every completed task, report:
 - Injected UUID suppliers must be unique across a complete command sequence,
   including audit events. Test fixtures that return one constant UUID create
   false persistence failures; use a deterministic sequence or distinct IDs.
+- Metadata corrections must preserve downstream lifecycle state. Test a
+  correction after later actions, such as confirmed collection, before
+  allowing the update to reset a status.

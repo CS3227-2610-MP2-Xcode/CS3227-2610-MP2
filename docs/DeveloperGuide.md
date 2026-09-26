@@ -762,7 +762,9 @@ BOOKED -> CANCELLED
 Custody separately progresses from `AWAITING_STORAGE` to `STORED`,
 `READY_FOR_COLLECTION`, and `RETURNED`. A cancelled or no-show appointment
 releases the one collection desk slot and permits a later booking for the same
-approved Claim. A returned or closed case cannot be booked again.
+approved Claim. Correcting a storage location while custody is ready preserves
+`READY_FOR_COLLECTION`, including after collection confirmation; a returned or
+closed case rejects further location changes and cannot be booked again.
 
 Storage failures are typed and fail closed. Corrupt bytes are never silently
 overwritten; after an operator restores valid bytes, the repository rereads
