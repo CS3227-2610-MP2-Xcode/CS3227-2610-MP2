@@ -3,18 +3,22 @@ package io.github.cs32272610mp2xcode.finderskeepers.appointment.application;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.AppointmentId;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.AppointmentStatus;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CollectionAppointment;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CollectionCase;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CollectionSlot;
+import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.SlotId;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.persistence.AppointmentRepository;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.persistence.AppointmentStoreException;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.AuthenticatedUser;
@@ -77,14 +81,26 @@ public final class StudentAppointmentService {
                 .toList();
     }
 
-    /** Loads the Student's active appointment, if present.
-     * @return active appointments
+    /** Loads the Student's active appointments with their scheduled slot times.
+     * @return Student-safe active appointment summaries
      * @throws AppointmentStoreException when storage is unavailable */
-    public List<CollectionAppointment> loadActiveAppointments()
+    public List<StudentActiveAppointmentSummary> loadActiveAppointments()
             throws AppointmentStoreException {
-        return loadOwnedAppointments().stream()
-                .filter(appointment -> appointment.status() == AppointmentStatus.BOOKED)
-                .toList();
+        Map<SlotId, Instant> startsBySlot = repository.loadSlots().stream()
+                .collect(Collectors.toMap(CollectionSlot::slotId, CollectionSlot::startsAt));
+        List<StudentActiveAppointmentSummary> active = new ArrayList<>();
+        for (CollectionAppointment appointment : loadOwnedAppointments()) {
+            if (appointment.status() == AppointmentStatus.BOOKED) {
+                Instant startsAt = startsBySlot.get(appointment.slotId());
+                if (startsAt == null) {
+                    throw new AppointmentStoreException(
+                            AppointmentStoreException.Reason.CORRUPT_STORE);
+                }
+                active.add(new StudentActiveAppointmentSummary(appointment.appointmentId(),
+                        appointment.status(), startsAt));
+            }
+        }
+        return List.copyOf(active);
     }
 
     /** Loads the Student's completed, cancelled, and no-show history.

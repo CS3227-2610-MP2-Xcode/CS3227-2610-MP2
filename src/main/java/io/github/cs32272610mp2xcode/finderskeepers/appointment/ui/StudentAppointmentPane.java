@@ -4,9 +4,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
-import io.github.cs32272610mp2xcode.finderskeepers.appointment.application.StudentAppointmentService;
+import io.github.cs32272610mp2xcode.finderskeepers.appointment.application.StudentActiveAppointmentSummary;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.application.StudentAppointmentHistorySummary;
-import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CollectionAppointment;
+import io.github.cs32272610mp2xcode.finderskeepers.appointment.application.StudentAppointmentService;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CollectionSlot;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.application.ApprovedClaimSummary;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.ClaimStoreException;
@@ -34,7 +34,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
 
     private final ListView<CollectionSlot> slots = new ListView<>();
 
-    private final ListView<CollectionAppointment> active = new ListView<>();
+    private final ListView<StudentActiveAppointmentSummary> active = new ListView<>();
 
     private final ListView<StudentAppointmentHistorySummary> history = new ListView<>();
 
@@ -60,9 +60,10 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
         });
         active.setCellFactory(view -> new javafx.scene.control.ListCell<>() {
             @Override
-            protected void updateItem(CollectionAppointment item, boolean empty) {
+            protected void updateItem(StudentActiveAppointmentSummary item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : item.status().name()
+                        + " — " + DISPLAY_TIME.format(item.startsAt())
                         + " — " + item.appointmentId().value());
             }
         });
@@ -91,8 +92,8 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
         VBox content = new VBox(8, new Label("Approved Claim"), claims,
                 new Label("Available collection slots (Singapore time)"), slots,
                 book, reschedule, cancel, new Separator(),
-                new Label("Active appointment"), active, new Label("Appointment history"),
-                history, refresh, feedback);
+                new Label("Active appointment (Singapore time)"), active,
+                new Label("Appointment history"), history, refresh, feedback);
         content.setPadding(new Insets(12));
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
@@ -167,7 +168,8 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
     }
 
     private void cancel() {
-        CollectionAppointment appointment = active.getSelectionModel().getSelectedItem();
+        StudentActiveAppointmentSummary appointment = active.getSelectionModel()
+                .getSelectedItem();
         if (appointment == null) {
             feedback.setText("Select an active appointment first.");
             return;
@@ -185,7 +187,8 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
     }
 
     private void reschedule() {
-        CollectionAppointment appointment = active.getSelectionModel().getSelectedItem();
+        StudentActiveAppointmentSummary appointment = active.getSelectionModel()
+                .getSelectedItem();
         CollectionSlot slot = slots.getSelectionModel().getSelectedItem();
         if (appointment == null || slot == null) {
             feedback.setText("Select an active appointment and a new slot first.");
