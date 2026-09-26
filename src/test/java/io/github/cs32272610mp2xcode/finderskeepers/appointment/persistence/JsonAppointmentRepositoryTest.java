@@ -296,6 +296,34 @@ class JsonAppointmentRepositoryTest {
     }
 
     @Test
+    void correctingStorageAfterCollectionPreservesReadyCustodyAndAllowsReturn()
+            throws AppointmentStoreException {
+        JsonAppointmentRepository repository = new JsonAppointmentRepository(
+                temporaryDirectory.resolve("appointments.json"));
+        SlotId slotId = SlotId.of(UUID.randomUUID());
+        ClaimId claimId = ClaimId.of(UUID.randomUUID());
+        AppointmentId appointmentId = AppointmentId.of(UUID.randomUUID());
+        Instant start = Instant.parse("2030-01-01T02:00:00Z");
+        repository.createSlot(CollectionSlot.create(slotId, start, NOW, "officer-1"));
+        repository.book(claimId, "student-1", slotId, appointmentId, "student-1",
+                UserRole.STUDENT, NOW);
+        repository.recordStorageLocation(claimId, "officer-1", "Locker A1", NOW.plusSeconds(1));
+        repository.markReadyForCollection(claimId, "officer-1", NOW.plusSeconds(2));
+        repository.confirmCollection(appointmentId, "officer-1", start.plusSeconds(60));
+
+        assertEquals(AppointmentRepository.CaseOutcome.CHANGED,
+                repository.recordStorageLocation(claimId, "officer-1", "Locker B2",
+                        start.plusSeconds(61)).outcome());
+        var corrected = repository.loadCases().getFirst();
+        assertEquals(CustodyStatus.READY_FOR_COLLECTION, corrected.custodyStatus());
+        assertEquals(java.util.Optional.of("Locker B2"), corrected.storageLocation());
+        assertEquals(AppointmentRepository.CaseOutcome.CHANGED,
+                repository.markReturned(claimId, "officer-1", start.plusSeconds(62)).outcome());
+        assertEquals(AppointmentRepository.CaseOutcome.CHANGED,
+                repository.closeCase(claimId, "officer-1", start.plusSeconds(63)).outcome());
+    }
+
+    @Test
     void noShowReleasesClaimForAnotherBooking() throws AppointmentStoreException {
         JsonAppointmentRepository repository = new JsonAppointmentRepository(
                 temporaryDirectory.resolve("appointments.json"));

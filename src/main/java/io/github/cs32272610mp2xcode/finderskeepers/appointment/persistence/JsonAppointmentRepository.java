@@ -320,7 +320,11 @@ public final class JsonAppointmentRepository implements AppointmentRepository {
                 return new CaseResult(CaseOutcome.CASE_CLOSED, Optional.of(current));
             }
             try {
-                CollectionCase updated = current.withCustody(CustodyStatus.STORED,
+                // A location correction must not undo readiness or confirmed collection.
+                CustodyStatus updatedCustody = current.custodyStatus()
+                        == CustodyStatus.READY_FOR_COLLECTION
+                                ? CustodyStatus.READY_FOR_COLLECTION : CustodyStatus.STORED;
+                CollectionCase updated = current.withCustody(updatedCustody,
                         Optional.of(location)).withAuditEvent(event(
                                 AuditEventType.STORAGE_LOCATION_RECORDED, officerId,
                                 UserRole.DESK_OFFICER, time, Optional.empty(), Optional.empty(),
