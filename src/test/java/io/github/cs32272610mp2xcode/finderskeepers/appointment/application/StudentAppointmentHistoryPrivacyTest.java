@@ -2,11 +2,14 @@ package io.github.cs32272610mp2xcode.finderskeepers.appointment.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.AppointmentId;
@@ -28,6 +31,16 @@ class StudentAppointmentHistoryPrivacyTest {
 
     @TempDir
     private Path temporaryDirectory;
+
+    @Test
+    void historyCanRepresentAnEmptyCaseButRejectsIncompleteAttemptDetails() {
+        var empty = new StudentAppointmentHistorySummary("CLM-SYNTHETIC", CaseStatus.OPEN,
+                0, Optional.empty(), Optional.empty());
+        assertEquals(0, empty.attemptNumber());
+        assertEquals(Optional.empty(), empty.appointmentStatus());
+        assertThrows(IllegalArgumentException.class, () -> new StudentAppointmentHistorySummary(
+                "CLM-SYNTHETIC", CaseStatus.OPEN, 1, Optional.empty(), Optional.empty()));
+    }
 
     @Test
     void historyContainsOnlyStudentSafeFieldsAndOnlyOwnedCases() throws Exception {
@@ -68,11 +81,66 @@ class StudentAppointmentHistoryPrivacyTest {
         assertEquals(1, result.size());
         assertEquals(ownedClaim.reference(), result.getFirst().claimReference());
         assertEquals(CaseStatus.OPEN, result.getFirst().status());
-        assertEquals(AppointmentStatus.NO_SHOW,
-                result.getFirst().latestAppointmentStatus().orElseThrow());
+        assertEquals(1, result.getFirst().attemptNumber());
+        assertEquals(Optional.of(AppointmentStatus.NO_SHOW),
+                result.getFirst().appointmentStatus());
+        assertEquals(Optional.of(NOW.plusSeconds(7200)), result.getFirst().startsAt());
         assertFalse(result.getFirst().toString().contains("officer-confidential-7"));
         assertFalse(result.getFirst().toString().contains("SECRET-LOCKER-42"));
         assertEquals("StudentAppointmentHistorySummary[redacted]",
                 result.getFirst().toString());
+    }
+
+    @Test
+    void repeatedBookingsRetainEveryStudentVisibleAttemptAfterReopening() throws Exception {
+        Path appointmentPath = temporaryDirectory.resolve("appointments.json");
+        JsonAppointmentRepository appointments = new JsonAppointmentRepository(appointmentPath);
+        ClaimId claimId = ClaimId.of(UUID.randomUUID());
+        SlotId firstSlot = SlotId.of(UUID.randomUUID());
+        SlotId secondSlot = SlotId.of(UUID.randomUUID());
+        SlotId thirdSlot = SlotId.of(UUID.randomUUID());
+        SlotId otherStudentSlot = SlotId.of(UUID.randomUUID());
+        List<SlotId> slots = List.of(firstSlot, secondSlot, thirdSlot, otherStudentSlot);
+        for (int index = 0; index < slots.size(); index++) {
+            appointments.createSlot(CollectionSlot.create(slots.get(index),
+                    NOW.plusSeconds((index + 2) * 3600L), NOW, "officer-confidential-7"));
+        }
+        AppointmentId first = AppointmentId.of(UUID.randomUUID());
+        AppointmentId second = AppointmentId.of(UUID.randomUUID());
+        AppointmentId third = AppointmentId.of(UUID.randomUUID());
+        appointments.book(claimId, "student-1", firstSlot, first,
+                "student-1", UserRole.STUDENT, NOW);
+        appointments.recordNoShow(first, "officer-confidential-7", NOW.plusSeconds(9000));
+        appointments.book(claimId, "student-1", secondSlot, second,
+                "student-1", UserRole.STUDENT, NOW.plusSeconds(9001));
+        appointments.cancel(second, "student-1", "student-1", UserRole.STUDENT,
+                NOW.plusSeconds(9002));
+        appointments.book(claimId, "student-1", thirdSlot, third,
+                "student-1", UserRole.STUDENT, NOW.plusSeconds(9003));
+        appointments.book(ClaimId.of(UUID.randomUUID()), "student-2", otherStudentSlot,
+                AppointmentId.of(UUID.randomUUID()), "student-2", UserRole.STUDENT, NOW);
+
+        AuthenticatedUser student = new AuthenticatedUser("student-1", "student",
+                UserRole.STUDENT);
+        StudentAppointmentService service = new StudentAppointmentService(student,
+                new JsonAppointmentRepository(appointmentPath),
+                new StudentApprovedClaimService(student, new JsonClaimRepository(
+                        temporaryDirectory.resolve("claims.json"))),
+                Clock.fixed(NOW, ZoneOffset.UTC), UUID::randomUUID);
+
+        var history = service.loadHistory();
+        assertEquals(3, history.size());
+        assertEquals(List.of(3, 2, 1), history.stream()
+                .map(StudentAppointmentHistorySummary::attemptNumber).toList());
+        assertEquals(List.of(AppointmentStatus.BOOKED, AppointmentStatus.CANCELLED,
+                AppointmentStatus.NO_SHOW), history.stream()
+                        .map(row -> row.appointmentStatus().orElseThrow()).toList());
+        assertEquals(List.of(NOW.plusSeconds(14400), NOW.plusSeconds(10800),
+                NOW.plusSeconds(7200)), history.stream()
+                        .map(row -> row.startsAt().orElseThrow()).toList());
+        for (StudentAppointmentHistorySummary row : history) {
+            assertEquals(claimId.reference(), row.claimReference());
+            assertEquals("StudentAppointmentHistorySummary[redacted]", row.toString());
+        }
     }
 }

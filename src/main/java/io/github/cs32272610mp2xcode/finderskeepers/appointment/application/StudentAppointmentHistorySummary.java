@@ -1,5 +1,6 @@
 package io.github.cs32272610mp2xcode.finderskeepers.appointment.application;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -7,24 +8,34 @@ import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.Appointment
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CaseStatus;
 
 /**
- * Student-safe summary of a collection case for appointment history.
+ * Student-safe history row for one appointment attempt or an empty case.
  *
  * @param claimReference user-visible Claim reference
  * @param status case lifecycle status
- * @param latestAppointmentStatus latest Student-visible appointment status
+ * @param attemptNumber one-based attempt number, or zero when there is no appointment
+ * @param appointmentStatus Student-visible appointment status, if an attempt exists
+ * @param startsAt scheduled collection time, if an attempt exists
  */
 public record StudentAppointmentHistorySummary(String claimReference, CaseStatus status,
-        Optional<AppointmentStatus> latestAppointmentStatus) {
+        int attemptNumber, Optional<AppointmentStatus> appointmentStatus,
+        Optional<Instant> startsAt) {
     /** Validates the values displayed in Student appointment history.
      * @param claimReference user-visible Claim reference
      * @param status case lifecycle status
-     * @param latestAppointmentStatus latest appointment status, if available
+     * @param attemptNumber one-based attempt number, or zero for an empty case
+     * @param appointmentStatus appointment status, if an attempt exists
+     * @param startsAt scheduled collection time, if an attempt exists
      */
     public StudentAppointmentHistorySummary {
         claimReference = requireText(claimReference, "claimReference");
         status = Objects.requireNonNull(status, "status");
-        latestAppointmentStatus = Objects.requireNonNull(latestAppointmentStatus,
-                "latestAppointmentStatus");
+        appointmentStatus = Objects.requireNonNull(appointmentStatus, "appointmentStatus");
+        startsAt = Objects.requireNonNull(startsAt, "startsAt");
+        boolean hasAttempt = attemptNumber > 0;
+        if (attemptNumber < 0 || appointmentStatus.isPresent() != hasAttempt
+                || startsAt.isPresent() != hasAttempt) {
+            throw new IllegalArgumentException("History attempt details are inconsistent.");
+        }
     }
 
     @Override

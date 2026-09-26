@@ -71,10 +71,16 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
             @Override
             protected void updateItem(StudentAppointmentHistorySummary item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.claimReference()
-                        + " — " + item.status().name() + " — "
-                        + item.latestAppointmentStatus().map(Enum::name)
-                                .orElse("No appointment"));
+                if (empty || item == null) {
+                    setText(null);
+                    return;
+                }
+                String attempt = item.attemptNumber() == 0 ? "No appointment"
+                        : "Attempt " + item.attemptNumber() + " — "
+                                + item.appointmentStatus().orElseThrow().name() + " — "
+                                + DISPLAY_TIME.format(item.startsAt().orElseThrow());
+                setText(item.claimReference() + " — " + attempt + " — "
+                        + item.status().name());
             }
         });
         Button refresh = new Button("Refresh");

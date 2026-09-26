@@ -103,21 +103,37 @@ public final class StudentAppointmentService {
         return List.copyOf(active);
     }
 
-    /** Loads the Student's completed, cancelled, and no-show history.
-     * @return case history
+    /** Loads every appointment attempt for the Student's collection cases.
+     * @return Student-safe attempt history, newest attempt first within each case
      * @throws AppointmentStoreException when storage is unavailable */
     public List<StudentAppointmentHistorySummary> loadHistory()
             throws AppointmentStoreException {
-        return repository.loadCases().stream()
+        Map<SlotId, Instant> startsBySlot = repository.loadSlots().stream()
+                .collect(Collectors.toMap(CollectionSlot::slotId, CollectionSlot::startsAt));
+        List<CollectionCase> ownedCases = repository.loadCases().stream()
                 .filter(caseState -> caseState.studentUserId().equals(user.userId()))
                 .sorted(Comparator.comparing(CollectionCase::claimId,
                         Comparator.comparing(ClaimId::value)).reversed())
-                .map(caseState -> new StudentAppointmentHistorySummary(
-                        caseState.claimId().reference(), caseState.status(),
-                        caseState.appointments().isEmpty()
-                                ? Optional.empty()
-                                : Optional.of(caseState.appointments().getLast().status())))
                 .toList();
+        List<StudentAppointmentHistorySummary> history = new ArrayList<>();
+        for (CollectionCase caseState : ownedCases) {
+            if (caseState.appointments().isEmpty()) {
+                history.add(new StudentAppointmentHistorySummary(caseState.claimId().reference(),
+                        caseState.status(), 0, Optional.empty(), Optional.empty()));
+            }
+            for (int index = caseState.appointments().size() - 1; index >= 0; index--) {
+                CollectionAppointment appointment = caseState.appointments().get(index);
+                Instant startsAt = startsBySlot.get(appointment.slotId());
+                if (startsAt == null) {
+                    throw new AppointmentStoreException(
+                            AppointmentStoreException.Reason.CORRUPT_STORE);
+                }
+                history.add(new StudentAppointmentHistorySummary(caseState.claimId().reference(),
+                        caseState.status(), index + 1, Optional.of(appointment.status()),
+                        Optional.of(startsAt)));
+            }
+        }
+        return List.copyOf(history);
     }
 
     /** Attempts to book an approved Claim into one available slot.
