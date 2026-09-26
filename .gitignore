@@ -25,4 +25,5 @@ Thumbs.db
 /data/claims.json
 /data/.claim-store-*.tmp
 /data/appointments.json
+/data/appointments.json.lock
 /data/.appointment-store-*.tmp

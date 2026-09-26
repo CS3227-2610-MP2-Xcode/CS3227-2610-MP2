@@ -81,340 +81,373 @@ public final class JsonAppointmentRepository implements AppointmentRepository {
     @Override
     public synchronized SlotResult createSlot(CollectionSlot slot)
             throws AppointmentStoreException {
-        Objects.requireNonNull(slot, "slot");
-        if (!isValidStart(slot.startsAt(), slot.createdAt())) {
-            return new SlotResult(SlotOutcome.INVALID_TIME, Optional.empty());
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            Objects.requireNonNull(slot, "slot");
+            if (!isValidStart(slot.startsAt(), slot.createdAt())) {
+                return new SlotResult(SlotOutcome.INVALID_TIME, Optional.empty());
+            }
+            StoreState state = readCurrent();
+            if (state.slots().stream().anyMatch(existing ->
+                    existing.slotId().equals(slot.slotId()))) {
+                return new SlotResult(SlotOutcome.ID_COLLISION, Optional.empty());
+            }
+            if (state.slots().stream().anyMatch(existing -> existing.enabled()
+                    && overlaps(existing, slot))) {
+                return new SlotResult(SlotOutcome.OVERLAPPING, Optional.empty());
+            }
+            List<CollectionSlot> slots = new ArrayList<>(state.slots());
+            slots.add(slot);
+            writeCandidate(slots, state.cases());
+            return new SlotResult(SlotOutcome.CREATED, Optional.of(slot));
         }
-        StoreState state = readCurrent();
-        if (state.slots().stream().anyMatch(existing ->
-                existing.slotId().equals(slot.slotId()))) {
-            return new SlotResult(SlotOutcome.ID_COLLISION, Optional.empty());
-        }
-        if (state.slots().stream().anyMatch(existing -> existing.enabled()
-                && overlaps(existing, slot))) {
-            return new SlotResult(SlotOutcome.OVERLAPPING, Optional.empty());
-        }
-        List<CollectionSlot> slots = new ArrayList<>(state.slots());
-        slots.add(slot);
-        writeCandidate(slots, state.cases());
-        return new SlotResult(SlotOutcome.CREATED, Optional.of(slot));
     }
 
     @Override
     public synchronized SlotResult disableSlot(SlotId slotId, String officerId, Instant time)
             throws AppointmentStoreException {
-        Objects.requireNonNull(slotId, "slotId");
-        requireText(officerId, "officerId");
-        StoreState state = readCurrent();
-        int index = findSlotIndex(state.slots(), slotId);
-        if (index < 0) {
-            return new SlotResult(SlotOutcome.NOT_FOUND, Optional.empty());
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            Objects.requireNonNull(slotId, "slotId");
+            requireText(officerId, "officerId");
+            StoreState state = readCurrent();
+            int index = findSlotIndex(state.slots(), slotId);
+            if (index < 0) {
+                return new SlotResult(SlotOutcome.NOT_FOUND, Optional.empty());
+            }
+            CollectionSlot current = state.slots().get(index);
+            if (!current.enabled()) {
+                return new SlotResult(SlotOutcome.ALREADY_DISABLED, Optional.of(current));
+            }
+            if (state.cases().stream().flatMap(caseState -> caseState.appointments().stream())
+                    .anyMatch(appointment -> appointment.status() == AppointmentStatus.BOOKED
+                            && appointment.slotId().equals(slotId))) {
+                return new SlotResult(SlotOutcome.BOOKED, Optional.of(current));
+            }
+            if (!current.startsAt().isAfter(time)) {
+                return new SlotResult(SlotOutcome.INVALID_TIME, Optional.of(current));
+            }
+            List<CollectionSlot> slots = new ArrayList<>(state.slots());
+            CollectionSlot replacement = current.disable(time, officerId);
+            slots.set(index, replacement);
+            writeCandidate(slots, state.cases());
+            return new SlotResult(SlotOutcome.CREATED, Optional.of(replacement));
         }
-        CollectionSlot current = state.slots().get(index);
-        if (!current.enabled()) {
-            return new SlotResult(SlotOutcome.ALREADY_DISABLED, Optional.of(current));
-        }
-        if (state.cases().stream().flatMap(caseState -> caseState.appointments().stream())
-                .anyMatch(appointment -> appointment.status() == AppointmentStatus.BOOKED
-                        && appointment.slotId().equals(slotId))) {
-            return new SlotResult(SlotOutcome.BOOKED, Optional.of(current));
-        }
-        if (!current.startsAt().isAfter(time)) {
-            return new SlotResult(SlotOutcome.INVALID_TIME, Optional.of(current));
-        }
-        List<CollectionSlot> slots = new ArrayList<>(state.slots());
-        CollectionSlot replacement = current.disable(time, officerId);
-        slots.set(index, replacement);
-        writeCandidate(slots, state.cases());
-        return new SlotResult(SlotOutcome.CREATED, Optional.of(replacement));
     }
 
     @Override
     public synchronized BookingResult book(ClaimId claimId, String studentUserId,
             SlotId slotId, AppointmentId appointmentId, String actorUserId,
             UserRole actorRole, Instant time) throws AppointmentStoreException {
-        requireRole(actorRole, UserRole.STUDENT);
-        requireText(studentUserId, "studentUserId");
-        requireText(actorUserId, "actorUserId");
-        StoreState state = readCurrent();
-        if (containsAppointment(state.cases(), appointmentId)) {
-            return new BookingResult(BookingOutcome.ID_COLLISION, Optional.empty());
-        }
-        Optional<CollectionSlot> target = findSlot(state.slots(), slotId);
-        if (target.isEmpty()) {
-            return new BookingResult(BookingOutcome.SLOT_NOT_FOUND, Optional.empty());
-        }
-        if (!target.orElseThrow().enabled()) {
-            return new BookingResult(BookingOutcome.SLOT_DISABLED, Optional.empty());
-        }
-        if (!target.orElseThrow().startsAt().isAfter(time)) {
-            return new BookingResult(BookingOutcome.INVALID_TIME, Optional.empty());
-        }
-        if (hasActiveSlot(state.cases(), slotId)) {
-            return new BookingResult(BookingOutcome.SLOT_TAKEN, Optional.empty());
-        }
-        Optional<CollectionCase> existing = findCase(state.cases(), claimId);
-        if (existing.isPresent()) {
-            CollectionCase caseState = existing.orElseThrow();
-            if (!caseState.studentUserId().equals(studentUserId)) {
-                return new BookingResult(BookingOutcome.NOT_AUTHORIZED, Optional.empty());
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            requireRole(actorRole, UserRole.STUDENT);
+            requireText(studentUserId, "studentUserId");
+            requireText(actorUserId, "actorUserId");
+            StoreState state = readCurrent();
+            if (containsAppointment(state.cases(), appointmentId)) {
+                return new BookingResult(BookingOutcome.ID_COLLISION, Optional.empty());
             }
-            if (caseState.status() == CaseStatus.CLOSED) {
-                return new BookingResult(BookingOutcome.CASE_CLOSED, Optional.of(caseState));
+            Optional<CollectionSlot> target = findSlot(state.slots(), slotId);
+            if (target.isEmpty()) {
+                return new BookingResult(BookingOutcome.SLOT_NOT_FOUND, Optional.empty());
             }
-            if (!caseState.mayBookAgain()) {
-                return new BookingResult(BookingOutcome.CLAIM_ALREADY_ACTIVE,
-                        Optional.of(caseState));
+            if (!target.orElseThrow().enabled()) {
+                return new BookingResult(BookingOutcome.SLOT_DISABLED, Optional.empty());
             }
+            if (!target.orElseThrow().startsAt().isAfter(time)) {
+                return new BookingResult(BookingOutcome.INVALID_TIME, Optional.empty());
+            }
+            if (hasActiveSlot(state.cases(), slotId)) {
+                return new BookingResult(BookingOutcome.SLOT_TAKEN, Optional.empty());
+            }
+            Optional<CollectionCase> existing = findCase(state.cases(), claimId);
+            if (existing.isPresent()) {
+                CollectionCase caseState = existing.orElseThrow();
+                if (!caseState.studentUserId().equals(studentUserId)) {
+                    return new BookingResult(BookingOutcome.NOT_AUTHORIZED, Optional.empty());
+                }
+                if (caseState.status() == CaseStatus.CLOSED) {
+                    return new BookingResult(BookingOutcome.CASE_CLOSED, Optional.of(caseState));
+                }
+                if (!caseState.mayBookAgain()) {
+                    return new BookingResult(BookingOutcome.CLAIM_ALREADY_ACTIVE,
+                            Optional.of(caseState));
+                }
+            }
+            CollectionAppointment appointment = CollectionAppointment.book(appointmentId, claimId,
+                    studentUserId, slotId, time);
+            CollectionCase updated = existing.orElseGet(() -> CollectionCase.open(claimId,
+                    studentUserId)).withAppointment(appointment).withAuditEvent(event(
+                            AuditEventType.APPOINTMENT_BOOKED, actorUserId, actorRole, time,
+                            Optional.of(appointmentId), Optional.empty(), Optional.of(slotId)));
+            List<CollectionCase> cases = replaceCase(state.cases(), existing, updated);
+            writeCandidate(state.slots(), cases);
+            return new BookingResult(BookingOutcome.BOOKED, Optional.of(updated));
         }
-        CollectionAppointment appointment = CollectionAppointment.book(appointmentId, claimId,
-                studentUserId, slotId, time);
-        CollectionCase updated = existing.orElseGet(() -> CollectionCase.open(claimId,
-                studentUserId)).withAppointment(appointment).withAuditEvent(event(
-                        AuditEventType.APPOINTMENT_BOOKED, actorUserId, actorRole, time,
-                        Optional.of(appointmentId), Optional.empty(), Optional.of(slotId)));
-        List<CollectionCase> cases = replaceCase(state.cases(), existing, updated);
-        writeCandidate(state.slots(), cases);
-        return new BookingResult(BookingOutcome.BOOKED, Optional.of(updated));
     }
 
     @Override
     public synchronized BookingResult reschedule(AppointmentId appointmentId,
             String studentUserId, SlotId replacementSlotId, String actorUserId,
             UserRole actorRole, Instant time) throws AppointmentStoreException {
-        requireRole(actorRole, UserRole.STUDENT);
-        requireText(studentUserId, "studentUserId");
-        requireText(actorUserId, "actorUserId");
-        StoreState state = readCurrent();
-        CaseAndAppointment found = findAppointment(state.cases(), appointmentId);
-        if (found == null) {
-            return new BookingResult(BookingOutcome.NOT_FOUND, Optional.empty());
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            requireRole(actorRole, UserRole.STUDENT);
+            requireText(studentUserId, "studentUserId");
+            requireText(actorUserId, "actorUserId");
+            StoreState state = readCurrent();
+            CaseAndAppointment found = findAppointment(state.cases(), appointmentId);
+            if (found == null) {
+                return new BookingResult(BookingOutcome.NOT_FOUND, Optional.empty());
+            }
+            if (!found.appointment().studentUserId().equals(studentUserId)) {
+                return new BookingResult(BookingOutcome.NOT_AUTHORIZED, Optional.empty());
+            }
+            if (found.appointment().status() != AppointmentStatus.BOOKED) {
+                return new BookingResult(BookingOutcome.NOT_BOOKED, Optional.of(found.caseState()));
+            }
+            CollectionSlot oldSlot = findSlot(state.slots(), found.appointment().slotId())
+                    .orElseThrow();
+            if (!oldSlot.startsAt().isAfter(time)) {
+                return new BookingResult(BookingOutcome.TOO_LATE, Optional.of(found.caseState()));
+            }
+            Optional<CollectionSlot> replacement = findSlot(state.slots(), replacementSlotId);
+            if (replacement.isEmpty()) {
+                return new BookingResult(BookingOutcome.SLOT_NOT_FOUND, Optional.empty());
+            }
+            if (!replacement.orElseThrow().enabled()) {
+                return new BookingResult(BookingOutcome.SLOT_DISABLED, Optional.empty());
+            }
+            if (!replacement.orElseThrow().startsAt().isAfter(time)) {
+                return new BookingResult(BookingOutcome.INVALID_TIME, Optional.empty());
+            }
+            if (hasActiveSlotExcept(state.cases(), replacementSlotId, appointmentId)) {
+                return new BookingResult(BookingOutcome.SLOT_TAKEN, Optional.empty());
+            }
+            CollectionAppointment updatedAppointment = found.appointment().reschedule(replacementSlotId);
+            CollectionCase updatedCase = found.caseState().replaceAppointment(updatedAppointment)
+                    .withAuditEvent(event(AuditEventType.APPOINTMENT_RESCHEDULED, actorUserId,
+                            actorRole, time, Optional.of(appointmentId), Optional.of(oldSlot.slotId()),
+                            Optional.of(replacementSlotId)));
+            writeCandidate(state.slots(), replaceCase(state.cases(), Optional.of(found.caseState()),
+                    updatedCase));
+            return new BookingResult(BookingOutcome.BOOKED, Optional.of(updatedCase));
         }
-        if (!found.appointment().studentUserId().equals(studentUserId)) {
-            return new BookingResult(BookingOutcome.NOT_AUTHORIZED, Optional.empty());
-        }
-        if (found.appointment().status() != AppointmentStatus.BOOKED) {
-            return new BookingResult(BookingOutcome.NOT_BOOKED, Optional.of(found.caseState()));
-        }
-        CollectionSlot oldSlot = findSlot(state.slots(), found.appointment().slotId())
-                .orElseThrow();
-        if (!oldSlot.startsAt().isAfter(time)) {
-            return new BookingResult(BookingOutcome.TOO_LATE, Optional.of(found.caseState()));
-        }
-        Optional<CollectionSlot> replacement = findSlot(state.slots(), replacementSlotId);
-        if (replacement.isEmpty()) {
-            return new BookingResult(BookingOutcome.SLOT_NOT_FOUND, Optional.empty());
-        }
-        if (!replacement.orElseThrow().enabled()) {
-            return new BookingResult(BookingOutcome.SLOT_DISABLED, Optional.empty());
-        }
-        if (!replacement.orElseThrow().startsAt().isAfter(time)) {
-            return new BookingResult(BookingOutcome.INVALID_TIME, Optional.empty());
-        }
-        if (hasActiveSlotExcept(state.cases(), replacementSlotId, appointmentId)) {
-            return new BookingResult(BookingOutcome.SLOT_TAKEN, Optional.empty());
-        }
-        CollectionAppointment updatedAppointment = found.appointment().reschedule(replacementSlotId);
-        CollectionCase updatedCase = found.caseState().replaceAppointment(updatedAppointment)
-                .withAuditEvent(event(AuditEventType.APPOINTMENT_RESCHEDULED, actorUserId,
-                        actorRole, time, Optional.of(appointmentId), Optional.of(oldSlot.slotId()),
-                        Optional.of(replacementSlotId)));
-        writeCandidate(state.slots(), replaceCase(state.cases(), Optional.of(found.caseState()),
-                updatedCase));
-        return new BookingResult(BookingOutcome.BOOKED, Optional.of(updatedCase));
     }
 
     @Override
     public synchronized AppointmentResult cancel(AppointmentId appointmentId,
             String studentUserId, String actorUserId, UserRole actorRole, Instant time)
             throws AppointmentStoreException {
-        requireRole(actorRole, UserRole.STUDENT);
-        requireText(studentUserId, "studentUserId");
-        requireText(actorUserId, "actorUserId");
-        StoreState state = readCurrent();
-        CaseAndAppointment found = findAppointment(state.cases(), appointmentId);
-        if (found == null) {
-            return new AppointmentResult(AppointmentOutcome.NOT_FOUND, Optional.empty());
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            requireRole(actorRole, UserRole.STUDENT);
+            requireText(studentUserId, "studentUserId");
+            requireText(actorUserId, "actorUserId");
+            StoreState state = readCurrent();
+            CaseAndAppointment found = findAppointment(state.cases(), appointmentId);
+            if (found == null) {
+                return new AppointmentResult(AppointmentOutcome.NOT_FOUND, Optional.empty());
+            }
+            if (!found.appointment().studentUserId().equals(studentUserId)) {
+                return new AppointmentResult(AppointmentOutcome.NOT_AUTHORIZED, Optional.empty());
+            }
+            if (found.appointment().status() != AppointmentStatus.BOOKED) {
+                return new AppointmentResult(AppointmentOutcome.ALREADY_TERMINAL,
+                        Optional.of(found.caseState()));
+            }
+            CollectionSlot slot = findSlot(state.slots(), found.appointment().slotId()).orElseThrow();
+            if (!slot.startsAt().isAfter(time)) {
+                return new AppointmentResult(AppointmentOutcome.TOO_LATE,
+                        Optional.of(found.caseState()));
+            }
+            CollectionAppointment replacement = found.appointment().cancel(time);
+            CollectionCase updated = found.caseState().replaceAppointment(replacement)
+                    .withAuditEvent(event(AuditEventType.APPOINTMENT_CANCELLED, actorUserId,
+                            actorRole, time, Optional.of(appointmentId), Optional.empty(),
+                            Optional.empty()));
+            writeCandidate(state.slots(), replaceCase(state.cases(), Optional.of(found.caseState()),
+                    updated));
+            return new AppointmentResult(AppointmentOutcome.CHANGED, Optional.of(updated));
         }
-        if (!found.appointment().studentUserId().equals(studentUserId)) {
-            return new AppointmentResult(AppointmentOutcome.NOT_AUTHORIZED, Optional.empty());
-        }
-        if (found.appointment().status() != AppointmentStatus.BOOKED) {
-            return new AppointmentResult(AppointmentOutcome.ALREADY_TERMINAL,
-                    Optional.of(found.caseState()));
-        }
-        CollectionSlot slot = findSlot(state.slots(), found.appointment().slotId()).orElseThrow();
-        if (!slot.startsAt().isAfter(time)) {
-            return new AppointmentResult(AppointmentOutcome.TOO_LATE,
-                    Optional.of(found.caseState()));
-        }
-        CollectionAppointment replacement = found.appointment().cancel(time);
-        CollectionCase updated = found.caseState().replaceAppointment(replacement)
-                .withAuditEvent(event(AuditEventType.APPOINTMENT_CANCELLED, actorUserId,
-                        actorRole, time, Optional.of(appointmentId), Optional.empty(),
-                        Optional.empty()));
-        writeCandidate(state.slots(), replaceCase(state.cases(), Optional.of(found.caseState()),
-                updated));
-        return new AppointmentResult(AppointmentOutcome.CHANGED, Optional.of(updated));
     }
 
     @Override
     public synchronized AppointmentResult recordNoShow(AppointmentId appointmentId,
             String officerId, Instant time) throws AppointmentStoreException {
-        requireText(officerId, "officerId");
-        StoreState state = readCurrent();
-        CaseAndAppointment found = findAppointment(state.cases(), appointmentId);
-        if (found == null) {
-            return new AppointmentResult(AppointmentOutcome.NOT_FOUND, Optional.empty());
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            requireText(officerId, "officerId");
+            StoreState state = readCurrent();
+            CaseAndAppointment found = findAppointment(state.cases(), appointmentId);
+            if (found == null) {
+                return new AppointmentResult(AppointmentOutcome.NOT_FOUND, Optional.empty());
+            }
+            if (found.appointment().status() != AppointmentStatus.BOOKED) {
+                return new AppointmentResult(AppointmentOutcome.ALREADY_TERMINAL,
+                        Optional.of(found.caseState()));
+            }
+            CollectionSlot slot = findSlot(state.slots(), found.appointment().slotId()).orElseThrow();
+            if (!slot.endsAt().isBefore(time) && !slot.endsAt().equals(time)) {
+                return new AppointmentResult(AppointmentOutcome.TOO_EARLY,
+                        Optional.of(found.caseState()));
+            }
+            CollectionAppointment replacement = found.appointment().markNoShow(time);
+            CollectionCase updated = found.caseState().replaceAppointment(replacement)
+                    .withAuditEvent(event(AuditEventType.NO_SHOW_RECORDED, officerId,
+                            UserRole.DESK_OFFICER, time, Optional.of(appointmentId), Optional.empty(),
+                            Optional.empty()));
+            writeCandidate(state.slots(), replaceCase(state.cases(), Optional.of(found.caseState()),
+                    updated));
+            return new AppointmentResult(AppointmentOutcome.CHANGED, Optional.of(updated));
         }
-        if (found.appointment().status() != AppointmentStatus.BOOKED) {
-            return new AppointmentResult(AppointmentOutcome.ALREADY_TERMINAL,
-                    Optional.of(found.caseState()));
-        }
-        CollectionSlot slot = findSlot(state.slots(), found.appointment().slotId()).orElseThrow();
-        if (!slot.endsAt().isBefore(time) && !slot.endsAt().equals(time)) {
-            return new AppointmentResult(AppointmentOutcome.TOO_EARLY,
-                    Optional.of(found.caseState()));
-        }
-        CollectionAppointment replacement = found.appointment().markNoShow(time);
-        CollectionCase updated = found.caseState().replaceAppointment(replacement)
-                .withAuditEvent(event(AuditEventType.NO_SHOW_RECORDED, officerId,
-                        UserRole.DESK_OFFICER, time, Optional.of(appointmentId), Optional.empty(),
-                        Optional.empty()));
-        writeCandidate(state.slots(), replaceCase(state.cases(), Optional.of(found.caseState()),
-                updated));
-        return new AppointmentResult(AppointmentOutcome.CHANGED, Optional.of(updated));
     }
 
     @Override
     public synchronized CaseResult recordStorageLocation(ClaimId claimId, String officerId,
             String location, Instant time) throws AppointmentStoreException {
-        requireText(officerId, "officerId");
-        StoreState state = readCurrent();
-        Optional<CollectionCase> found = findCase(state.cases(), claimId);
-        if (found.isEmpty()) {
-            return new CaseResult(CaseOutcome.NOT_FOUND, Optional.empty());
-        }
-        CollectionCase current = found.orElseThrow();
-        if (current.status() == CaseStatus.CLOSED || current.custodyStatus() == CustodyStatus.RETURNED) {
-            return new CaseResult(CaseOutcome.CASE_CLOSED, Optional.of(current));
-        }
-        try {
-            CollectionCase updated = current.withCustody(CustodyStatus.STORED,
-                    Optional.of(location)).withAuditEvent(event(
-                            AuditEventType.STORAGE_LOCATION_RECORDED, officerId,
-                            UserRole.DESK_OFFICER, time, Optional.empty(), Optional.empty(),
-                            Optional.empty()));
-            writeCandidate(state.slots(), replaceCase(state.cases(), found, updated));
-            return new CaseResult(CaseOutcome.CHANGED, Optional.of(updated));
-        } catch (IllegalArgumentException failure) {
-            return new CaseResult(CaseOutcome.INVALID_LOCATION, Optional.of(current));
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            requireText(officerId, "officerId");
+            StoreState state = readCurrent();
+            Optional<CollectionCase> found = findCase(state.cases(), claimId);
+            if (found.isEmpty()) {
+                return new CaseResult(CaseOutcome.NOT_FOUND, Optional.empty());
+            }
+            CollectionCase current = found.orElseThrow();
+            if (current.status() == CaseStatus.CLOSED || current.custodyStatus() == CustodyStatus.RETURNED) {
+                return new CaseResult(CaseOutcome.CASE_CLOSED, Optional.of(current));
+            }
+            try {
+                CollectionCase updated = current.withCustody(CustodyStatus.STORED,
+                        Optional.of(location)).withAuditEvent(event(
+                                AuditEventType.STORAGE_LOCATION_RECORDED, officerId,
+                                UserRole.DESK_OFFICER, time, Optional.empty(), Optional.empty(),
+                                Optional.empty()));
+                writeCandidate(state.slots(), replaceCase(state.cases(), found, updated));
+                return new CaseResult(CaseOutcome.CHANGED, Optional.of(updated));
+            } catch (IllegalArgumentException failure) {
+                return new CaseResult(CaseOutcome.INVALID_LOCATION, Optional.of(current));
+            }
         }
     }
 
     @Override
     public synchronized CaseResult markReadyForCollection(ClaimId claimId, String officerId,
             Instant time) throws AppointmentStoreException {
-        requireText(officerId, "officerId");
-        StoreState state = readCurrent();
-        Optional<CollectionCase> found = findCase(state.cases(), claimId);
-        if (found.isEmpty()) {
-            return new CaseResult(CaseOutcome.NOT_FOUND, Optional.empty());
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            requireText(officerId, "officerId");
+            StoreState state = readCurrent();
+            Optional<CollectionCase> found = findCase(state.cases(), claimId);
+            if (found.isEmpty()) {
+                return new CaseResult(CaseOutcome.NOT_FOUND, Optional.empty());
+            }
+            CollectionCase current = found.orElseThrow();
+            if (current.status() == CaseStatus.CLOSED) {
+                return new CaseResult(CaseOutcome.CASE_CLOSED, Optional.of(current));
+            }
+            if (current.custodyStatus() != CustodyStatus.STORED) {
+                return new CaseResult(CaseOutcome.INVALID_CUSTODY, Optional.of(current));
+            }
+            CollectionCase updated = current.withCustody(CustodyStatus.READY_FOR_COLLECTION,
+                    current.storageLocation()).withAuditEvent(event(AuditEventType.CUSTODY_READY,
+                            officerId, UserRole.DESK_OFFICER, time, Optional.empty(), Optional.empty(),
+                            Optional.empty()));
+            writeCandidate(state.slots(), replaceCase(state.cases(), found, updated));
+            return new CaseResult(CaseOutcome.CHANGED, Optional.of(updated));
         }
-        CollectionCase current = found.orElseThrow();
-        if (current.status() == CaseStatus.CLOSED) {
-            return new CaseResult(CaseOutcome.CASE_CLOSED, Optional.of(current));
-        }
-        if (current.custodyStatus() != CustodyStatus.STORED) {
-            return new CaseResult(CaseOutcome.INVALID_CUSTODY, Optional.of(current));
-        }
-        CollectionCase updated = current.withCustody(CustodyStatus.READY_FOR_COLLECTION,
-                current.storageLocation()).withAuditEvent(event(AuditEventType.CUSTODY_READY,
-                        officerId, UserRole.DESK_OFFICER, time, Optional.empty(), Optional.empty(),
-                        Optional.empty()));
-        writeCandidate(state.slots(), replaceCase(state.cases(), found, updated));
-        return new CaseResult(CaseOutcome.CHANGED, Optional.of(updated));
     }
 
     @Override
     public synchronized AppointmentResult confirmCollection(AppointmentId appointmentId,
             String officerId, Instant time) throws AppointmentStoreException {
-        requireText(officerId, "officerId");
-        StoreState state = readCurrent();
-        CaseAndAppointment found = findAppointment(state.cases(), appointmentId);
-        if (found == null) {
-            return new AppointmentResult(AppointmentOutcome.NOT_FOUND, Optional.empty());
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            requireText(officerId, "officerId");
+            StoreState state = readCurrent();
+            CaseAndAppointment found = findAppointment(state.cases(), appointmentId);
+            if (found == null) {
+                return new AppointmentResult(AppointmentOutcome.NOT_FOUND, Optional.empty());
+            }
+            if (found.appointment().status() != AppointmentStatus.BOOKED) {
+                return new AppointmentResult(AppointmentOutcome.ALREADY_TERMINAL,
+                        Optional.of(found.caseState()));
+            }
+            CollectionSlot slot = findSlot(state.slots(), found.appointment().slotId()).orElseThrow();
+            if (slot.startsAt().isAfter(time)) {
+                return new AppointmentResult(AppointmentOutcome.TOO_EARLY,
+                        Optional.of(found.caseState()));
+            }
+            if (found.caseState().custodyStatus() != CustodyStatus.READY_FOR_COLLECTION) {
+                return new AppointmentResult(AppointmentOutcome.INVALID_CUSTODY,
+                        Optional.of(found.caseState()));
+            }
+            CollectionAppointment replacement = found.appointment().confirmCollection(time);
+            CollectionCase updated = found.caseState().replaceAppointment(replacement)
+                    .withAuditEvent(event(AuditEventType.COLLECTION_CONFIRMED, officerId,
+                            UserRole.DESK_OFFICER, time, Optional.of(appointmentId), Optional.empty(),
+                            Optional.empty()));
+            writeCandidate(state.slots(), replaceCase(state.cases(), Optional.of(found.caseState()),
+                    updated));
+            return new AppointmentResult(AppointmentOutcome.CHANGED, Optional.of(updated));
         }
-        if (found.appointment().status() != AppointmentStatus.BOOKED) {
-            return new AppointmentResult(AppointmentOutcome.ALREADY_TERMINAL,
-                    Optional.of(found.caseState()));
-        }
-        CollectionSlot slot = findSlot(state.slots(), found.appointment().slotId()).orElseThrow();
-        if (slot.startsAt().isAfter(time)) {
-            return new AppointmentResult(AppointmentOutcome.TOO_EARLY,
-                    Optional.of(found.caseState()));
-        }
-        if (found.caseState().custodyStatus() != CustodyStatus.READY_FOR_COLLECTION) {
-            return new AppointmentResult(AppointmentOutcome.INVALID_CUSTODY,
-                    Optional.of(found.caseState()));
-        }
-        CollectionAppointment replacement = found.appointment().confirmCollection(time);
-        CollectionCase updated = found.caseState().replaceAppointment(replacement)
-                .withAuditEvent(event(AuditEventType.COLLECTION_CONFIRMED, officerId,
-                        UserRole.DESK_OFFICER, time, Optional.of(appointmentId), Optional.empty(),
-                        Optional.empty()));
-        writeCandidate(state.slots(), replaceCase(state.cases(), Optional.of(found.caseState()),
-                updated));
-        return new AppointmentResult(AppointmentOutcome.CHANGED, Optional.of(updated));
     }
 
     @Override
     public synchronized CaseResult markReturned(ClaimId claimId, String officerId, Instant time)
             throws AppointmentStoreException {
-        requireText(officerId, "officerId");
-        StoreState state = readCurrent();
-        Optional<CollectionCase> found = findCase(state.cases(), claimId);
-        if (found.isEmpty()) {
-            return new CaseResult(CaseOutcome.NOT_FOUND, Optional.empty());
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            requireText(officerId, "officerId");
+            StoreState state = readCurrent();
+            Optional<CollectionCase> found = findCase(state.cases(), claimId);
+            if (found.isEmpty()) {
+                return new CaseResult(CaseOutcome.NOT_FOUND, Optional.empty());
+            }
+            CollectionCase current = found.orElseThrow();
+            if (current.status() == CaseStatus.CLOSED) {
+                return new CaseResult(CaseOutcome.CASE_CLOSED, Optional.of(current));
+            }
+            boolean confirmed = current.appointments().stream().anyMatch(appointment ->
+                    appointment.status() == AppointmentStatus.COLLECTION_CONFIRMED);
+            if (!confirmed || current.custodyStatus() != CustodyStatus.READY_FOR_COLLECTION) {
+                return new CaseResult(CaseOutcome.INVALID_CUSTODY, Optional.of(current));
+            }
+            CollectionCase updated = current.withCustody(CustodyStatus.RETURNED,
+                    current.storageLocation()).withAuditEvent(event(AuditEventType.ITEM_RETURNED,
+                            officerId, UserRole.DESK_OFFICER, time, Optional.empty(), Optional.empty(),
+                            Optional.empty()));
+            writeCandidate(state.slots(), replaceCase(state.cases(), found, updated));
+            return new CaseResult(CaseOutcome.CHANGED, Optional.of(updated));
         }
-        CollectionCase current = found.orElseThrow();
-        if (current.status() == CaseStatus.CLOSED) {
-            return new CaseResult(CaseOutcome.CASE_CLOSED, Optional.of(current));
-        }
-        boolean confirmed = current.appointments().stream().anyMatch(appointment ->
-                appointment.status() == AppointmentStatus.COLLECTION_CONFIRMED);
-        if (!confirmed || current.custodyStatus() != CustodyStatus.READY_FOR_COLLECTION) {
-            return new CaseResult(CaseOutcome.INVALID_CUSTODY, Optional.of(current));
-        }
-        CollectionCase updated = current.withCustody(CustodyStatus.RETURNED,
-                current.storageLocation()).withAuditEvent(event(AuditEventType.ITEM_RETURNED,
-                        officerId, UserRole.DESK_OFFICER, time, Optional.empty(), Optional.empty(),
-                        Optional.empty()));
-        writeCandidate(state.slots(), replaceCase(state.cases(), found, updated));
-        return new CaseResult(CaseOutcome.CHANGED, Optional.of(updated));
     }
 
     @Override
     public synchronized CaseResult closeCase(ClaimId claimId, String officerId, Instant time)
             throws AppointmentStoreException {
-        requireText(officerId, "officerId");
-        StoreState state = readCurrent();
-        Optional<CollectionCase> found = findCase(state.cases(), claimId);
-        if (found.isEmpty()) {
-            return new CaseResult(CaseOutcome.NOT_FOUND, Optional.empty());
-        }
-        CollectionCase current = found.orElseThrow();
-        if (current.status() == CaseStatus.CLOSED) {
-            return new CaseResult(CaseOutcome.ALREADY_CLOSED, Optional.of(current));
-        }
-        try {
-            CollectionCase updated = current.close(time).withAuditEvent(event(
-                    AuditEventType.CASE_CLOSED, officerId, UserRole.DESK_OFFICER, time,
-                    Optional.empty(), Optional.empty(), Optional.empty()));
-            writeCandidate(state.slots(), replaceCase(state.cases(), found, updated));
-            return new CaseResult(CaseOutcome.CHANGED, Optional.of(updated));
-        } catch (IllegalStateException failure) {
-            return new CaseResult(CaseOutcome.INVALID_CUSTODY, Optional.of(current));
+        try (AppointmentStoreLock.Guard storeLock = AppointmentStoreLock.acquire(storePath)) {
+            storeLock.ensureHeld();
+            requireText(officerId, "officerId");
+            StoreState state = readCurrent();
+            Optional<CollectionCase> found = findCase(state.cases(), claimId);
+            if (found.isEmpty()) {
+                return new CaseResult(CaseOutcome.NOT_FOUND, Optional.empty());
+            }
+            CollectionCase current = found.orElseThrow();
+            if (current.status() == CaseStatus.CLOSED) {
+                return new CaseResult(CaseOutcome.ALREADY_CLOSED, Optional.of(current));
+            }
+            try {
+                CollectionCase updated = current.close(time).withAuditEvent(event(
+                        AuditEventType.CASE_CLOSED, officerId, UserRole.DESK_OFFICER, time,
+                        Optional.empty(), Optional.empty(), Optional.empty()));
+                writeCandidate(state.slots(), replaceCase(state.cases(), found, updated));
+                return new CaseResult(CaseOutcome.CHANGED, Optional.of(updated));
+            } catch (IllegalStateException failure) {
+                return new CaseResult(CaseOutcome.INVALID_CUSTODY, Optional.of(current));
+            }
         }
     }
 

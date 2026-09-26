@@ -12,6 +12,8 @@ public final class AppointmentStoreException extends Exception {
         UNSUPPORTED_VERSION,
         /** File could not be read or accessed. */
         READ_FAILURE,
+        /** The cross-process command lock could not be acquired safely. */
+        LOCK_FAILURE,
         /** Candidate could not be atomically committed. */
         WRITE_FAILURE,
         /** Candidate exceeded the configured byte limit. */
