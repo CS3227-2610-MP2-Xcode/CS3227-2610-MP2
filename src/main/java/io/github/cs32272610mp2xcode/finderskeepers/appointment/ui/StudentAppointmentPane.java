@@ -18,6 +18,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
@@ -83,13 +84,19 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
         book.setOnAction(event -> book());
         cancel.setOnAction(event -> cancel());
         reschedule.setOnAction(event -> reschedule());
+        slots.setMinHeight(120);
+        active.setMinHeight(90);
+        history.setMinHeight(120);
+        feedback.setWrapText(true);
         VBox content = new VBox(8, new Label("Approved Claim"), claims,
                 new Label("Available collection slots (Singapore time)"), slots,
                 book, reschedule, cancel, new Separator(),
                 new Label("Active appointment"), active, new Label("Appointment history"),
                 history, refresh, feedback);
         content.setPadding(new Insets(12));
-        setCenter(content);
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        setCenter(scroll);
     }
 
     /** Refreshes authoritative Claims, slots, active appointment, and history. */
