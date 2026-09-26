@@ -163,3 +163,5 @@ For every completed task, report:
 - When a feature stacks several lists and controls in a small desktop window,
   provide scrolling and usable minimum list heights; visible buttons alone do
   not make the lists operable.
+- Appointment rows must display the scheduled slot time, not just the booking
+  status or ID; verify that the time survives reopening and rescheduling.

@@ -380,7 +380,9 @@ refresh and choose another slot.
 Select an active appointment to reschedule it to another available slot or to
 cancel it. Rescheduling keeps the appointment history while moving the same
 booking to a new slot. Cancellation releases the slot; you may book again for
-the same approved Claim. Changes are not accepted after the slot has started.
+the same approved Claim. The active appointment row shows its scheduled date
+and time in Singapore time, including after reopening or rescheduling. Changes
+are not accepted after the slot has started.
 
 The history list includes cancelled appointments, no-shows, and closed cases.
 Storage locations and officer-only custody details are never shown to Students.
