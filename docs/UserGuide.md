@@ -384,7 +384,9 @@ the same approved Claim. The active appointment row shows its scheduled date
 and time in Singapore time, including after reopening or rescheduling. Changes
 are not accepted after the slot has started.
 
-The history list includes cancelled appointments, no-shows, and closed cases.
+The history list shows each booking attempt for your Claims, including earlier
+cancellations and no-shows after you book again. Each row shows its attempt
+number, status, scheduled Singapore date/time, and current case status.
 Storage locations and officer-only custody details are never shown to Students.
 
 ### Desk Officer appointments and custody

@@ -165,3 +165,5 @@ For every completed task, report:
   not make the lists operable.
 - Appointment rows must display the scheduled slot time, not just the booking
   status or ID; verify that the time survives reopening and rescheduling.
+- History projections must iterate retained appointment attempts, not only the
+  latest status; test repeated booking after cancellation and no-show.
