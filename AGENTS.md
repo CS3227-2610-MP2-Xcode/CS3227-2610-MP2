@@ -167,3 +167,5 @@ For every completed task, report:
   status or ID; verify that the time survives reopening and rescheduling.
 - History projections must iterate retained appointment attempts, not only the
   latest status; test repeated booking after cancellation and no-show.
+- A JavaFX ComboBox needs both popup cells and a button cell when its value has
+  a redacted `toString()`; verify the selected reference remains readable.
