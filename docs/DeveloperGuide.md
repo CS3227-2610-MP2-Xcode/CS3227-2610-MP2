@@ -739,8 +739,17 @@ Report status or possible-match visibility.
 records and one `CollectionCase` per Claim. Each case retains appointment
 attempts, custody state, and append-only typed `AuditEvent` records. The
 repository rereads the authoritative file for every command, validates the
-complete state, and atomically replaces the document. Booking, rescheduling,
-and slot occupancy are therefore checked in one synchronized command.
+complete state, and atomically replaces the document. Every state-changing
+command holds a persistent sibling lock at `data/appointments.json.lock` across
+the full read, validation, and write. A process-local lock coordinates separate
+repository instances in one JVM, and an operating-system file lock coordinates
+separate application processes. The sidecar remains in place because deleting
+it after releasing the lock could let concurrent processes lock different file
+identities. If the lock cannot be acquired safely, the command fails without
+reporting success. If lock release reports an I/O error after atomic
+replacement, the error is logged and the known committed result is retained;
+closing the channel is still attempted. Read-only queries continue to read the
+most recently committed atomic document.
 
 The lifecycle is:
 
