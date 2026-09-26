@@ -160,3 +160,6 @@ For every completed task, report:
 - Metadata corrections must preserve downstream lifecycle state. Test a
   correction after later actions, such as confirmed collection, before
   allowing the update to reset a status.
+- When a feature stacks several lists and controls in a small desktop window,
+  provide scrolling and usable minimum list heights; visible buttons alone do
+  not make the lists operable.
