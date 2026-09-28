@@ -72,6 +72,7 @@ public final class DeskOfficerWorkspacePane extends TabPane implements SessionVi
     private DeskOfficerWorkspacePane(ReportRepository reports,
             PossibleMatchRepository relationships, WorkspaceFeature claims,
             DeskOfficerClaimFeature officerClaims, WorkspaceFeature appointments) {
+        getStyleClass().add("workspace-tabs");
         Objects.requireNonNull(reports, "reports");
         Objects.requireNonNull(relationships, "relationships");
         claimsFeature = claims;

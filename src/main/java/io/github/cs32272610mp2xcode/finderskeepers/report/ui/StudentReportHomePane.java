@@ -68,6 +68,7 @@ public final class StudentReportHomePane extends BorderPane implements SessionVi
         Tab submitTab = fixedTab("Report an item", reportForm);
         Tab historyTab = fixedTab("My reports", reportHistory);
         TabPane navigation = new TabPane(submitTab, historyTab);
+        navigation.getStyleClass().add("workspace-tabs");
         Tab claimsTab = claimsFeature == null
                 ? null : fixedTab("Claims", claimsFeature.content());
         Tab appointmentsTab = appointmentsFeature == null ? null

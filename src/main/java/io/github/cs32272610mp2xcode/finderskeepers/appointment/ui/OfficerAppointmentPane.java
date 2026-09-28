@@ -18,7 +18,6 @@ import io.github.cs32272610mp2xcode.finderskeepers.appointment.persistence.Appoi
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimId;
 import io.github.cs32272610mp2xcode.finderskeepers.workspace.SessionView;
 import javafx.event.ActionEvent;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
@@ -79,6 +78,7 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
      * @param appointmentService authenticated officer service */
     public OfficerAppointmentPane(OfficerAppointmentService appointmentService) {
         service = Objects.requireNonNull(appointmentService, "service");
+        getStyleClass().add("feature-pane");
         location.setPromptText("Storage location");
         slots.setCellFactory(view -> new javafx.scene.control.ListCell<>() {
             @Override
@@ -115,6 +115,11 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
         audit.setMinHeight(100);
         feedback.setWrapText(true);
         Button refresh = new Button("Refresh");
+        refresh.getStyleClass().add("quiet-button");
+        addSlot.getStyleClass().add("icon-button");
+        removeSlot.getStyleClass().addAll("icon-button", "danger-button");
+        store.getStyleClass().add("primary-button");
+        noShow.getStyleClass().add("danger-button");
         addSlot.setTooltip(new Tooltip("Add a 30-minute collection slot"));
         addSlot.setOnAction(event -> showCreateSlotDialog());
         removeSlot.setOnAction(event -> disableSlot());
@@ -133,7 +138,7 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
                 new Label("Booked and custody cases"), cases,
                 new Label("Audit history (officer view)"), audit, location, store, ready,
                 confirm, noShow, returned, close, refresh, feedback);
-        content.setPadding(new Insets(12));
+        content.getStyleClass().addAll("content-panel", "appointment-content");
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
         setCenter(scroll);

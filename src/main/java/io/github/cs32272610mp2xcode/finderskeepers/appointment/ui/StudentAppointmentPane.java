@@ -14,7 +14,6 @@ import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.ClaimStoreE
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.persistence.AppointmentRepository;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.persistence.AppointmentStoreException;
 import io.github.cs32272610mp2xcode.finderskeepers.workspace.SessionView;
-import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -53,6 +52,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
      * @param appointmentService authenticated Student service */
     public StudentAppointmentPane(StudentAppointmentService appointmentService) {
         service = Objects.requireNonNull(appointmentService, "service");
+        getStyleClass().add("feature-pane");
         claims.setCellFactory(view -> claimReferenceCell());
         claims.setButtonCell(claimReferenceCell());
         slots.setCellFactory(view -> new javafx.scene.control.ListCell<>() {
@@ -86,6 +86,9 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
             }
         });
         Button refresh = new Button("Refresh");
+        refresh.getStyleClass().add("quiet-button");
+        book.getStyleClass().add("primary-button");
+        cancel.getStyleClass().add("danger-button");
         refresh.setOnAction(event -> enter());
         book.setOnAction(event -> book());
         cancel.setOnAction(event -> cancel());
@@ -104,7 +107,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
                 book, reschedule, cancel, new Separator(),
                 new Label("Active appointment (Singapore time)"), active,
                 new Label("Appointment history"), history, refresh, feedback);
-        content.setPadding(new Insets(12));
+        content.getStyleClass().addAll("content-panel", "appointment-content");
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
         setCenter(scroll);
