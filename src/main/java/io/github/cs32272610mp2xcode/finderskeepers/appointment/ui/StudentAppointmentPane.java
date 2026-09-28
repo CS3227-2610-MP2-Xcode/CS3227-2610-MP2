@@ -86,6 +86,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
             }
         });
         Button refresh = new Button("Refresh");
+        Button help = AppointmentHelpDialog.studentHelpButton();
         refresh.getStyleClass().add("quiet-button");
         book.getStyleClass().add("primary-button");
         cancel.getStyleClass().add("danger-button");
@@ -102,7 +103,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
         active.setMinHeight(90);
         history.setMinHeight(120);
         feedback.setWrapText(true);
-        VBox content = new VBox(8, new Label("Approved Claim"), claims,
+        VBox content = new VBox(8, help, new Label("Approved Claim"), claims,
                 new Label("Available collection slots (Singapore time)"), slots,
                 book, reschedule, cancel, new Separator(),
                 new Label("Active appointment (Singapore time)"), active,

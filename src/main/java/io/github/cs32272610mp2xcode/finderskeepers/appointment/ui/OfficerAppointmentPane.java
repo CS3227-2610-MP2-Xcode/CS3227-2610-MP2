@@ -115,6 +115,7 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
         audit.setMinHeight(100);
         feedback.setWrapText(true);
         Button refresh = new Button("Refresh");
+        Button help = AppointmentHelpDialog.officerHelpButton();
         refresh.getStyleClass().add("quiet-button");
         addSlot.getStyleClass().add("icon-button");
         removeSlot.getStyleClass().addAll("icon-button", "danger-button");
@@ -134,7 +135,7 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
         HBox slotHeader = new HBox(8, slotsLabel, addSlot, removeSlot);
         slotHeader.setAlignment(Pos.CENTER_RIGHT);
         HBox.setHgrow(slotsLabel, Priority.ALWAYS);
-        VBox content = new VBox(8, slotHeader, slots, new Separator(),
+        VBox content = new VBox(8, help, slotHeader, slots, new Separator(),
                 new Label("Booked and custody cases"), cases,
                 new Label("Audit history (officer view)"), audit, location, store, ready,
                 confirm, noShow, returned, close, refresh, feedback);
