@@ -132,6 +132,37 @@ class StudentClaimsServiceTest {
     }
 
     @Test
+    void oneStudentsClaimHidesSharedFoundItemFromAnotherStudent() throws Exception {
+        String secondStudentId = "synthetic-student-2";
+        UUID secondLost = uuid(103);
+        MutableReports reports = new MutableReports(List.of(
+                report(LOST_NEW, STUDENT_ID, ReportType.LOST, "First lost item",
+                        ItemCategory.BAGS, LocalDate.of(2026, 9, 20), 10),
+                report(secondLost, secondStudentId, ReportType.LOST, "Second lost item",
+                        ItemCategory.BAGS, LocalDate.of(2026, 9, 20), 20),
+                report(FOUND_NEW, "finder-1", ReportType.FOUND, "Shared found item",
+                        ItemCategory.BAGS, LocalDate.of(2026, 9, 21), 30)));
+        MutableMatches matches = new MutableMatches(Set.of(
+                PossibleMatchPair.of(LOST_NEW, FOUND_NEW),
+                PossibleMatchPair.of(secondLost, FOUND_NEW)));
+        ClaimRepository repository = claims();
+        StudentClaimsService firstStudent = service(repository, reports, matches, ids(1));
+        StudentClaimsService secondStudent = new StudentClaimsService(
+                new AuthenticatedUser(secondStudentId, "student-two", UserRole.STUDENT),
+                repository, reports, matches, CLOCK, ids(2));
+
+        var firstHandle = firstStudent.enter().availableGroups().getFirst()
+                .cards().getFirst().handle();
+        firstStudent.submit(firstStudent.reviewSubmission(firstHandle,
+                "Synthetic evidence from the first Student."));
+
+        StudentClaimsState secondView = secondStudent.enter();
+        assertTrue(secondView.availableGroups().isEmpty());
+        assertTrue(secondView.availableEmpty());
+        assertEquals(Availability.READY, secondView.availableAvailability());
+    }
+
+    @Test
     void submissionRevalidatesLinkAndRetriesOnlyIdCollisions() throws Exception {
         MutableReports reports = standardReports();
         MutableMatches matches = standardMatches();
