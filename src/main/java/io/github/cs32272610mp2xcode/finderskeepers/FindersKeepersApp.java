@@ -64,13 +64,13 @@ public final class FindersKeepersApp extends Application {
                         possibleMatchRepository,
                         claimWorkspaceFactory.createDeskOfficerFeature(user),
                         appointmentWorkspaceFactory.createOfficerFeature(user)));
-        Scene scene = new Scene(content, 720, 420);
+        Scene scene = new Scene(content, 960, 680);
         scene.getStylesheets().add(Objects.requireNonNull(
                 FindersKeepersApp.class.getResource("app.css")).toExternalForm());
 
         stage.setTitle(AppMetadata.NAME);
-        stage.setMinWidth(560);
-        stage.setMinHeight(320);
+        stage.setMinWidth(840);
+        stage.setMinHeight(560);
         stage.setScene(scene);
         stage.show();
 
