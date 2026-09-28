@@ -489,6 +489,7 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
         alert.showAndWait();
     }
 
+    /** Deferred case command executed through the pane's shared error handling. */
     @FunctionalInterface
     private interface CaseAction {
         AppointmentRepository.CaseResult run() throws AppointmentStoreException;

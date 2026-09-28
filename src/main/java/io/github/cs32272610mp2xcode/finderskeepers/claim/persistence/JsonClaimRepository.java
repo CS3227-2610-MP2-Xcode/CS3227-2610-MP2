@@ -174,11 +174,13 @@ public final class JsonClaimRepository implements ClaimRepository {
         }
     }
 
+    /** Computes a Claim transition without exposing repository mutation details. */
     @FunctionalInterface
     private interface TransitionCommand {
         Transition apply(Claim current);
     }
 
+    /** Authorized replacement, or a privacy-safe authorization denial. */
     private record Transition(boolean unauthorized, Optional<Claim> replacement) {
         private static Transition denied() {
             return new Transition(true, Optional.empty());

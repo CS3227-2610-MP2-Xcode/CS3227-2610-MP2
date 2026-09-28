@@ -476,8 +476,11 @@ public final class AuthenticationPane extends StackPane {
         return label;
     }
 
+    /** Selects which authentication backend the login form uses. */
     private enum LoginMode {
+        /** Bundled accounts intended for demonstrations. */
         DEMO("Demo mode"),
+        /** Persistent accounts registered by application users. */
         PRODUCTION("Production mode");
 
         private final String label;

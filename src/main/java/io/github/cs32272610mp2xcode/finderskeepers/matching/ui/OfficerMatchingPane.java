@@ -318,6 +318,7 @@ public final class OfficerMatchingPane extends BorderPane {
         return label;
     }
 
+    /** Renders suggested and linked report pairs with their current match status. */
     private static final class MatchRowCell extends ListCell<PairRow> {
         @Override
         protected void updateItem(PairRow row, boolean empty) {

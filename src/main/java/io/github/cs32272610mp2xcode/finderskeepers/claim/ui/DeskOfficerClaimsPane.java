@@ -463,6 +463,7 @@ public final class DeskOfficerClaimsPane extends BorderPane {
         node.setManaged(visible);
     }
 
+    /** Renders a pending Claim with only the information needed for review. */
     private static final class PendingCell extends ListCell<PendingClaimRow> {
         @Override
         protected void updateItem(PendingClaimRow row, boolean empty) {
@@ -484,6 +485,7 @@ public final class DeskOfficerClaimsPane extends BorderPane {
         }
     }
 
+    /** Renders a terminal Claim in the Officer history list. */
     private static final class HistoryCell extends ListCell<HistoryClaimRow> {
         @Override
         protected void updateItem(HistoryClaimRow row, boolean empty) {

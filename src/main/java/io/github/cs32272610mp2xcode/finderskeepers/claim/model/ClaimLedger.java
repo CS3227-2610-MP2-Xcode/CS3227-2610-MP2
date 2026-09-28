@@ -181,6 +181,7 @@ public final class ClaimLedger {
         }
     }
 
+    /** Composite key enforcing one active Claim per Student and found report. */
     private record ClaimantFound(String claimantUserId, UUID foundReportId) {
     }
 

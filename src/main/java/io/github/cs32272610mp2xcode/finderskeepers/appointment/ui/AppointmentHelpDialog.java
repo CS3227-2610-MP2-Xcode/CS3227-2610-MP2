@@ -117,6 +117,7 @@ final class AppointmentHelpDialog {
         return scroll;
     }
 
+    /** One titled instruction shown in an appointment help page. */
     private record HelpStep(String title, String explanation) {
     }
 }

@@ -198,6 +198,7 @@ public final class DeskOfficerReviewPane extends BorderPane {
         return label;
     }
 
+    /** Renders the public report details used to scan the Officer review queue. */
     private static final class ReportQueueCell extends ListCell<ItemReport> {
         @Override
         protected void updateItem(ItemReport report, boolean empty) {
