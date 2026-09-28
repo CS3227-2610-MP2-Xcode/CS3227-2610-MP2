@@ -27,6 +27,21 @@
 }
 
 /* Authentication shell */
+.login-mode-bar {
+    -fx-padding: 18px 24px 0 24px;
+}
+
+.login-mode-label {
+    -fx-background-color: #e8f2ec;
+    -fx-background-radius: 999px;
+    -fx-padding: 7px 12px;
+    -fx-text-fill: #245c3d;
+}
+
+.mode-switch-button {
+    -fx-font-size: 17px;
+}
+
 .login-shell {
     -fx-background-color: white;
     -fx-background-radius: 24px;

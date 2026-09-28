@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -206,8 +207,7 @@ class AuthenticationCoordinatorTest {
         SwitchableUserRepository repository = new SwitchableUserRepository(account);
         ExactPasswordHasher hasher = new ExactPasswordHasher(
                 Map.of(credential, STUDENT_PASSWORD.toCharArray()));
-        AuthenticationCoordinator coordinator = new AuthenticationCoordinator(
-                new AuthenticationService(repository, hasher));
+        AuthenticationCoordinator coordinator = coordinator(repository, hasher);
         coordinator.login("student.user", STUDENT_PASSWORD.toCharArray());
         AuthenticatedUser originalUser = coordinator.currentUser().orElseThrow();
         repository.failReads();
@@ -274,8 +274,8 @@ class AuthenticationCoordinatorTest {
                 """.formatted(salt, hash);
         Files.writeString(store, corruptJson, StandardCharsets.UTF_8);
         CountingPasswordHasher hasher = new CountingPasswordHasher();
-        AuthenticationCoordinator coordinator = new AuthenticationCoordinator(
-                new AuthenticationService(new JsonUserRepository(store), hasher));
+        AuthenticationCoordinator coordinator = coordinator(
+                new JsonUserRepository(store), hasher);
         char[] password = STUDENT_PASSWORD.toCharArray();
 
         AuthenticationResult result = coordinator.login("student.user", password);
@@ -294,9 +294,15 @@ class AuthenticationCoordinatorTest {
 
     private static AuthenticationCoordinator coordinator(List<UserAccount> accounts,
             PasswordHasher hasher) {
-        AuthenticationService service = new AuthenticationService(
-                new InMemoryUserRepository(accounts), hasher);
-        return new AuthenticationCoordinator(service);
+        return coordinator(new InMemoryUserRepository(accounts), hasher);
+    }
+
+    private static AuthenticationCoordinator coordinator(UserRepository repository,
+            PasswordHasher hasher) {
+        AuthenticationService service = new AuthenticationService(repository, hasher);
+        RegistrationService registration = new RegistrationService(
+                repository, hasher, UUID::randomUUID);
+        return new AuthenticationCoordinator(service, registration);
     }
 
     private static UserAccount account(String userId, String username, UserRole role,

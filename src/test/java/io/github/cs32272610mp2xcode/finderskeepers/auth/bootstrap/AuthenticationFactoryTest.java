@@ -17,6 +17,8 @@ import io.github.cs32272610mp2xcode.finderskeepers.auth.application.ApplicationR
 import io.github.cs32272610mp2xcode.finderskeepers.auth.application.AuthenticationCoordinator;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.application.AuthenticationResult;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.application.AuthenticationStatus;
+import io.github.cs32272610mp2xcode.finderskeepers.auth.application.RegistrationResult;
+import io.github.cs32272610mp2xcode.finderskeepers.auth.application.RegistrationStatus;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.UserAccount;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.UserRole;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.persistence.JsonUserRepository;
@@ -59,5 +61,30 @@ class AuthenticationFactoryTest {
                 () -> assertEquals("", coordinator.message()),
                 () -> assertArrayEquals(new char[loginPassword.length], loginPassword),
                 () -> assertTrue(Files.isRegularFile(store)));
+    }
+
+    @Test
+    void composesRegistrationAndLoginOverTheSameStore() throws UserStoreException {
+        Path store = temporaryDirectory.resolve("registered-users.json");
+        AuthenticationCoordinator coordinator = AuthenticationFactory.createCoordinator(store);
+        char[] password = "factory-created officer".toCharArray();
+        char[] confirmation = "factory-created officer".toCharArray();
+
+        RegistrationResult registration = coordinator.register(
+                "factory.officer", password, confirmation, UserRole.DESK_OFFICER);
+        coordinator.logout();
+        char[] loginPassword = "factory-created officer".toCharArray();
+        AuthenticationResult login = coordinator.login("FACTORY.OFFICER", loginPassword);
+
+        JsonUserRepository repository = new JsonUserRepository(store);
+        assertAll(
+                () -> assertEquals(RegistrationStatus.SUCCESS, registration.status()),
+                () -> assertEquals(AuthenticationStatus.SUCCESS, login.status()),
+                () -> assertEquals(ApplicationRoute.DESK_OFFICER, coordinator.route()),
+                () -> assertEquals(UserRole.DESK_OFFICER,
+                        repository.findByUsername("factory.officer").orElseThrow().role()),
+                () -> assertArrayEquals(new char[password.length], password),
+                () -> assertArrayEquals(new char[confirmation.length], confirmation),
+                () -> assertArrayEquals(new char[loginPassword.length], loginPassword));
     }
 }

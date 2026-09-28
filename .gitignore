@@ -19,6 +19,8 @@ Thumbs.db
 *.swo
 
 # Local mutable application data
+/data/users.json
+/data/.users-*.tmp
 /data/reports.json
 /data/possible-match-links.txt
 /data/.possible-match-links-*.tmp
