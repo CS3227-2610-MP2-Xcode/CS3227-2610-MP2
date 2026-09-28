@@ -680,6 +680,11 @@ gradlew.bat release
 
 `check` compiles the project, runs JUnit, Checkstyle, Javadoc checks, and generates the JaCoCo report. `release` produces `release/FindersKeepers.jar`.
 
+`AuthenticationPaneTest` starts a real JavaFX toolkit and renders the login pane
+to exercise its controls. On a headless Linux machine, run the quality gate as
+`xvfb-run -a ./gradlew check`; CI applies this wrapper to its Linux build. macOS,
+Windows, and Linux sessions with a display can use the ordinary command above.
+
 ## Testing and quality gates
 
 - JUnit 5 provides automated tests. In addition to the baseline tests,
@@ -689,6 +694,10 @@ gradlew.bat release
   duplicate and invalid registration, session preservation, provisioning
   validation, bounded JSON persistence, missing storage, corrupt metadata, and
   plaintext exclusion.
+- The scene-level `AuthenticationPaneTest` covers the Production-mode default,
+  both demo-role buttons, mode switching and tooltips, coordinator separation,
+  registration validation and persistence, both role routes, normal login,
+  clear, logout, and return to the active mode.
 - Report domain and persistence tests cover report invariants, reconstruction,
   ordering, replacement conflicts, strict JSON and Unicode handling, resource
   bounds, atomic-write failures, recovery behavior, and supported

@@ -37,7 +37,9 @@ jobs:
         timeout-minutes: 10
         shell: bash
         run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            xvfb-run -a ./gradlew clean check release
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
             ./gradlew.bat clean check release
           else
             ./gradlew clean check release
