@@ -380,9 +380,9 @@ refresh and choose another slot.
 Select an active appointment to reschedule it to another available slot or to
 cancel it. Rescheduling keeps the appointment history while moving the same
 booking to a new slot. Cancellation releases the slot; you may book again for
-the same approved Claim. The active appointment row shows its scheduled date
-and time in Singapore time, including after reopening or rescheduling. Changes
-are not accepted after the slot has started.
+the same approved Claim. Each active appointment row shows a short Claim
+reference with its scheduled date and time in Singapore time, including after
+reopening or rescheduling. Changes are not accepted after the slot has started.
 
 The history list shows each booking attempt for your Claims, including earlier
 cancellations and no-shows after you book again. Each row shows its attempt
@@ -391,18 +391,25 @@ Storage locations and officer-only custody details are never shown to Students.
 
 ### Desk Officer appointments and custody
 
-Open **Appointments** and enter a future start as `yyyy-MM-dd HH:mm` in
-Singapore time. Starts must be on the hour or half-hour. Select **Create
-30-minute slot**. Overlapping enabled slots are rejected because the service
-has one collection desk. An unbooked future slot can be disabled; a booked
-slot cannot be silently removed.
+Open **Appointments** and select **+** beside the collection slots. Choose a
+future date, hour, and either `00` or `30` minutes in Singapore time. Duplicate
+or overlapping enabled slots are rejected because the service has one
+collection desk. Select an unbooked future slot and use **−** to disable it;
+a booked slot cannot be silently removed.
 
 Select a booked case to record its storage location and mark custody ready.
-At the appointment, choose **Confirm collection** to record the collection
+Selecting a case also shows its officer-only audit history, including each
+recorded action, time, actor role, and actor account. Refreshing the screen keeps
+an unfinished storage-location draft when the same case remains selected. At
+the appointment, choose **Confirm collection** to record the collection
 time and officer action. Then choose **Mark item returned**, followed by **Close
 case**. Invalid orderings are rejected and do not change stored data. If the
 Student does not attend, use **NO_SHOW** after the slot has ended; the slot is
 released and the Student may book another appointment.
+
+Available actions are clickable rather than time-disabled. If an action is too
+early or the case is not in the required state, a pop-up explains what must
+happen first. Dismiss the message, complete the indicated step, and retry.
 
 **NO_SHOW** is for a missed appointment, not a step in returning an item. It
 cannot be recorded before the 30-minute slot ends or after collection has been
@@ -410,12 +417,6 @@ confirmed. If the screen says the custody order is invalid, record a storage
 location and mark the item ready before confirming collection. Confirm
 collection before marking the item returned, and mark it returned before
 closing the case.
-
-The officer audit history records booking, rescheduling, cancellation,
-no-show, custody, collection, return, and closure events. Officer identities
-are visible in this officer-only history, and each actor is labelled as a
-Student or Desk Officer according to the recorded role. Evidence, report
-descriptions, and storage locations are not copied into audit-event text.
 
 ## Troubleshooting
 

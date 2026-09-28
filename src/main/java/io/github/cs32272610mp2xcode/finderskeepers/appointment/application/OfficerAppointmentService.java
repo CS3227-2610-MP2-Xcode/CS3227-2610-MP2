@@ -144,6 +144,12 @@ public final class OfficerAppointmentService {
         return repository.closeCase(claimId, user.userId(), operationTime());
     }
 
+    /** Returns the service clock time used for UI availability hints.
+     * @return current operation time */
+    public Instant currentTime() {
+        return operationTime();
+    }
+
     private Instant operationTime() {
         return clock.instant().truncatedTo(ChronoUnit.MILLIS);
     }

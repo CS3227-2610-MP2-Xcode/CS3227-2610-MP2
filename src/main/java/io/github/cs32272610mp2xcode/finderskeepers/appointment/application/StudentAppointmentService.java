@@ -97,7 +97,7 @@ public final class StudentAppointmentService {
                             AppointmentStoreException.Reason.CORRUPT_STORE);
                 }
                 active.add(new StudentActiveAppointmentSummary(appointment.appointmentId(),
-                        appointment.status(), startsAt));
+                        appointment.claimId(), appointment.status(), startsAt));
             }
         }
         return List.copyOf(active);
