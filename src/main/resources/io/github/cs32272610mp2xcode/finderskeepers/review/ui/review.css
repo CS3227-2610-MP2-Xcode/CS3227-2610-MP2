@@ -5,7 +5,7 @@
 .review-title {
     -fx-font-size: 22px;
     -fx-font-weight: bold;
-    -fx-text-fill: #1f5136;
+    -fx-text-fill: #173e2b;
 }
 
 .review-row-primary,
@@ -25,6 +25,15 @@
 .review-details-scroll,
 .review-details-scroll > .viewport {
     -fx-background-color: transparent;
+}
+
+.review-details {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-border-color: #d7e3db;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(27, 62, 43, 0.06), 10, 0.1, 0, 2);
+    -fx-padding: 14px;
 }
 
 .review-section-title {
