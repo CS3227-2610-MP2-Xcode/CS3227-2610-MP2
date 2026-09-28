@@ -104,6 +104,9 @@ Do not duplicate another developer's types or features to avoid an integration d
   - editing another developer's owned implementation;
   - running destructive filesystem or Git operations.
 - Avoid destructive commands. Prefer reversible operations and inspect the exact target first.
+- In zsh scripts, avoid reserved or special variable names such as `status`; use task-specific names.
+- Resolve generated artifact names from the filesystem before validating them; do not assume filenames from an earlier plan.
+- Test assertions must inspect returned or persisted behaviour; never compare two constants as a substitute for observing the system under test.
 - Stop repeated attempts after the same failure occurs three times. Report the evidence and current blocker.
 
 ## Verification
