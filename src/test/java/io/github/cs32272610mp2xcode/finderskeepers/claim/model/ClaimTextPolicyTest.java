@@ -23,6 +23,9 @@ class ClaimTextPolicyTest {
         assertEquals(Optional.empty(), ClaimTextPolicy.optionalDecisionReason(Optional.of(" \n ")));
         assertEquals(Optional.of("Synthetic reason."),
                 ClaimTextPolicy.optionalDecisionReason(Optional.of(" Synthetic reason. ")));
+        assertEquals(Optional.empty(), ClaimTextPolicy.optionalDecisionReason(null));
+        assertEquals("x".repeat(499) + "🙂",
+                ClaimTextPolicy.evidence("x".repeat(499) + "🙂"));
     }
 
     @ParameterizedTest(name = "invalid partition {index}")
@@ -54,6 +57,8 @@ class ClaimTextPolicyTest {
                 Arguments.of("line\rbreak"),
                 Arguments.of("tab\tbreak"),
                 Arguments.of("format\u200Bcharacter"),
-                Arguments.of("unpaired\uD800"));
+                Arguments.of("unpaired\uD800"),
+                Arguments.of("unpaired\uDC00"),
+                Arguments.of("control\u0000character"));
     }
 }

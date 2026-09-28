@@ -23,6 +23,7 @@ import io.github.cs32272610mp2xcode.finderskeepers.claim.application.OfficerClai
 import io.github.cs32272610mp2xcode.finderskeepers.claim.application.OfficerClaimsState.HistoryFilter;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.Claim;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimId;
+import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimLedger;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimStatus;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimValidationException;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.ClaimRepository;
@@ -33,6 +34,7 @@ import io.github.cs32272610mp2xcode.finderskeepers.report.ItemReport;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ReportStatus;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ReportType;
 import io.github.cs32272610mp2xcode.finderskeepers.report.persistence.ReportRepository;
+import io.github.cs32272610mp2xcode.finderskeepers.report.persistence.ReportStoreException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -187,6 +189,86 @@ class OfficerClaimsServiceTest {
     }
 
     @Test
+    void approvalWithOptionalReasonIsDurableAndClosesBothEndpoints() throws Exception {
+        JsonClaimRepository claims = claims("approval.json");
+        Claim claim = pending(1, 101, 201, NOW.minusSeconds(20));
+        submitAll(claims, claim);
+        MutableReports reports = reportsFor(claim);
+        OfficerClaimsService service = service(claims, reports);
+        var handle = service.enter().pendingRows().getFirst().handle();
+        service.selectPending(handle);
+        var review = service.reviewDecision(
+                handle, DecisionKind.APPROVE, "  Synthetic approval reason.  ");
+
+        OfficerClaimsState approved = service.approve(review);
+
+        assertEquals(Optional.of(Feedback.APPROVED), approved.feedback());
+        assertTrue(approved.pendingRows().isEmpty());
+        assertTrue(approved.selectedDetail().isEmpty());
+        Claim durable = claims("approval.json").loadAll().getFirst();
+        assertEquals(ClaimStatus.APPROVED, durable.status());
+        assertEquals(Optional.of("Synthetic approval reason."), durable.decisionReason());
+        assertEquals(NOW, durable.terminalAt().orElseThrow());
+        assertEquals(ClaimLedger.SubmissionEligibility.BLOCKED,
+                ClaimLedger.from(List.of(durable))
+                        .evaluate("other-student", claim.lostReportId(), uuid(999))
+                        .eligibility());
+        assertEquals(ClaimLedger.SubmissionEligibility.BLOCKED,
+                ClaimLedger.from(List.of(durable))
+                        .evaluate("other-student", uuid(998), claim.foundReportId())
+                        .eligibility());
+    }
+
+    @Test
+    void decisionRevalidationStopsWhenCanonicalReportDisappears() throws Exception {
+        JsonClaimRepository claims = claims("missing-before-decision.json");
+        Claim claim = pending(1, 101, 201, NOW.minusSeconds(20));
+        submitAll(claims, claim);
+        MutableReports reports = reportsFor(claim);
+        OfficerClaimsService service = service(claims, reports);
+        var handle = service.enter().pendingRows().getFirst().handle();
+        service.selectPending(handle);
+        var review = service.reviewDecision(handle, DecisionKind.APPROVE, "");
+        reports.values.removeIf(report -> report.reportId().equals(claim.foundReportId()));
+
+        OfficerClaimsState result = service.approve(review);
+
+        assertEquals(Optional.of(Feedback.REPORT_UNAVAILABLE), result.feedback());
+        assertFalse(result.decisionsEnabled());
+        assertTrue(result.selectedDetail().orElseThrow().foundReport().isEmpty());
+        assertEquals(ClaimStatus.PENDING_REVIEW, claims.loadAll().getFirst().status());
+    }
+
+    @Test
+    void invalidSelectionsAndMismatchedConfirmationKindsNeverDecide() throws Exception {
+        JsonClaimRepository durable = claims("invalid-selection.json");
+        Claim claim = pending(1, 101, 201, NOW.minusSeconds(20));
+        submitAll(durable, claim);
+        SwitchableClaims claims = new SwitchableClaims(durable);
+        OfficerClaimsService service = service(claims, reportsFor(claim));
+        OfficerClaimsState entered = service.enter();
+
+        assertEquals(Optional.of(Feedback.INVALID_SELECTION),
+                service.selectPending(null).feedback());
+        assertEquals(Optional.of(Feedback.INVALID_SELECTION),
+                service.selectHistory(entered.pendingRows().getFirst().handle()).feedback());
+        var handle = service.refreshPending().pendingRows().getFirst().handle();
+        service.selectPending(handle);
+        var approval = service.reviewDecision(handle, DecisionKind.APPROVE, "");
+        var rejection = service.reviewDecision(
+                handle, DecisionKind.REJECT, "Synthetic rejection.");
+
+        assertThrows(IllegalArgumentException.class, () -> service.reject(approval));
+        assertThrows(IllegalArgumentException.class, () -> service.approve(rejection));
+        assertEquals(ClaimStatus.PENDING_REVIEW, durable.loadAll().getFirst().status());
+
+        claims.returnNotFound = true;
+        assertEquals(Optional.of(Feedback.INVALID_SELECTION),
+                service.approve(approval).feedback());
+        assertEquals(ClaimStatus.PENDING_REVIEW, durable.loadAll().getFirst().status());
+    }
+
+    @Test
     void staleDecisionReportsAuthoritativeTerminalStateWithoutSecondWrite()
             throws Exception {
         JsonClaimRepository claims = claims("stale.json");
@@ -243,6 +325,34 @@ class OfficerClaimsServiceTest {
         assertEquals(Optional.of(Feedback.DECISION_FAILED), writeFailed.feedback());
         assertEquals(ClaimStatus.PENDING_REVIEW, durable.loadAll().getFirst().status());
         assertTrue(writeFailed.selectedDetail().isPresent());
+
+        claims.failWrites = false;
+        claims.failLoads = true;
+        OfficerClaimsState historyFailed = service.refreshHistory();
+        assertEquals(Availability.UNAVAILABLE, historyFailed.historyAvailability());
+        assertTrue(historyFailed.historyRows().isEmpty());
+        claims.failLoads = false;
+        assertEquals(Availability.READY,
+                service.retryHistory().historyAvailability());
+
+        reports.failLoads = true;
+        OfficerClaimsState reportFailure = service.refreshPending();
+        assertEquals(Availability.UNAVAILABLE, reportFailure.pendingAvailability());
+        assertTrue(reportFailure.pendingRows().isEmpty());
+        reports.failLoads = false;
+        OfficerClaimsState ready = service.retryPending();
+        assertEquals(Availability.READY, ready.pendingAvailability());
+        var currentHandle = ready.pendingRows().getFirst().handle();
+        service.selectPending(currentHandle);
+        var currentReview = service.reviewDecision(
+                currentHandle, DecisionKind.APPROVE, "");
+        reports.failLoads = true;
+
+        OfficerClaimsState precommitLoadFailure = service.approve(currentReview);
+
+        assertEquals(Optional.of(Feedback.DECISION_FAILED),
+                precommitLoadFailure.feedback());
+        assertEquals(ClaimStatus.PENDING_REVIEW, durable.loadAll().getFirst().status());
     }
 
     @Test
@@ -348,12 +458,18 @@ class OfficerClaimsServiceTest {
     private static final class MutableReports implements ReportRepository {
         private final List<ItemReport> values;
 
+        private boolean failLoads;
+
         MutableReports(List<ItemReport> initial) {
             values = new ArrayList<>(initial);
         }
 
         @Override
-        public List<ItemReport> loadAll() {
+        public List<ItemReport> loadAll() throws ReportStoreException {
+            if (failLoads) {
+                throw new ReportStoreException(
+                        ReportStoreException.Reason.CORRUPT_OR_UNSUPPORTED_STORE);
+            }
             return List.copyOf(values);
         }
 
@@ -376,6 +492,8 @@ class OfficerClaimsServiceTest {
         private boolean failWrites;
 
         private boolean failLoadsAfterMutation;
+
+        private boolean returnNotFound;
 
         SwitchableClaims(ClaimRepository repository) {
             delegate = repository;
@@ -406,6 +524,9 @@ class OfficerClaimsServiceTest {
             if (failWrites) {
                 throw new ClaimStoreException(ClaimStoreException.Reason.WRITE_FAILURE);
             }
+            if (returnNotFound) {
+                return new TerminalResult(TerminalOutcome.NOT_FOUND, Optional.empty());
+            }
             TerminalResult result = delegate.approve(id, decisionReason, terminalAt);
             failLoads = failLoadsAfterMutation;
             return result;
@@ -416,6 +537,9 @@ class OfficerClaimsServiceTest {
                 Instant terminalAt) throws ClaimStoreException {
             if (failWrites) {
                 throw new ClaimStoreException(ClaimStoreException.Reason.WRITE_FAILURE);
+            }
+            if (returnNotFound) {
+                return new TerminalResult(TerminalOutcome.NOT_FOUND, Optional.empty());
             }
             TerminalResult result = delegate.reject(id, decisionReason, terminalAt);
             failLoads = failLoadsAfterMutation;

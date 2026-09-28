@@ -105,6 +105,20 @@ class JsonUserRepositoryTest {
         assertTrue(repository.findByUsername("demo.user").isPresent());
     }
 
+    @Test
+    void addedEscapedUnicodeIdentitySurvivesRestartExactly()
+            throws UserStoreException {
+        String userId = "synthetic-\"\\/\bé";
+        String username = "student-\"\\/\b\f\n\r\t\u0001é";
+        UserAccount original = account(userId, username);
+
+        repository.add(original);
+
+        UserAccount restored = new JsonUserRepository(store)
+                .findByUsername(username).orElseThrow();
+        assertEquals(original, restored);
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidCredentialMetadata")
     void rejectsInvalidCredentialMetadataWithoutReplacingTheStore(
@@ -315,7 +329,23 @@ class JsonUserRepositoryTest {
                 arguments("unknown field is present", storeJson(unknownField)),
                 arguments("field is duplicated", storeJson(duplicateField)),
                 arguments("role value is invalid", storeJson(validAccount.replace(
-                        "\"role\": \"STUDENT\"", "\"role\": \"COMMUNITY_MEMBER\""))));
+                        "\"role\": \"STUDENT\"", "\"role\": \"COMMUNITY_MEMBER\""))),
+                arguments("empty top-level object", "{}"),
+                arguments("empty account object", storeJson("{}")),
+                arguments("unterminated string", validDocument.replace(
+                        "\"demo.user\"", "\"demo.user")),
+                arguments("raw control character in string", validDocument.replace(
+                        "demo.user", "demo\nuser")),
+                arguments("escape is missing its value", validDocument.replace(
+                        "demo.user", "demo.user\\")),
+                arguments("escape is not defined by JSON", validDocument.replace(
+                        "demo.user", "demo\\q.user")),
+                arguments("unicode escape is incomplete", validDocument.replace(
+                        "demo.user", "demo\\u123.user")),
+                arguments("unicode escape has a non-hex digit", validDocument.replace(
+                        "demo.user", "demo\\u12x4.user")),
+                arguments("integer exceeds supported range", validDocument.replace(
+                        "\"iterations\": 210000", "\"iterations\": 99999999999999999999")));
     }
 
     private void assertRejectedWithoutReplacement(String content) throws IOException {
