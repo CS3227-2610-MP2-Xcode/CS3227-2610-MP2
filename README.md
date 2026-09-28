@@ -6,6 +6,8 @@ Finders Keepers is a JavaFX desktop lost-and-found application for primary schoo
 
 This project is developed for NUS CS3227 MP2 using Java SE 25.
 
+Visit the [Finders Keepers product website](https://cs3227-2610-mp2-xcode.github.io/CS3227-2610-MP2/) for the product overview and published guides.
+
 ## Development commands
 
 ```bash
@@ -17,3 +19,5 @@ This project is developed for NUS CS3227 MP2 using Java SE 25.
 See [docs/UserGuide.md](docs/UserGuide.md) for user instructions.
 
 See [docs/DeveloperGuide.md](docs/DeveloperGuide.md) for developer documentation.
+
+Version tags matching `v*` publish a verified GitHub Release automatically. Pushes to `master` deploy the product website after the cross-platform delivery checks pass.

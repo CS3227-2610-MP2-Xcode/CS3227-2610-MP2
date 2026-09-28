@@ -1,0 +1,13 @@
+title: Finders Keepers
+description: A role-based lost-and-found desktop application for primary schools.
+theme: minima
+url: https://cs3227-2610-mp2-xcode.github.io
+baseurl: /CS3227-2610-MP2
+repository: CS3227-2610-MP2-Xcode/CS3227-2610-MP2
+header_pages:
+  - UserGuide.md
+  - DeveloperGuide.md
+  - Reflections.md
+exclude:
+  - features
+  - mission-briefs
