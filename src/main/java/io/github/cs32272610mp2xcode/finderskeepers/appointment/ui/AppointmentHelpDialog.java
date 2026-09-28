@@ -1,6 +1,7 @@
 package io.github.cs32272610mp2xcode.finderskeepers.appointment.ui;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -49,39 +50,37 @@ final class AppointmentHelpDialog {
 
     /** Creates the help button used by the Student appointment page. */
     static Button studentHelpButton() {
-        return helpButton("Student appointment help", STUDENT_STEPS,
-                "Need to change plans? You may cancel or reschedule before the slot starts. "
-                        + "Storage locations and officer-only notes are never shown to Students.",
+        return helpButton("Student appointment help", AppointmentHelpDialog::studentPage,
                 "student-appointment-help");
     }
 
     /** Creates the help button used by the Desk Officer appointment page. */
     static Button officerHelpButton() {
-        return helpButton("Desk Officer appointment help", OFFICER_STEPS,
-                "Use NO_SHOW only after a missed slot has ended. A cancelled or no-show booking "
-                        + "releases the slot so the Student can book again.",
+        return helpButton("Desk Officer appointment help", AppointmentHelpDialog::officerPage,
                 "officer-appointment-help");
     }
 
-    static List<String> studentStepTitles() {
-        return STUDENT_STEPS.stream().map(HelpStep::title).toList();
+    static ScrollPane studentPage() {
+        return buildPage(STUDENT_STEPS,
+                "Need to change plans? You may cancel or reschedule before the slot starts. "
+                        + "Storage locations and officer-only notes are never shown to Students.");
     }
 
-    static List<String> officerStepTitles() {
-        return OFFICER_STEPS.stream().map(HelpStep::title).toList();
+    static ScrollPane officerPage() {
+        return buildPage(OFFICER_STEPS,
+                "Use NO_SHOW only after a missed slot has ended. A cancelled or no-show booking "
+                        + "releases the slot so the Student can book again.");
     }
 
-    private static Button helpButton(String title, List<HelpStep> steps, String note, String id) {
+    private static Button helpButton(String title, Supplier<ScrollPane> pageSupplier, String id) {
         Button button = new Button("Help: how appointments work");
         button.setId(id);
         button.getStyleClass().add("quiet-button");
-        button.setOnAction(event -> show(title, steps, note));
+        button.setOnAction(event -> show(title, pageSupplier.get()));
         return button;
     }
 
-    private static void show(String title, List<HelpStep> steps, String note) {
-        ScrollPane scroll = buildPage(steps, note);
-
+    private static void show(String title, ScrollPane scroll) {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle(title);
         dialog.setHeaderText("How the collection process works");
@@ -103,6 +102,7 @@ final class AppointmentHelpDialog {
             heading.getStyleClass().add("section-title");
             Label explanation = new Label(step.explanation());
             explanation.setWrapText(true);
+            explanation.getStyleClass().add("help-step-explanation");
             content.getChildren().addAll(heading, explanation);
         }
         Label finalNote = new Label(note);
