@@ -4,10 +4,20 @@ import java.util.Objects;
 import java.util.Optional;
 
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.AuthenticatedUser;
+import io.github.cs32272610mp2xcode.finderskeepers.auth.model.UserRole;
 
-/** Coordinates login, in-memory session state, and role-derived navigation. */
+/**
+ * Coordinates login, self-registration, in-memory session state, and
+ * role-derived navigation.
+ *
+ * <p>A successful login or registration replaces the current identity. A
+ * failed attempt updates the user-facing message without discarding an
+ * existing authenticated session.</p>
+ */
 public final class AuthenticationCoordinator {
     private final AuthenticationService authenticationService;
+
+    private final RegistrationService registrationService;
 
     private AuthenticatedUser currentUser;
 
@@ -17,9 +27,12 @@ public final class AuthenticationCoordinator {
      * Creates a coordinator without an authenticated user.
      *
      * @param service credential verifier
+     * @param registration account creation service
      */
-    public AuthenticationCoordinator(AuthenticationService service) {
+    public AuthenticationCoordinator(AuthenticationService service,
+            RegistrationService registration) {
         authenticationService = Objects.requireNonNull(service, "service");
+        registrationService = Objects.requireNonNull(registration, "registration");
     }
 
     /**
@@ -33,6 +46,26 @@ public final class AuthenticationCoordinator {
         AuthenticationResult result = authenticationService.authenticate(username, password);
         message = result.message();
         if (result.status() == AuthenticationStatus.SUCCESS) {
+            currentUser = result.user().orElseThrow();
+        }
+        return result;
+    }
+
+    /**
+     * Creates a local account and starts its session on success.
+     *
+     * @param username requested username
+     * @param password requested password; cleared by the registration service
+     * @param confirmation repeated password; cleared by the registration service
+     * @param role requested Student or Desk Officer role
+     * @return registration outcome
+     */
+    public RegistrationResult register(String username, char[] password,
+            char[] confirmation, UserRole role) {
+        RegistrationResult result = registrationService.register(
+                username, password, confirmation, role);
+        message = result.message();
+        if (result.status() == RegistrationStatus.SUCCESS) {
             currentUser = result.user().orElseThrow();
         }
         return result;

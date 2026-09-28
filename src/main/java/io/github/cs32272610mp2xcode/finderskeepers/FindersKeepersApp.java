@@ -55,6 +55,8 @@ public final class FindersKeepersApp extends Application {
         AuthenticationPane content = new AuthenticationPane(
                 AuthenticationFactory.createCoordinator(
                         Path.of("data", "demo-users.json")),
+                AuthenticationFactory.createCoordinator(
+                        Path.of("data", "users.json")),
                 StudentReportWorkspaceFactory.create(
                         reportRepository,
                         claimWorkspaceFactory::createStudentFeature,

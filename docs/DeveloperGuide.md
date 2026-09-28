@@ -56,9 +56,10 @@ The current source tree keeps application startup separate from the shared repor
 - `workspace` supplies neutral authenticated-feature and session-lifecycle
   seams used to compose Claims without coupling authentication to Claim UI.
 
-`Launcher` delegates to `FindersKeepersApp`, which composes the authentication
-coordinator for `data/demo-users.json` and one application-lifetime repository
-for each durable domain: `JsonReportRepository` at `data/reports.json`,
+`Launcher` delegates to `FindersKeepersApp`, which composes separate
+authentication coordinators for the checked-in `data/demo-users.json` fixture
+and the untracked `data/users.json` production-mode store, plus one
+application-lifetime repository for each durable domain: `JsonReportRepository` at `data/reports.json`,
 `FilePossibleMatchRepository` at `data/possible-match-links.txt`, and
 `JsonClaimRepository` at `data/claims.json`. `ClaimWorkspaceFactory` receives
 all three repositories, a UTC clock, and a Claim UUID supplier. Authentication
@@ -77,7 +78,9 @@ The repository stores all canonical report fields and preserves insertion order
 across reconstruction. It performs bounded strict reads and all-or-nothing
 atomic replacement with no unsafe fallback. The application-owned
 `data/reports.json` remains plaintext and is excluded from Git by the exact
-root-relative ignore rule `/data/reports.json`. The Claim and relationship
+root-relative ignore rule `/data/reports.json`. The mutable production account
+store and its temporary files are excluded by `/data/users.json` and
+`/data/.users-*.tmp`. The Claim and relationship
 stores and their temporary files have equally precise root-relative ignore
 rules. See
 [S1-D2-02 Report Storage Format](features/S1-D2-02/StorageFormat.md) for the
@@ -89,7 +92,8 @@ assumptions.
 Authentication code is grouped by responsibility under `finderskeepers.auth`:
 
 - `application` contains `AuthenticationCoordinator`, `AuthenticationService`,
-  authentication results and statuses, and application routes.
+  `RegistrationService`, login and registration results/statuses, and
+  application routes.
 - `model` contains account, authenticated-user, and role values.
 - `security` contains the password policy, credential value, hashing interface,
   algorithm enum, and PBKDF2 implementation.
@@ -105,22 +109,37 @@ The dependencies flow in one direction:
 
 ```text
 AuthenticationPane -> AuthenticationCoordinator -> AuthenticationService
+                                            \-----> RegistrationService
 AuthenticationFactory -> AuthenticationCoordinator
                       -> JsonUserRepository -> UserStoreJsonCodec
                       -> Pbkdf2PasswordHasher
 AuthenticationService -> UserRepository
 AuthenticationService -> PasswordHasher
+RegistrationService -> UserRepository
+RegistrationService -> PasswordHasher
 ```
 
-- `AuthenticationFactory.createCoordinator(Path)` owns production wiring for
-  the JSON repository, PBKDF2 hasher, authentication service, and coordinator.
-  The JavaFX pane accepts an `AuthenticationCoordinator` plus opaque Student
-  and Desk Officer view factories; it does not know concrete report,
-  persistence, review, or hashing types.
+- `AuthenticationFactory.createCoordinator(Path)` owns wiring for a JSON
+  repository, shared PBKDF2 hasher, authentication service, registration
+  service, UUID source, and coordinator. The JavaFX pane accepts separate demo
+  and production coordinators plus opaque Student and Desk Officer view
+  factories; it does not know concrete report, persistence, review, or hashing
+  types.
 - `AuthenticationCoordinator` stores only the current authenticated user and a
-  validation message. It derives the route from the user's role. A failed login
-  preserves an existing authenticated session; logout clears it and returns to
-  the login route.
+  validation message. It derives the route from the user's role. Successful
+  registration adopts the newly stored identity just like a successful login.
+  A failed login or registration preserves an existing authenticated session;
+  logout clears it and returns to the login route.
+- `AuthenticationPane` starts in Production mode. Its top-right **⇄** control
+  swaps the normal form for two one-click demo-role buttons. Demo authentication reads
+  only `data/demo-users.json`; Production mode authenticates and registers only
+  through `data/users.json`. Logging out returns to the active mode.
+- `RegistrationService` trims usernames, rejects blank usernames/passwords,
+  checks exact password confirmation, requires a supported role, enforces
+  case-insensitive username uniqueness, creates a UUID identity, hashes the
+  password, and appends the account. Both supplied password arrays are cleared
+  on every outcome. Successful registration returns only the new non-secret
+  identity.
 - `JsonUserRepository` receives its storage path from the caller. An absent file
   means that no accounts are configured. Unreadable, malformed,
   unsupported-version, duplicate, incomplete, oversized, or invalid UTF-8 data
@@ -148,6 +167,9 @@ AuthenticationService -> PasswordHasher
   successful login or the explicit **Clear** action.
 - Authenticated state contains only user ID, username, and role. Passwords,
   hashes, and salts never enter it.
+- Allowing self-registration as `DESK_OFFICER` is an explicit assignment/testing
+  convenience. It is not a production authorization boundary; a deployed system
+  would require trusted staff provisioning or approval.
 
 ## Desk Officer review components
 
@@ -630,6 +652,12 @@ Use `DESK_OFFICER` for a Desk Officer. The utility permits only the two canonica
 
 `data/demo-users.json` retains the version 1 schema and contains the two explicitly synthetic accounts listed in the User Guide. Never use that public store or those demonstration passwords for real users. Application startup resolves this external file relative to the working directory. It is not embedded in the release JAR, so launch from the repository root until a shared distribution layout is approved.
 
+The JavaFX registration workflow writes Production-mode accounts to the
+separate ignored `data/users.json` store. It uses the same JSON schema,
+repository safety checks, PBKDF2 parameters, and role values as the provisioning
+utility. A missing store starts empty and is created only after a successful
+registration. Demo mode never writes the checked-in fixture.
+
 ## Useful commands
 
 On macOS or Linux:
@@ -652,14 +680,24 @@ gradlew.bat release
 
 `check` compiles the project, runs JUnit, Checkstyle, Javadoc checks, and generates the JaCoCo report. `release` produces `release/FindersKeepers.jar`.
 
+`AuthenticationPaneTest` starts a real JavaFX toolkit and renders the login pane
+to exercise its controls. On a headless Linux machine, run the quality gate as
+`xvfb-run -a ./gradlew check`; CI applies this wrapper to its Linux build. macOS,
+Windows, and Linux sessions with a display can use the ordinary command above.
+
 ## Testing and quality gates
 
 - JUnit 5 provides automated tests. In addition to the baseline tests,
   authentication tests cover the coordinator's login/session behavior,
   credential whitespace and array clearing, both role routes, logout, factory
-  wiring, PBKDF2 verification and salt uniqueness, provisioning validation,
-  bounded JSON persistence, missing storage, corrupt metadata, and plaintext
-  exclusion.
+  wiring, PBKDF2 verification and salt uniqueness, registration for both roles,
+  duplicate and invalid registration, session preservation, provisioning
+  validation, bounded JSON persistence, missing storage, corrupt metadata, and
+  plaintext exclusion.
+- The scene-level `AuthenticationPaneTest` covers the Production-mode default,
+  both demo-role buttons, mode switching and tooltips, coordinator separation,
+  registration validation and persistence, both role routes, normal login,
+  clear, logout, and return to the active mode.
 - Report domain and persistence tests cover report invariants, reconstruction,
   ordering, replacement conflicts, strict JSON and Unicode handling, resource
   bounds, atomic-write failures, recovery behavior, and supported

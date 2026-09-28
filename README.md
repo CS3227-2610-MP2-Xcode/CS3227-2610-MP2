@@ -52,7 +52,8 @@ Officer collection work remain pending.
 
 Authentication is separated by responsibility under `finderskeepers.auth`:
 `application`, `model`, `security`, `persistence`, `provisioning`, `ui`, and
-`bootstrap`. `AuthenticationCoordinator` owns login/session behavior, while
+`bootstrap`. `AuthenticationCoordinator` owns login, self-registration, and
+session behavior, while
 `AuthenticationFactory.createCoordinator(Path)` is the production composition
 point. The JavaFX pane depends only on the coordinator.
 
@@ -72,10 +73,13 @@ After compiling classes, local accounts can be provisioned through
 See the [Developer Guide](docs/DeveloperGuide.md) for the full command and
 safety constraints.
 
-Application startup and the refreshed release JAR show the login interface. Run
-them from the repository root so the external `data/demo-users.json` store is
-available. The JAR does not embed that store, so distributing a standalone JAR
-with usable demo accounts still requires a shared packaging decision.
+Application startup and the refreshed release JAR show Production mode with
+normal login and local account creation in the ignored `data/users.json` store.
+The top-right **⇄** control opens Demo mode with one-click Student and Desk
+Officer access. Run from the repository root so the external
+`data/demo-users.json` fixture is available. The JAR does not embed that store,
+so distributing a standalone JAR with usable demo accounts still requires a
+shared packaging decision.
 
 ## Documentation
 

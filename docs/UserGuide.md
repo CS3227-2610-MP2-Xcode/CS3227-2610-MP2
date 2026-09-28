@@ -3,9 +3,11 @@
 ## Current status
 
 Finders Keepers is intended for a primary school's lost-and-found desk.
-Application startup opens the local login, with Student and Desk Officer
-routing and logout available after authentication. The Desk Officer route now
-opens the active report-review queue backed by `data/reports.json`.
+Application startup opens the local login in Production mode. A top-right **⇄**
+button switches between normal local account access and Demo mode's one-click
+Student and Desk Officer access. The Desk
+Officer route opens the active report-review queue backed by
+`data/reports.json`.
 
 The Desk Officer route also provides the possible-match workspace and stores
 officer-created relationships separately in
@@ -52,6 +54,20 @@ gradlew.bat run
 
 Both `gradlew run` and the current release JAR open the **Finders Keepers** login interface when launched from the repository root.
 
+## Switch login modes
+
+The label beside the top-right **⇄** button shows the current mode:
+
+- **Demo mode** replaces the username and password fields with **Log in as demo
+  Student** and **Log in as demo Desk Officer**. Select either button to enter
+  the matching workspace immediately.
+- **Production mode** shows the normal username/password form, **Log in**,
+  **Clear**, and **Create account**. Selecting **⇄** again returns to Demo
+  mode.
+
+Switching modes clears any current login validation message. Logging out
+returns to the mode used for that session.
+
 ## Synthetic demonstration accounts
 
 The project-local `data/demo-users.json` store contains two public, synthetic demonstration accounts:
@@ -61,15 +77,48 @@ The project-local `data/demo-users.json` store contains two public, synthetic de
 | Student | `demo.student` | `Student-Demo-27!` |
 | Desk Officer | `demo.officer` | `Officer-Demo-42!` |
 
-These accounts and passwords are clearly labelled public synthetic test data. Do not reuse them for a real person, school, or system. The credential store contains salted password hashes rather than these plaintext passwords. Application startup reads the project-local store from `data/demo-users.json`. The store is not embedded in the JAR, so launch the JAR from the repository root unless a different store layout is configured later.
+These accounts and passwords are clearly labelled public synthetic test data.
+Demo mode supplies them automatically, so normal testers do not need to type or
+copy them. Do not reuse them for a real person, school, or system. The
+credential store contains salted password hashes rather than plaintext
+passwords. Application startup reads the project-local store from
+`data/demo-users.json`. The store is not embedded in the JAR, so launch the JAR
+from the repository root unless a different store layout is configured later.
 
 ## Login behavior
 
-Enter one of the usernames and passwords above and select **Log in**. Usernames ignore capitalization and surrounding spaces. Passwords are case-sensitive and are not trimmed: meaningful leading or trailing spaces are part of the password, while an empty or entirely whitespace password is rejected. Temporary password arrays used by the authentication module are cleared after each attempt. The stored account role determines which interface opens; there is no role selector.
+In Production mode, enter a registered username and password and select **Log
+in**. Usernames ignore capitalization and surrounding spaces. Passwords are
+case-sensitive and are not trimmed: meaningful leading or trailing spaces are
+part of the password, while an empty or entirely whitespace password is
+rejected. Temporary password arrays used by the authentication module are
+cleared after each attempt. The stored account role determines which interface
+opens; the login form has no role selector.
 
 Blank or incorrect details show `Invalid username or password.` without identifying which entry was wrong. After a failed login, the masked password field remains populated so the user can correct the attempt. A successful login clears it. **Clear** removes both fields and the message. **Log out** clears the in-memory session and returns to login.
 
-The local store keeps its version 1 format. For safety, it accepts only
+## Create a local account
+
+In Production mode, select **Create account**, then:
+
+1. Choose a username.
+2. Enter and confirm a nonblank password.
+3. Select **Student** or **Desk Officer**.
+4. Select **Create and log in**.
+
+Successful registration stores the account and opens its role workspace. The
+username must be unique without regard to capitalization. A duplicate username,
+mismatched confirmation, blank field, or unavailable store shows a safe message
+without creating a session. **Back to login** abandons the form.
+
+Production-mode accounts are stored in the local, untracked `data/users.json`
+file. The file is created after the first successful registration and is
+separate from the checked-in demo accounts. For this school assignment, the
+registration form intentionally lets a tester choose the Desk Officer role.
+That convenience is not a suitable authorization design for a real deployment;
+real staff accounts would need approval by a trusted administrator.
+
+Both local account stores keep the version 1 format. For safety, they accept only
 `PBKDF2WithHmacSHA256` credentials with 210,000 to 1,000,000 iterations, a
 256-bit key, a 16-byte salt, and a 32-byte hash. Newly provisioned accounts use
 600,000 iterations. The store must be valid UTF-8 and no larger than 1 MiB, and

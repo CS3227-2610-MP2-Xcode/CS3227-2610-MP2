@@ -15,6 +15,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,7 @@ import io.github.cs32272610mp2xcode.finderskeepers.auth.application.Authenticati
 import io.github.cs32272610mp2xcode.finderskeepers.auth.application.AuthenticationResult;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.application.AuthenticationService;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.application.AuthenticationStatus;
+import io.github.cs32272610mp2xcode.finderskeepers.auth.application.RegistrationService;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.UserAccount;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.UserRole;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.security.PasswordAlgorithm;
@@ -331,7 +333,8 @@ class JsonUserRepositoryTest {
     private void assertAuthenticationFailsSafely() {
         CountingPasswordHasher hasher = new CountingPasswordHasher();
         AuthenticationCoordinator coordinator = new AuthenticationCoordinator(
-                new AuthenticationService(repository, hasher));
+                new AuthenticationService(repository, hasher),
+                new RegistrationService(repository, hasher, UUID::randomUUID));
         char[] password = "synthetic password".toCharArray();
 
         AuthenticationResult result = coordinator.login("demo.user", password);
