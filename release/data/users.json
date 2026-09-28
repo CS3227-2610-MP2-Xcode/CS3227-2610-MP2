@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "accounts": [
+    {
+      "userId": "44582a79-8cf9-45d4-93fb-530401ce4820",
+      "username": "zh-student",
+      "role": "STUDENT",
+      "algorithm": "PBKDF2WithHmacSHA256",
+      "iterations": 600000,
+      "keyLength": 256,
+      "salt": "kUL3XrA7NWn/PdGwPAfTWw==",
+      "passwordHash": "IsWZW9TBwcH46dDlRMxERhd4RDAULmWhtupLp3LDF8E="
+    },
+    {
+      "userId": "df5df742-91f8-448d-a05f-aea0b1c7ecee",
+      "username": "zh-officer",
+      "role": "DESK_OFFICER",
+      "algorithm": "PBKDF2WithHmacSHA256",
+      "iterations": 600000,
+      "keyLength": 256,
+      "salt": "1aXmF6R4a8qrrZzEbxtw5A==",
+      "passwordHash": "YM/Owwqp2a6btfFbJy2g4rn0S5pL5gjH52QmZxfeQVk="
+    }
+  ]
+}

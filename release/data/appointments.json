@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "slots": [
+    {
+      "slotId": "7030214c-4fbc-44d0-9e57-8d25126b9473",
+      "startsAt": "2026-09-28T15:30:00Z",
+      "enabled": true,
+      "createdAt": "2026-09-28T15:10:36.157Z",
+      "createdByOfficerId": "demo-officer",
+      "disabledAt": null,
+      "disabledByOfficerId": null
+    },
+    {
+      "slotId": "6bab3f8c-2efe-4fde-b63e-ec4ddcc14580",
+      "startsAt": "2026-09-29T15:30:00Z",
+      "enabled": true,
+      "createdAt": "2026-09-28T15:10:52.524Z",
+      "createdByOfficerId": "demo-officer",
+      "disabledAt": null,
+      "disabledByOfficerId": null
+    },
+    {
+      "slotId": "f1922510-a959-4c5a-81aa-321adccea8d1",
+      "startsAt": "2026-09-30T15:30:00Z",
+      "enabled": true,
+      "createdAt": "2026-09-28T15:11:04.689Z",
+      "createdByOfficerId": "demo-officer",
+      "disabledAt": null,
+      "disabledByOfficerId": null
+    }
+  ],
+  "cases": [
+    {
+      "claimId": "ec33c259-d33c-4c17-8fef-55224e34d978",
+      "studentUserId": "demo-student",
+      "status": "CLOSED",
+      "custodyStatus": "RETURNED",
+      "storageLocation": "cupboard1",
+      "closedAt": "2026-09-28T15:41:27.252Z",
+      "appointments": [
+        {
+      "appointmentId": "ce9dcd8a-d234-4bd4-bff6-edc959bc2e87",
+      "claimId": "ec33c259-d33c-4c17-8fef-55224e34d978",
+      "studentUserId": "demo-student",
+      "slotId": "7030214c-4fbc-44d0-9e57-8d25126b9473",
+      "status": "COLLECTION_CONFIRMED",
+      "bookedAt": "2026-09-28T15:12:01.284Z",
+      "cancelledAt": null,
+      "noShowAt": null,
+      "collectionConfirmedAt": "2026-09-28T15:40:21.633Z"
+        }
+      ],
+      "auditEvents": [
+        {
+      "eventId": "045bb7bb-7ff0-4709-af0f-d003698ae609",
+      "eventType": "APPOINTMENT_BOOKED",
+      "occurredAt": "2026-09-28T15:12:01.284Z",
+      "actorUserId": "demo-student",
+      "actorRole": "STUDENT",
+      "appointmentId": "ce9dcd8a-d234-4bd4-bff6-edc959bc2e87",
+      "sourceSlotId": null,
+      "targetSlotId": "7030214c-4fbc-44d0-9e57-8d25126b9473"
+        },
+        {
+      "eventId": "98deb6bf-76ad-45e2-97d3-5cdddbd4672a",
+      "eventType": "STORAGE_LOCATION_RECORDED",
+      "occurredAt": "2026-09-28T15:12:55.960Z",
+      "actorUserId": "demo-officer",
+      "actorRole": "DESK_OFFICER",
+      "appointmentId": null,
+      "sourceSlotId": null,
+      "targetSlotId": null
+        },
+        {
+      "eventId": "d1d13af1-411c-4bef-b36f-534fdbdecf4d",
+      "eventType": "CUSTODY_READY",
+      "occurredAt": "2026-09-28T15:13:29.626Z",
+      "actorUserId": "demo-officer",
+      "actorRole": "DESK_OFFICER",
+      "appointmentId": null,
+      "sourceSlotId": null,
+      "targetSlotId": null
+        },
+        {
+      "eventId": "40fe727b-a373-48f6-b6e1-79f1bb97c164",
+      "eventType": "COLLECTION_CONFIRMED",
+      "occurredAt": "2026-09-28T15:40:21.633Z",
+      "actorUserId": "df5df742-91f8-448d-a05f-aea0b1c7ecee",
+      "actorRole": "DESK_OFFICER",
+      "appointmentId": "ce9dcd8a-d234-4bd4-bff6-edc959bc2e87",
+      "sourceSlotId": null,
+      "targetSlotId": null
+        },
+        {
+      "eventId": "69e96fc4-839d-4598-a46d-5bc23f93e197",
+      "eventType": "ITEM_RETURNED",
+      "occurredAt": "2026-09-28T15:40:52.854Z",
+      "actorUserId": "df5df742-91f8-448d-a05f-aea0b1c7ecee",
+      "actorRole": "DESK_OFFICER",
+      "appointmentId": null,
+      "sourceSlotId": null,
+      "targetSlotId": null
+        },
+        {
+      "eventId": "26fdffe5-0cd7-46c1-82e7-4b6f4e298f8e",
+      "eventType": "CASE_CLOSED",
+      "occurredAt": "2026-09-28T15:41:27.252Z",
+      "actorUserId": "df5df742-91f8-448d-a05f-aea0b1c7ecee",
+      "actorRole": "DESK_OFFICER",
+      "appointmentId": null,
+      "sourceSlotId": null,
+      "targetSlotId": null
+        }
+      ]
+    }
+  ]
+}

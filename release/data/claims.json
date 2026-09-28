@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "claims": [
+    {
+      "claimId": "ec33c259-d33c-4c17-8fef-55224e34d978",
+      "claimantUserId": "demo-student",
+      "lostReportId": "ddabb9ce-b4c7-4039-a63b-902a8a7a0838",
+      "foundReportId": "e6397550-0b52-4b0c-b539-f072d9c638df",
+      "ownershipEvidence": "mine",
+      "status": "APPROVED",
+      "submittedAt": "2026-09-28T15:10:02.733Z",
+      "terminalAt": "2026-09-28T15:10:19.746Z",
+      "decisionReason": "this is correct"
+    }
+  ]
+}

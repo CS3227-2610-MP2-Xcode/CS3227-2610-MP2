@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "reports": [
+    {
+      "reportId": "ddabb9ce-b4c7-4039-a63b-902a8a7a0838",
+      "reporterId": "demo-student",
+      "reportType": "LOST",
+      "itemName": "shoe",
+      "category": "PERSONAL_ITEMS",
+      "location": "shoe",
+      "occurrenceDate": "2026-09-28",
+      "publicDescription": "shoe",
+      "privateIdentifyingDetail": "shoe",
+      "status": "SUBMITTED",
+      "createdAt": "2026-09-28T15:08:54.812Z"
+    },
+    {
+      "reportId": "e6397550-0b52-4b0c-b539-f072d9c638df",
+      "reporterId": "demo-student",
+      "reportType": "FOUND",
+      "itemName": "shoe",
+      "category": "PERSONAL_ITEMS",
+      "location": "shoe",
+      "occurrenceDate": "2026-09-28",
+      "publicDescription": "shoe",
+      "privateIdentifyingDetail": "shoe",
+      "status": "SUBMITTED",
+      "createdAt": "2026-09-28T15:09:16.411Z"
+    }
+  ]
+}
