@@ -73,10 +73,10 @@ After compiling classes, local accounts can be provisioned through
 See the [Developer Guide](docs/DeveloperGuide.md) for the full command and
 safety constraints.
 
-Application startup and the refreshed release JAR show Demo mode with one-click
-Student and Desk Officer access. The top-right **⇄** control opens Production
-mode with normal login and local account creation in the ignored
-`data/users.json` store. Run from the repository root so the external
+Application startup and the refreshed release JAR show Production mode with
+normal login and local account creation in the ignored `data/users.json` store.
+The top-right **⇄** control opens Demo mode with one-click Student and Desk
+Officer access. Run from the repository root so the external
 `data/demo-users.json` fixture is available. The JAR does not embed that store,
 so distributing a standalone JAR with usable demo accounts still requires a
 shared packaging decision.

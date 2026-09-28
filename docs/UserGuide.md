@@ -3,9 +3,9 @@
 ## Current status
 
 Finders Keepers is intended for a primary school's lost-and-found desk.
-Application startup opens the local login in Demo mode. A top-right **⇄**
-button switches between one-click demonstration access and Production mode,
-where local Student and Desk Officer accounts can be created and used. The Desk
+Application startup opens the local login in Production mode. A top-right **⇄**
+button switches between normal local account access and Demo mode's one-click
+Student and Desk Officer access. The Desk
 Officer route opens the active report-review queue backed by
 `data/reports.json`.
 

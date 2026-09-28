@@ -50,7 +50,7 @@ public final class AuthenticationPane extends StackPane {
 
     private final Function<AuthenticatedUser, Node> deskOfficerContentFactory;
 
-    private LoginMode loginMode = LoginMode.DEMO;
+    private LoginMode loginMode = LoginMode.PRODUCTION;
 
     /**
      * Creates and displays the login interface.

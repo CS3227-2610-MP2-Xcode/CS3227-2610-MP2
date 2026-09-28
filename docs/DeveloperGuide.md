@@ -130,8 +130,8 @@ RegistrationService -> PasswordHasher
   registration adopts the newly stored identity just like a successful login.
   A failed login or registration preserves an existing authenticated session;
   logout clears it and returns to the login route.
-- `AuthenticationPane` starts in Demo mode. Its top-right **⇄** control swaps
-  the normal form for two one-click demo-role buttons. Demo authentication reads
+- `AuthenticationPane` starts in Production mode. Its top-right **⇄** control
+  swaps the normal form for two one-click demo-role buttons. Demo authentication reads
   only `data/demo-users.json`; Production mode authenticates and registers only
   through `data/users.json`. Logging out returns to the active mode.
 - `RegistrationService` trims usernames, rejects blank usernames/passwords,
