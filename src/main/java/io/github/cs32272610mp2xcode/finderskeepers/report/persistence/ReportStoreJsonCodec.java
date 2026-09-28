@@ -22,6 +22,7 @@ import io.github.cs32272610mp2xcode.finderskeepers.report.ReportConstraints;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ReportStatus;
 import io.github.cs32272610mp2xcode.finderskeepers.report.ReportType;
 
+/** Strict, size-bounded JSON codec for the complete report store. */
 final class ReportStoreJsonCodec {
     private static final List<String> REPORT_MEMBERS = List.of(
             "reportId",
@@ -36,6 +37,13 @@ final class ReportStoreJsonCodec {
             "status",
             "createdAt");
 
+    /**
+     * Decodes and validates one complete report-store document.
+     *
+     * @param document UTF-8 JSON document
+     * @return validated reports in stored order
+     * @throws InvalidStoreException if the document is malformed or inconsistent
+     */
     List<ItemReport> decode(byte[] document) throws InvalidStoreException {
         String json;
         try {
@@ -50,6 +58,14 @@ final class ReportStoreJsonCodec {
         return new Parser(json).parseDocument();
     }
 
+    /**
+     * Serializes reports without exceeding the configured limit.
+     *
+     * @param reports reports to persist
+     * @param maximumBytes largest permitted encoded document
+     * @return UTF-8 JSON document
+     * @throws InvalidReportStateException if a value or encoded document is invalid
+     */
     byte[] encode(List<ItemReport> reports, int maximumBytes) throws InvalidReportStateException {
         BoundedUtf8 output = new BoundedUtf8(maximumBytes);
         output.ascii("{\n  \"schemaVersion\": 1,\n  \"reports\": [");
@@ -91,14 +107,17 @@ final class ReportStoreJsonCodec {
         output.jsonString(value);
     }
 
+    /** Signals that stored bytes do not represent a valid report store. */
     static final class InvalidStoreException extends Exception {
         private static final long serialVersionUID = 1L;
     }
 
+    /** Signals that in-memory report state cannot be serialized safely. */
     static final class InvalidReportStateException extends Exception {
         private static final long serialVersionUID = 1L;
     }
 
+    /** Writes escaped UTF-8 while enforcing the store's byte limit incrementally. */
     private static final class BoundedUtf8 {
         private static final char[] HEX = "0123456789abcdef".toCharArray();
 
@@ -186,6 +205,7 @@ final class ReportStoreJsonCodec {
         }
     }
 
+    /** Minimal strict JSON parser used to reject ambiguous report-store input. */
     private static final class Parser {
         private final String json;
 

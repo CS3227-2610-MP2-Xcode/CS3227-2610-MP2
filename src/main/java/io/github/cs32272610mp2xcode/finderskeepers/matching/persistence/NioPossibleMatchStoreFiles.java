@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+/** NIO implementation of bounded reads and atomic possible-match-store replacement. */
 final class NioPossibleMatchStoreFiles implements PossibleMatchStoreFiles {
     private static final int READ_BUFFER_BYTES = 8192;
 

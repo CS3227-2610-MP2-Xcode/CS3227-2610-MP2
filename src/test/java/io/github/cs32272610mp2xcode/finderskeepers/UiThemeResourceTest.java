@@ -18,10 +18,18 @@ class UiThemeResourceTest {
             String css = new String(resource.readAllBytes(), StandardCharsets.UTF_8);
             assertAll(
                     () -> assertTrue(css.contains(".login-shell")),
+                    () -> assertTrue(css.contains(".login-mascot")),
                     () -> assertTrue(css.contains(".top-bar")),
                     () -> assertTrue(css.contains(".workspace-tabs")),
+                    () -> assertTrue(css.contains(".student-workspace")),
                     () -> assertTrue(css.contains(".primary-button")),
                     () -> assertTrue(css.contains(".danger-button")));
         }
+    }
+
+    @Test
+    void studentMascotIsPackagedWithTheApplication() {
+        assertNotNull(FindersKeepersApp.class.getResource(
+                "report/ui/assets/student-bear.png"));
     }
 }

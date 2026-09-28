@@ -35,6 +35,13 @@ import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimId;
 final class AppointmentStoreJsonCodec {
     private static final String VERSION = "schemaVersion";
 
+    /**
+     * Decodes and validates one complete appointment-store document.
+     *
+     * @param document UTF-8 JSON document
+     * @return validated slots and cases
+     * @throws InvalidStoreException if the document is malformed, unsupported, or inconsistent
+     */
     DecodedStore decode(byte[] document) throws InvalidStoreException {
         String text;
         try {
@@ -65,6 +72,15 @@ final class AppointmentStoreJsonCodec {
         }
     }
 
+    /**
+     * Serializes validated appointment state without exceeding the configured limit.
+     *
+     * @param slots slots to persist
+     * @param cases collection cases to persist
+     * @param maximumBytes largest permitted encoded document
+     * @return UTF-8 JSON document
+     * @throws InvalidStateException if the state is inconsistent or the document is too large
+     */
     byte[] encode(List<CollectionSlot> slots, List<CollectionCase> cases, int maximumBytes)
             throws InvalidStateException {
         try {
@@ -447,37 +463,68 @@ final class AppointmentStoreJsonCodec {
         return UUID.fromString(value);
     }
 
+    /**
+     * Validated state reconstructed from one store document.
+     *
+     * @param slots decoded collection slots
+     * @param cases decoded collection cases
+     */
     record DecodedStore(List<CollectionSlot> slots, List<CollectionCase> cases) {
     }
 
+    /** Signals that stored bytes do not represent a supported, valid appointment store. */
     static final class InvalidStoreException extends Exception {
         private static final long serialVersionUID = 1L;
 
         private final boolean unsupportedVersion;
 
+        /**
+         * Creates a store-validation failure with a standard message.
+         *
+         * @param unsupported whether the schema version is unsupported
+         */
         InvalidStoreException(boolean unsupported) {
             this(unsupported, "Invalid appointment store.");
         }
 
+        /**
+         * Creates a store-validation failure caused by invalid decoded state.
+         *
+         * @param unsupported whether the schema version is unsupported
+         * @param cause internal validation failure
+         */
         InvalidStoreException(boolean unsupported, Throwable cause) {
             super(cause);
             unsupportedVersion = unsupported;
         }
 
+        /**
+         * Creates a store-validation failure with a safe diagnostic message.
+         *
+         * @param unsupported whether the schema version is unsupported
+         * @param message safe diagnostic message
+         */
         InvalidStoreException(boolean unsupported, String message) {
             super(message);
             unsupportedVersion = unsupported;
         }
 
+        /**
+         * Reports whether the failure was caused by an unsupported schema version.
+         *
+         * @return {@code true} for an unsupported schema version
+         */
         boolean unsupportedVersion() {
             return unsupportedVersion;
         }
     }
 
+    /** Signals that in-memory appointment state cannot be serialized safely. */
     static final class InvalidStateException extends Exception {
         private static final long serialVersionUID = 1L;
     }
 
+    /** Minimal strict JSON parser used to avoid accepting ambiguous store input. */
     private static final class Parser {
         private final String input;
 

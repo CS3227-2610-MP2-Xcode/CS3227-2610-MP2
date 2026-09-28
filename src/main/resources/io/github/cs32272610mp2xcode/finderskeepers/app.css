@@ -81,6 +81,10 @@
     -fx-text-fill: #dcebe1;
 }
 
+.login-mascot {
+    -fx-effect: dropshadow(gaussian, rgba(5, 28, 18, 0.24), 14, 0.16, 0, 4);
+}
+
 .brand-feature {
     -fx-font-size: 13px;
     -fx-text-fill: #eff7f2;
@@ -400,4 +404,124 @@
 .history-status {
     -fx-font-weight: bold;
     -fx-text-fill: #245c3d;
+}
+
+/* Playful Student workspace */
+.student-workspace {
+    -fx-background-color: linear-gradient(to bottom right, #fff6c9, #e7f6ff);
+    -fx-font-family: "system";
+    -fx-font-size: 14px;
+}
+
+.student-banner {
+    -fx-background-color: linear-gradient(to right, #fff0a6, #dff3ff);
+    -fx-border-color: transparent transparent #dfc86e transparent;
+    -fx-padding: 8px 28px;
+}
+
+.student-banner-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #315d8a;
+}
+
+.student-banner-copy {
+    -fx-font-size: 14px;
+    -fx-text-fill: #52677c;
+}
+
+.student-workspace .workspace-tabs > .tab-header-area > .tab-header-background {
+    -fx-background-color: #fff8dc;
+    -fx-border-color: transparent transparent #eadca8 transparent;
+}
+
+.student-workspace .workspace-tabs > .tab-header-area > .headers-region > .tab {
+    -fx-background-radius: 14px 14px 0 0;
+    -fx-padding: 9px 16px;
+}
+
+.student-workspace .workspace-tabs > .tab-header-area > .headers-region > .tab:hover {
+    -fx-background-color: #e8f4ff;
+}
+
+.student-workspace .workspace-tabs > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: #cfe9ff;
+    -fx-border-color: transparent transparent #4d8fcc transparent;
+}
+
+.student-workspace .workspace-tabs > .tab-content-area {
+    -fx-background-color: linear-gradient(to bottom right, #fffdf2, #f2f9ff);
+}
+
+.student-workspace .claims-root .tab-header-area > .tab-header-background {
+    -fx-background-color: #e7f6ff;
+}
+
+.student-workspace .claims-root .tab-header-area > .headers-region > .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 12px 12px 0 0;
+    -fx-padding: 7px 13px;
+}
+
+.student-workspace .claims-root .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: #fff0a6;
+}
+
+.student-workspace .section-title,
+.student-workspace .claims-title {
+    -fx-font-size: 26px;
+    -fx-text-fill: #27496d;
+}
+
+.student-workspace .button {
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
+    -fx-padding: 9px 16px;
+}
+
+.student-workspace .primary-button,
+.student-workspace .button:default {
+    -fx-background-color: linear-gradient(to bottom, #5ba9e6, #438aca);
+    -fx-border-color: #3476b2;
+    -fx-effect: dropshadow(gaussian, rgba(39, 73, 109, 0.16), 8, 0.12, 0, 2);
+}
+
+.student-workspace .primary-button:hover,
+.student-workspace .button:default:hover {
+    -fx-background-color: #3978b3;
+    -fx-border-color: #2f679a;
+}
+
+.student-workspace .danger-button {
+    -fx-background-color: #fff0ed;
+    -fx-border-color: #f2aaa0;
+    -fx-text-fill: #a43d31;
+}
+
+.student-workspace .text-field,
+.student-workspace .combo-box,
+.student-workspace .date-picker,
+.student-workspace .text-area,
+.student-workspace .list-view {
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
+    -fx-border-color: #a8cce8;
+}
+
+.student-workspace .history-card,
+.student-workspace .claims-card,
+.student-workspace .claims-editor,
+.student-workspace .claims-detail,
+.student-workspace .claims-report-group {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 16px;
+    -fx-border-color: #c6def0;
+    -fx-border-radius: 16px;
+    -fx-effect: dropshadow(gaussian, rgba(39, 73, 109, 0.10), 12, 0.12, 0, 3);
+}
+
+.student-workspace .status-label,
+.student-workspace .submission-feedback,
+.student-workspace .history-feedback {
+    -fx-background-radius: 14px;
 }

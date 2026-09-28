@@ -23,6 +23,7 @@ import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimId;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimLedger;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.model.ClaimStatus;
 
+/** Strict, size-bounded JSON codec for the complete Claim store. */
 final class ClaimStoreJsonCodec {
     private static final DateTimeFormatter INSTANT_FORMAT =
             new DateTimeFormatterBuilder().appendInstant(3).toFormatter();
@@ -32,6 +33,13 @@ final class ClaimStoreJsonCodec {
             "ownershipEvidence", "status", "submittedAt", "terminalAt",
             "decisionReason");
 
+    /**
+     * Decodes and validates one complete Claim-store document.
+     *
+     * @param document UTF-8 JSON document
+     * @return validated Claims in stored order
+     * @throws InvalidStoreException if the document is malformed, unsupported, or inconsistent
+     */
     List<Claim> decode(byte[] document) throws InvalidStoreException {
         String json;
         try {
@@ -51,6 +59,14 @@ final class ClaimStoreJsonCodec {
         return claims;
     }
 
+    /**
+     * Serializes validated Claims without exceeding the configured limit.
+     *
+     * @param claims Claims to persist
+     * @param maximumBytes largest permitted encoded document
+     * @return UTF-8 JSON document
+     * @throws InvalidClaimStateException if the state or encoded document is invalid
+     */
     byte[] encode(List<Claim> claims, int maximumBytes)
             throws InvalidClaimStateException {
         try {
@@ -113,24 +129,37 @@ final class ClaimStoreJsonCodec {
         return INSTANT_FORMAT.format(instant);
     }
 
+    /** Signals that stored bytes do not represent a supported, valid Claim store. */
     static final class InvalidStoreException extends Exception {
         private static final long serialVersionUID = 1L;
 
         private final boolean unsupportedVersion;
 
+        /**
+         * Creates a classified store-validation failure.
+         *
+         * @param versionUnsupported whether the schema version is unsupported
+         */
         InvalidStoreException(boolean versionUnsupported) {
             unsupportedVersion = versionUnsupported;
         }
 
+        /**
+         * Reports whether the failure was caused by an unsupported schema version.
+         *
+         * @return {@code true} for an unsupported schema version
+         */
         boolean unsupportedVersion() {
             return unsupportedVersion;
         }
     }
 
+    /** Signals that in-memory Claim state cannot be serialized safely. */
     static final class InvalidClaimStateException extends Exception {
         private static final long serialVersionUID = 1L;
     }
 
+    /** Writes escaped UTF-8 while enforcing the store's byte limit incrementally. */
     private static final class BoundedUtf8 {
         private static final char[] HEX = "0123456789abcdef".toCharArray();
 
@@ -219,6 +248,7 @@ final class ClaimStoreJsonCodec {
         }
     }
 
+    /** Minimal strict JSON parser used to reject ambiguous Claim-store input. */
     private static final class Parser {
         private final String json;
 

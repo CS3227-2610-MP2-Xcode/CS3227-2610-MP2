@@ -397,9 +397,11 @@ public final class OfficerMatchingService {
                 Optional.empty(), Optional.empty(), Optional.ofNullable(feedback), false);
     }
 
+    /** Identity of the row selected in one matching-workspace section. */
     private record SelectionKey(Section section, PossibleMatchPair pair) {
     }
 
+    /** Reports, links, and generated suggestions loaded for one workspace refresh. */
     private record Snapshot(Map<UUID, ItemReport> reportsById,
             Set<PossibleMatchPair> links, DeterministicMatcher.Generation generation) {
         private Snapshot withLinks(Set<PossibleMatchPair> replacementLinks) {

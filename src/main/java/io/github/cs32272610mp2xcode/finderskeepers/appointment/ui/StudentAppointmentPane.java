@@ -100,8 +100,11 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
         active.getSelectionModel().selectedItemProperty().addListener(
                 (observable, previous, selected) -> updateActions());
         slots.setMinHeight(120);
+        slots.setPrefHeight(180);
         active.setMinHeight(90);
+        active.setPrefHeight(120);
         history.setMinHeight(120);
+        history.setPrefHeight(160);
         feedback.setWrapText(true);
         VBox content = new VBox(8, help, new Label("Approved Claim"), claims,
                 new Label("Available collection slots (Singapore time)"), slots,

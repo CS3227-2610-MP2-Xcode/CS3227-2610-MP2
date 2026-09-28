@@ -459,6 +459,7 @@ public final class OfficerClaimsService {
                 Optional.empty(), Optional.empty());
     }
 
+    /** Consistent Claim and report indexes used to build one Officer view state. */
     private record CurrentSnapshot(Map<ClaimId, Claim> claims,
             Map<UUID, ItemReport> reports) {
     }

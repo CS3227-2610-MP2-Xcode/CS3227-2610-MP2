@@ -459,6 +459,7 @@ public final class StudentClaimsPane extends BorderPane {
         node.setManaged(visible);
     }
 
+    /** Renders one privacy-safe Claim summary in the Student's history. */
     private static final class MyClaimCell extends ListCell<MyClaimRow> {
         @Override
         protected void updateItem(MyClaimRow row, boolean empty) {

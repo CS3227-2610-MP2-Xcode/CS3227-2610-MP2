@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+/** NIO implementation of bounded reads and atomic Claim-store replacement. */
 final class NioClaimStoreFiles implements ClaimStoreFiles {
     private static final int READ_BUFFER_BYTES = 8192;
 

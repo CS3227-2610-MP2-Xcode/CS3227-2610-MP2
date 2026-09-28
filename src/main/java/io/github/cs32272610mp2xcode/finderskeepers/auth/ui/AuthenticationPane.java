@@ -26,6 +26,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -406,10 +408,19 @@ public final class AuthenticationPane extends StackPane {
         Label copy = new Label("A safer, simpler way for your school community\n"
                 + "to reunite belongings with their owners.");
         copy.getStyleClass().add("brand-copy");
+        Image mascot = new Image(Objects.requireNonNull(
+                AuthenticationPane.class.getResource(
+                        "/io/github/cs32272610mp2xcode/finderskeepers/report/ui/"
+                                + "assets/student-bear.png"))
+                .toExternalForm(), 118, 118, true, true);
+        ImageView mascotView = new ImageView(mascot);
+        mascotView.getStyleClass().add("login-mascot");
+        mascotView.setAccessibleText("Friendly bear holding a magnifying glass");
         Label report = brandFeature("Report lost or found items");
         Label track = brandFeature("Track Claims and collection updates");
         Label protect = brandFeature("Keep ownership evidence private");
-        VBox brand = new VBox(18, mark, title, copy, report, track, protect);
+        VBox brand = new VBox(18, mark, title, copy, mascotView,
+                report, track, protect);
         brand.getStyleClass().add("login-brand-panel");
         brand.setAlignment(Pos.CENTER_LEFT);
         brand.setPrefWidth(510);
@@ -476,8 +487,11 @@ public final class AuthenticationPane extends StackPane {
         return label;
     }
 
+    /** Selects which authentication backend the login form uses. */
     private enum LoginMode {
+        /** Bundled accounts intended for demonstrations. */
         DEMO("Demo mode"),
+        /** Persistent accounts registered by application users. */
         PRODUCTION("Production mode");
 
         private final String label;

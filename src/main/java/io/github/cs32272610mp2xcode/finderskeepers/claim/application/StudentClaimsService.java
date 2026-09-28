@@ -542,6 +542,7 @@ public final class StudentClaimsService {
                 Optional.empty());
     }
 
+    /** Accumulates match cards and notices for one lost report. */
     private static final class GroupBuilder {
         private final ItemReport lostReport;
 
@@ -558,9 +559,11 @@ public final class StudentClaimsService {
         }
     }
 
+    /** Lost-and-found report pair normalized into a stable orientation. */
     private record OrientedPair(ItemReport lost, ItemReport found) {
     }
 
+    /** Reports and stored links read together for one Claim submission attempt. */
     private record SubmissionSnapshot(Map<UUID, ItemReport> reports,
             Set<PossibleMatchPair> links) {
     }

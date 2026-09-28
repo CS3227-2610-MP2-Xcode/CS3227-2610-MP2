@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+/** NIO implementation of bounded reads and atomic report-store replacement. */
 final class NioReportStoreFiles implements ReportStoreFiles {
     private static final int READ_BUFFER_BYTES = 8192;
 

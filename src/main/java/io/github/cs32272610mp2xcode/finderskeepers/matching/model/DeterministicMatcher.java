@@ -166,6 +166,7 @@ public final class DeterministicMatcher {
         return runs;
     }
 
+    /** Searchable keywords and location text normalized for deterministic comparison. */
     private record NormalizedText(Set<String> keywords, String location) {
     }
 }

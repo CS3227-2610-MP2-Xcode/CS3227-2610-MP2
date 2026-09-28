@@ -600,9 +600,11 @@ public final class JsonAppointmentRepository implements AppointmentRepository {
         return trimmed;
     }
 
+    /** Immutable snapshot read from or written to the appointment store. */
     private record StoreState(List<CollectionSlot> slots, List<CollectionCase> cases) {
     }
 
+    /** Case lookup result that keeps the selected appointment beside its parent case. */
     private record CaseAndAppointment(CollectionCase caseState,
             CollectionAppointment appointment) {
     }
