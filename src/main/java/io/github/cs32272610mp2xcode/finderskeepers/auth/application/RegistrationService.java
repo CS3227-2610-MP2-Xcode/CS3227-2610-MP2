@@ -14,7 +14,15 @@ import io.github.cs32272610mp2xcode.finderskeepers.auth.security.PasswordCredent
 import io.github.cs32272610mp2xcode.finderskeepers.auth.security.PasswordHasher;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.security.PasswordPolicy;
 
-/** Creates local accounts through the same hashed credential store used for login. */
+/**
+ * Creates local accounts through the same hashed credential store used for
+ * login.
+ *
+ * <p>Registration validates before hashing, refuses case-insensitive username
+ * reuse, assigns a generated identifier, and returns only a non-secret identity.
+ * Validation and storage failures leave the caller unauthenticated and do not
+ * replace an existing account.</p>
+ */
 public final class RegistrationService {
     private final UserRepository repository;
 
@@ -40,8 +48,8 @@ public final class RegistrationService {
      * Validates and stores a new account, clearing both password arrays before returning.
      *
      * @param username requested login name
-     * @param password requested password
-     * @param confirmation repeated password
+     * @param password requested password; cleared before this method returns
+     * @param confirmation repeated password; cleared before this method returns
      * @param role requested application role
      * @return registration outcome and identity on success
      */

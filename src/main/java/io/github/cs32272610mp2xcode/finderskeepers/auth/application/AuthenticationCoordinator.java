@@ -6,7 +6,14 @@ import java.util.Optional;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.AuthenticatedUser;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.UserRole;
 
-/** Coordinates login, in-memory session state, and role-derived navigation. */
+/**
+ * Coordinates login, self-registration, in-memory session state, and
+ * role-derived navigation.
+ *
+ * <p>A successful login or registration replaces the current identity. A
+ * failed attempt updates the user-facing message without discarding an
+ * existing authenticated session.</p>
+ */
 public final class AuthenticationCoordinator {
     private final AuthenticationService authenticationService;
 
@@ -50,7 +57,7 @@ public final class AuthenticationCoordinator {
      * @param username requested username
      * @param password requested password; cleared by the registration service
      * @param confirmation repeated password; cleared by the registration service
-     * @param role requested role
+     * @param role requested Student or Desk Officer role
      * @return registration outcome
      */
     public RegistrationResult register(String username, char[] password,

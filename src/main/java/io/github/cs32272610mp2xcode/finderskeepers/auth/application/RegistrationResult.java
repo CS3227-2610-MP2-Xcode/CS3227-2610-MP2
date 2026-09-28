@@ -22,6 +22,7 @@ public final class RegistrationResult {
      *
      * @param authenticatedUser newly created identity
      * @return successful result
+     * @throws NullPointerException when the identity is absent
      */
     public static RegistrationResult success(AuthenticatedUser authenticatedUser) {
         return new RegistrationResult(RegistrationStatus.SUCCESS,
@@ -33,6 +34,8 @@ public final class RegistrationResult {
      *
      * @param failureStatus non-success result category
      * @return failed result
+     * @throws NullPointerException when the status is absent
+     * @throws IllegalArgumentException when the status is {@link RegistrationStatus#SUCCESS}
      */
     public static RegistrationResult failure(RegistrationStatus failureStatus) {
         RegistrationStatus checked = Objects.requireNonNull(failureStatus, "failureStatus");

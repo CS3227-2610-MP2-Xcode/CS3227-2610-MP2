@@ -32,7 +32,14 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
-/** Login and role-navigation pane ready for application-shell integration. */
+/**
+ * Login, registration, and role-navigation pane for the application shell.
+ *
+ * <p>The pane opens in Production mode. Its top-right mode control switches to
+ * one-click demonstration login. Successful authentication routes by the
+ * stored account role, while logout returns to the mode used for that
+ * session.</p>
+ */
 public final class AuthenticationPane extends StackPane {
     private static final String DEMO_STUDENT_USERNAME = "demo.student";
 
@@ -53,7 +60,9 @@ public final class AuthenticationPane extends StackPane {
     private LoginMode loginMode = LoginMode.PRODUCTION;
 
     /**
-     * Creates and displays the login interface.
+     * Creates the login interface using one coordinator for both modes.
+     * This convenience overload is intended for compositions that do not need
+     * separate demo and production stores.
      *
      * @param authenticationCoordinator authentication and navigation module
      */
@@ -63,7 +72,8 @@ public final class AuthenticationPane extends StackPane {
     }
 
     /**
-     * Creates and displays authentication with an injected Student workspace.
+     * Creates authentication with an injected Student workspace and one
+     * coordinator shared by both login modes.
      * Authentication owns login, session state, role routing, and logout;
      * the supplied factory owns construction of the Student feature view.
      *
@@ -77,7 +87,8 @@ public final class AuthenticationPane extends StackPane {
     }
 
     /**
-     * Creates and displays authentication with injected Desk Officer content.
+     * Creates authentication with injected Desk Officer content and one
+     * coordinator shared by both login modes.
      *
      * @param authenticationCoordinator authentication and navigation module
      * @param officerContentFactory lazy factory for Desk Officer content
@@ -89,7 +100,8 @@ public final class AuthenticationPane extends StackPane {
     }
 
     /**
-     * Creates and displays authentication with injected role destinations.
+     * Creates authentication with injected role destinations and one
+     * coordinator shared by both login modes.
      * Authentication owns login, session state, role routing, and logout;
      * each supplied factory owns construction of its role-specific view.
      *
@@ -105,7 +117,8 @@ public final class AuthenticationPane extends StackPane {
     }
 
     /**
-     * Creates authentication with user-aware role destinations.
+     * Creates authentication with user-aware role destinations and one
+     * coordinator shared by both login modes.
      *
      * @param authenticationCoordinator authentication and navigation module
      * @param studentFactory factory for the authenticated Student workspace
@@ -120,6 +133,8 @@ public final class AuthenticationPane extends StackPane {
 
     /**
      * Creates authentication with separate demo and production account stores.
+     * The initial screen uses the production coordinator; the mode control
+     * selects the demonstration coordinator for one-click demo login.
      *
      * @param demonstrationCoordinator demo credential verifier
      * @param localCoordinator production login and registration coordinator
