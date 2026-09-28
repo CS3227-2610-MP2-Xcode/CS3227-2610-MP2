@@ -15,7 +15,7 @@ title: Developer Guide
 6. [Officer possible-match components](#officer-possible-match-components)
 7. [Claims and Verification](#claims-and-verification)
 8. [Student report components](#student-report-submission-components)
-9. [Testing, packaging, and CI](#useful-commands)
+9. [Testing, packaging, CI, and CD](#useful-commands)
 10. [Appointment and collection domain](#appointment-and-collection-domain)
 11. [Manual testing](#appendix-instructions-for-manual-testing)
 12. [Report domain contract](#report-domain-contract-s1-d1-02)
@@ -495,7 +495,17 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs for pushes and pull requests on Ubuntu, macOS, and Windows. Each job installs Java 25, validates the Gradle Wrapper, runs `clean check release`, smoke-tests the exact release JAR, and uploads it as a workflow artifact. The workflow can only be confirmed on GitHub after the first push; its equivalent build and smoke checks can be run locally beforehand.
+`.github/workflows/ci.yml` runs for pushes and pull requests on Ubuntu, macOS, and Windows. Each job installs Java 25, validates the Gradle Wrapper, runs `clean check release`, smoke-tests the exact release JAR, and uploads it as a workflow artifact. CI has been exercised on GitHub; equivalent build and smoke checks can also be run locally.
+
+## Continuous delivery
+
+`.github/workflows/cd.yml` has two publication paths. Both first run the complete build, test, packaging, and packaged-JAR smoke-test gate on Ubuntu, macOS, and Windows. Each runner uploads its JAR as a temporary seven-day workflow artifact.
+
+- A push to `master` builds the Jekyll source in `docs/` and deploys it through the protected `github-pages` environment. Publication occurs only after every platform verification job passes.
+- A pushed tag whose name begins with `v` publishes the verified Linux-job universal JAR and its SHA-256 checksum as a GitHub Release. A rerun replaces those two assets on the same release rather than creating a duplicate release.
+- A manual workflow run performs the cross-platform verification and temporary-artifact upload without publishing a website or Release.
+
+One-time human setup is required in **Repository Settings > Pages**: an administrator must select **GitHub Actions** as the publishing source. The organization must also allow public Pages sites. For each formal release, a maintainer chooses the version, checks that the tagged commit is the intended release commit, and pushes a tag such as `v1.0.0`. No manual GitHub Release form or website upload is needed after those actions. Repository or organization rules that restrict GitHub Actions, Pages, `contents: write`, `pages: write`, or OIDC must be adjusted by an administrator.
 
 ## Appointment and collection domain
 
