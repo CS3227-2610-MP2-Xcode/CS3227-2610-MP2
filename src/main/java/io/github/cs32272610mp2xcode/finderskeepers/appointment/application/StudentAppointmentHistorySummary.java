@@ -38,6 +38,13 @@ public record StudentAppointmentHistorySummary(String claimReference, CaseStatus
         }
     }
 
+    /** Returns a concise label without displaying the full Claim UUID.
+     * @return short approved-item label */
+    public String displayLabel() {
+        String reference = claimReference.substring(Math.max(0, claimReference.length() - 8));
+        return "Approved item · " + reference;
+    }
+
     @Override
     public String toString() {
         return "StudentAppointmentHistorySummary[redacted]";

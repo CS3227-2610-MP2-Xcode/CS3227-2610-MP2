@@ -43,7 +43,8 @@ class StudentActiveAppointmentSummaryTest {
         repository.createSlot(CollectionSlot.create(otherSlot, NOW.plusSeconds(14400), NOW,
                 "officer-1"));
         AppointmentId ownedAppointment = AppointmentId.of(UUID.randomUUID());
-        repository.book(ClaimId.of(UUID.randomUUID()), "student-1", firstSlot,
+        ClaimId ownedClaim = ClaimId.of(UUID.randomUUID());
+        repository.book(ownedClaim, "student-1", firstSlot,
                 ownedAppointment, "student-1", UserRole.STUDENT, NOW);
         repository.book(ClaimId.of(UUID.randomUUID()), "student-2", otherSlot,
                 AppointmentId.of(UUID.randomUUID()), "student-2", UserRole.STUDENT, NOW);
@@ -59,6 +60,7 @@ class StudentActiveAppointmentSummaryTest {
         var active = service.loadActiveAppointments();
         assertEquals(1, active.size());
         assertEquals(ownedAppointment, active.getFirst().appointmentId());
+        assertEquals(ownedClaim, active.getFirst().claimId());
         assertEquals(AppointmentStatus.BOOKED, active.getFirst().status());
         assertEquals(firstStart, active.getFirst().startsAt());
         assertEquals("StudentActiveAppointmentSummary[redacted]",

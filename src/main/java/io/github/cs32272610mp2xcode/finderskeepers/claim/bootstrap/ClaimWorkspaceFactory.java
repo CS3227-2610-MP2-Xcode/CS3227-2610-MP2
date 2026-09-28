@@ -67,7 +67,7 @@ public final class ClaimWorkspaceFactory {
      * @return privacy-safe approved-Claim service
      */
     public StudentApprovedClaimService createApprovedClaimService(AuthenticatedUser user) {
-        return new StudentApprovedClaimService(user, claimRepository);
+        return new StudentApprovedClaimService(user, claimRepository, reportRepository);
     }
 
     /**

@@ -14,6 +14,7 @@ import io.github.cs32272610mp2xcode.finderskeepers.appointment.persistence.Appoi
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.persistence.AppointmentStoreException;
 import io.github.cs32272610mp2xcode.finderskeepers.workspace.SessionView;
 import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -41,6 +42,12 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
 
     private final Label feedback = new Label();
 
+    private final Button book = new Button("Book selected slot");
+
+    private final Button cancel = new Button("Cancel active appointment");
+
+    private final Button reschedule = new Button("Reschedule to selected slot");
+
     /** Creates a Student appointment pane.
      * @param appointmentService authenticated Student service */
     public StudentAppointmentPane(StudentAppointmentService appointmentService) {
@@ -59,8 +66,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
             protected void updateItem(StudentActiveAppointmentSummary item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : item.status().name()
-                        + " — " + DISPLAY_TIME.format(item.startsAt())
-                        + " — " + item.appointmentId().value());
+                        + " — " + DISPLAY_TIME.format(item.startsAt()));
             }
         });
         history.setCellFactory(view -> new javafx.scene.control.ListCell<>() {
@@ -75,18 +81,20 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
                         : "Attempt " + item.attemptNumber() + " — "
                                 + item.appointmentStatus().orElseThrow().name() + " — "
                                 + DISPLAY_TIME.format(item.startsAt().orElseThrow());
-                setText(item.claimReference() + " — " + attempt + " — "
+                setText(item.displayLabel() + " — " + attempt + " — "
                         + item.status().name());
             }
         });
         Button refresh = new Button("Refresh");
-        Button book = new Button("Book selected slot");
-        Button cancel = new Button("Cancel active appointment");
-        Button reschedule = new Button("Reschedule to selected slot");
         refresh.setOnAction(event -> enter());
         book.setOnAction(event -> book());
         cancel.setOnAction(event -> cancel());
         reschedule.setOnAction(event -> reschedule());
+        claims.valueProperty().addListener((observable, previous, selected) -> updateActions());
+        slots.getSelectionModel().selectedItemProperty().addListener(
+                (observable, previous, selected) -> updateActions());
+        active.getSelectionModel().selectedItemProperty().addListener(
+                (observable, previous, selected) -> updateActions());
         slots.setMinHeight(120);
         active.setMinHeight(90);
         history.setMinHeight(120);
@@ -100,6 +108,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
         setCenter(scroll);
+        updateActions();
     }
 
     private static ListCell<ApprovedClaimSummary> claimReferenceCell() {
@@ -107,7 +116,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
             @Override
             protected void updateItem(ApprovedClaimSummary item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.claimReference());
+                setText(empty || item == null ? null : item.displayLabel());
             }
         };
     }
@@ -126,6 +135,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
             slots.getItems().setAll(service.loadAvailableSlots());
             active.getItems().setAll(service.loadActiveAppointments());
             history.getItems().setAll(service.loadHistory());
+            updateActions();
             if (clearFeedback) {
                 feedback.setText(claims.getItems().isEmpty()
                         ? "No approved Claims are currently available for booking."
@@ -142,6 +152,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
             active.getItems().clear();
             history.getSelectionModel().clearSelection();
             history.getItems().clear();
+            updateActions();
             feedback.setText("Appointment information is unavailable. Retry later.");
         }
     }
@@ -154,28 +165,55 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
     @Override
     public void clearSessionState() {
         claims.getItems().clear();
+        claims.setValue(null);
+        claims.getSelectionModel().clearSelection();
+        slots.getSelectionModel().clearSelection();
         slots.getItems().clear();
+        active.getSelectionModel().clearSelection();
         active.getItems().clear();
+        history.getSelectionModel().clearSelection();
         history.getItems().clear();
         feedback.setText("");
+        updateActions();
+    }
+
+    private void updateActions() {
+        boolean hasClaim = claims.getValue() != null;
+        boolean hasSlot = slots.getSelectionModel().getSelectedItem() != null;
+        boolean hasActive = active.getSelectionModel().getSelectedItem() != null;
+        boolean selectedClaimAlreadyActive = hasClaim && active.getItems().stream()
+                .anyMatch(appointment -> appointment.claimId().equals(claims.getValue().claimId()));
+        show(book, hasClaim && hasSlot && !hasActive && !selectedClaimAlreadyActive);
+        show(reschedule, hasSlot && hasActive);
+        show(cancel, hasActive);
+    }
+
+    private static void show(javafx.scene.Node node, boolean visible) {
+        node.setVisible(visible);
+        node.setManaged(visible);
     }
 
     private void book() {
         ApprovedClaimSummary claim = claims.getValue();
         CollectionSlot slot = slots.getSelectionModel().getSelectedItem();
         if (claim == null || slot == null) {
-            feedback.setText("Select an approved Claim and an available slot first.");
+            showError("Cannot book appointment",
+                    "Select an approved Claim and an available slot first.");
             return;
         }
         try {
             AppointmentRepository.BookingResult result = service.book(claim.claimId(),
                     slot.slotId());
-            feedback.setText(result.outcome() == AppointmentRepository.BookingOutcome.BOOKED
-                    ? "Appointment booked for " + DISPLAY_TIME.format(slot.startsAt()) + "."
-                    : "The appointment could not be booked; refresh and try again.");
+            if (result.outcome() == AppointmentRepository.BookingOutcome.BOOKED) {
+                feedback.setText("Appointment booked for "
+                        + DISPLAY_TIME.format(slot.startsAt()) + ".");
+            } else {
+                showError("Cannot book appointment", bookingError(result.outcome()));
+            }
             refresh(false);
         } catch (ClaimStoreException | AppointmentStoreException failure) {
-            feedback.setText("The appointment could not be booked. Retry later.");
+            showError("Cannot book appointment",
+                    "Appointment information is unavailable. Retry later.");
         }
     }
 
@@ -183,18 +221,26 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
         StudentActiveAppointmentSummary appointment = active.getSelectionModel()
                 .getSelectedItem();
         if (appointment == null) {
-            feedback.setText("Select an active appointment first.");
+            showError("Cannot cancel appointment", "Select an active appointment first.");
             return;
         }
         try {
             AppointmentRepository.AppointmentResult result = service.cancel(
                     appointment.appointmentId());
-            feedback.setText(result.outcome() == AppointmentRepository.AppointmentOutcome.CHANGED
-                    ? "Appointment cancelled. You may book another slot."
-                    : "The appointment could not be cancelled.");
+            if (result.outcome() == AppointmentRepository.AppointmentOutcome.CHANGED) {
+                feedback.setText("Appointment cancelled. You may book another slot.");
+            } else {
+                showError("Cannot cancel appointment", switch (result.outcome()) {
+                    case TOO_LATE -> "An appointment cannot be cancelled after its slot starts.";
+                    case ALREADY_TERMINAL, NOT_BOOKED ->
+                        "This appointment is already completed or ended.";
+                    default -> "The appointment could not be cancelled. Refresh and try again.";
+                });
+            }
             refresh(false);
         } catch (AppointmentStoreException failure) {
-            feedback.setText("The appointment could not be cancelled. Retry later.");
+            showError("Cannot cancel appointment",
+                    "Appointment information is unavailable. Retry later.");
         }
     }
 
@@ -203,18 +249,46 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
                 .getSelectedItem();
         CollectionSlot slot = slots.getSelectionModel().getSelectedItem();
         if (appointment == null || slot == null) {
-            feedback.setText("Select an active appointment and a new slot first.");
+            showError("Cannot reschedule appointment",
+                    "Select an active appointment and a new slot first.");
             return;
         }
         try {
             AppointmentRepository.BookingResult result = service.reschedule(
                     appointment.appointmentId(), slot.slotId());
-            feedback.setText(result.outcome() == AppointmentRepository.BookingOutcome.BOOKED
-                    ? "Appointment rescheduled."
-                    : "The appointment could not be rescheduled.");
+            if (result.outcome() == AppointmentRepository.BookingOutcome.BOOKED) {
+                feedback.setText("Appointment rescheduled.");
+            } else {
+                showError("Cannot reschedule appointment", bookingError(result.outcome()));
+            }
             refresh(false);
         } catch (ClaimStoreException | AppointmentStoreException failure) {
-            feedback.setText("The appointment could not be rescheduled. Retry later.");
+            showError("Cannot reschedule appointment",
+                    "Appointment information is unavailable. Retry later.");
         }
+    }
+
+    private static String bookingError(AppointmentRepository.BookingOutcome outcome) {
+        return switch (outcome) {
+            case CLAIM_ALREADY_ACTIVE -> "This Claim already has an active appointment.";
+            case CASE_CLOSED -> "This collection case is already closed.";
+            case SLOT_DISABLED -> "This slot is disabled. Choose another slot.";
+            case SLOT_TAKEN -> "This slot was just booked. Choose another slot.";
+            case TOO_LATE, INVALID_TIME -> "Choose a future available slot.";
+            case NOT_AUTHORIZED -> "This Claim is no longer approved for booking.";
+            case NOT_BOOKED -> "This appointment is no longer active.";
+            default -> "The appointment could not be updated. Refresh and try again.";
+        };
+    }
+
+    private void showError(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(title);
+        alert.setContentText(message);
+        if (getScene() != null && getScene().getWindow() != null) {
+            alert.initOwner(getScene().getWindow());
+        }
+        alert.showAndWait();
     }
 }

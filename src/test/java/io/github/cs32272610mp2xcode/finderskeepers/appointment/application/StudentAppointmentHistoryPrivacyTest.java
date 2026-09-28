@@ -37,6 +37,7 @@ class StudentAppointmentHistoryPrivacyTest {
         var empty = new StudentAppointmentHistorySummary("CLM-SYNTHETIC", CaseStatus.OPEN,
                 0, Optional.empty(), Optional.empty());
         assertEquals(0, empty.attemptNumber());
+        assertEquals("Approved item · YNTHETIC", empty.displayLabel());
         assertEquals(Optional.empty(), empty.appointmentStatus());
         assertThrows(IllegalArgumentException.class, () -> new StudentAppointmentHistorySummary(
                 "CLM-SYNTHETIC", CaseStatus.OPEN, 1, Optional.empty(), Optional.empty()));
