@@ -7,54 +7,27 @@
 - Owner: Developer 2
 - Feature: Claims and Verification
 - Workstream: Developer 2
-- Mission Brief: `docs/mission-briefs/S3-D2-01-claims-and-verification.md`
-  (Approved 2026-09-22)
-- Decision ledger: `docs/features/S3-D2-01/GrillingDecisions.md`
-  (Approved and complete 2026-09-22)
-- Source PRD: `docs/features/S3-D2-01/PRD.md`
-  (Approved 2026-09-22)
-- Inspected baseline: `royden/feat-officer-review-queue` at
-  `2512a5d761759e177bc88cc75724b1226a9642ea`
+- Mission Brief: `docs/mission-briefs/S3-D2-01-claims-and-verification.md` (Approved 2026-09-22)
+- Decision ledger: `docs/features/S3-D2-01/GrillingDecisions.md` (Approved and complete 2026-09-22)
+- Source PRD: `docs/features/S3-D2-01/PRD.md` (Approved 2026-09-22)
+- Inspected baseline: `royden/feat-officer-review-queue` at `2512a5d761759e177bc88cc75724b1226a9642ea`
 - TDD drafting authorization: Explicit current repository-owner request
-- Product-owner clarification: My claims, officer pending, and officer history
-  rows use the FOUND report's category; section 9.3 records this source
-- Requirements-to-Tests, implementation, tests, branch creation, commits,
-  pushes, pull requests, merges, and cross-owner production edits: Not
-  authorized
+- Product-owner clarification: My claims, officer pending, and officer history rows use the FOUND report's category; section 9.3 records this source
+- Requirements-to-Tests, implementation, tests, branch creation, commits, pushes, pull requests, merges, and cross-owner production edits: Not authorized
 
 ## 1. Authority, scope, and preflight outcome
 
-This document decides how to implement the approved product behaviour. It does
-not change what the feature does. Precedence is `AGENTS.md`, the approved
-Mission Brief, the approved Grilling Decisions, the approved PRD, verified
-repository contracts, then this TDD.
+This document decides how to implement the approved product behaviour. It does not change what the feature does. Precedence is `AGENTS.md`, the approved Mission Brief, the approved Grilling Decisions, the approved PRD, verified repository contracts, then this TDD.
 
-The complete governing artifacts were read in that order. The Mission Brief,
-decision ledger, and PRD are approved. Their older statements that the next
-artifact was not authorized record the gate state when each file was written.
-The current request is the later, separate authorization to create only this
-TDD. No upstream conflict was found. The product owner resolved the one narrow
-row-projection ambiguity on 2026-09-22: the singular category in My claims,
-officer pending, and officer history is the FOUND report's category, without
-assuming that the LOST and FOUND categories are identical. Section 9.3 applies
-that clarification; no unrelated product decision is reopened.
+The complete governing artifacts were read in that order. The Mission Brief, decision ledger, and PRD are approved. Their older statements that the next artifact was not authorized record the gate state when each file was written. The current request is the later, separate authorization to create only this TDD. No upstream conflict was found. The product owner resolved the one narrow row-projection ambiguity on 2026-09-22: the singular category in My claims, officer pending, and officer history is the FOUND report's category, without assuming that the LOST and FOUND categories are identical. Section 9.3 applies that clarification; no unrelated product decision is reopened.
 
-The verified worktree is the exact planning baseline named by the approved
-artifacts. It already contains the Sprint 2 officer review and possible-match
-implementation. It also contains pre-existing tracked and untracked work
-unrelated to this TDD; none of that work is modified here.
+The verified worktree is the exact planning baseline named by the approved artifacts. It already contains the Sprint 2 officer review and possible-match implementation. It also contains pre-existing tracked and untracked work unrelated to this TDD; none of that work is modified here.
 
-This design adds one separate Claims domain and store. It consumes the existing
-authentication identity, canonical reports, and durable possible-match links.
-It never writes reports or links. It does not add a report status, copy a report
-into a claim, record a deciding officer, add a dependency, or create a generic
-workflow framework.
+This design adds one separate Claims domain and store. It consumes the existing authentication identity, canonical reports, and durable possible-match links. It never writes reports or links. It does not add a report status, copy a report into a claim, record a deciding officer, add a dependency, or create a generic workflow framework.
 
 ## 2. Verified implementation baseline
 
-`base` below means
-`io.github.cs32272610mp2xcode.finderskeepers`. Java paths are under
-`src/main/java/` unless stated otherwise.
+`base` below means `io.github.cs32272610mp2xcode.finderskeepers`. Java paths are under `src/main/java/` unless stated otherwise.
 
 | Existing interface or file | Verified contract relevant to Claims | Ownership |
 | --- | --- | --- |
@@ -72,20 +45,13 @@ workflow framework.
 | Existing application services and panes | Stateful per-login plain-Java modules return immutable presentation state. JavaFX panes render state, use render guards, and do not own persistence rules. Unavailable and successful empty states are distinct. | Respective owners |
 | `base.FindersKeepersApp` | Developer 1-owned application entry and shared composition. It creates one application-lifetime report repository and link repository, then injects role workspaces. | Developer 1 / shared composition |
 
-Existing tests use JUnit Jupiter, `@TempDir`, synthetic immutable reports,
-fixed clocks, deterministic UUID suppliers, real local repositories, and
-package-local scripted file adapters. No JavaFX test framework is present.
-Repository documentation uses fenced text diagrams, so this TDD follows that
-convention.
+Existing tests use JUnit Jupiter, `@TempDir`, synthetic immutable reports, fixed clocks, deterministic UUID suppliers, real local repositories, and package-local scripted file adapters. No JavaFX test framework is present. Repository documentation uses fenced text diagrams, so this TDD follows that convention.
 
-No existing public contract is missing for Claims data access. The required
-production changes are composition/navigation hooks, not changes to report or
-possible-match interfaces.
+No existing public contract is missing for Claims data access. The required production changes are composition/navigation hooks, not changes to report or possible-match interfaces.
 
 ## 3. Architecture and dependency direction
 
-Claims use four modules with small interfaces and substantial behaviour behind
-them:
+Claims use four modules with small interfaces and substantial behaviour behind them:
 
 ```text
 JavaFX role panes
@@ -108,42 +74,21 @@ data/claims.json
 
 Dependency rules are:
 
-1. `claim.model` depends only on the JDK. It has no JavaFX, authentication,
-   report, matching, path, or persistence dependency.
-2. `claim.persistence` depends on `claim.model` and JDK filesystem classes. It
-   implements the Claim repository interface and owns the single consistency
-   boundary for claim state.
-3. `claim.application` coordinates the Claim repository with read-only report
-   and possible-match interfaces and a constructor-bound authenticated user.
-   It creates role-specific projections rather than exposing Claims or reports
-   indiscriminately.
-4. `claim.ui` depends on application-facing state and JavaFX. It does not read
-   repositories, inspect paths, derive eligibility, or perform transitions.
-5. Existing report and matching domains do not depend on Claims. The only
-   report-owned changes are neutral workspace-composition hooks described in
-   the cross-owner section.
+1. `claim.model` depends only on the JDK. It has no JavaFX, authentication, report, matching, path, or persistence dependency.
+2. `claim.persistence` depends on `claim.model` and JDK filesystem classes. It implements the Claim repository interface and owns the single consistency boundary for claim state.
+3. `claim.application` coordinates the Claim repository with read-only report and possible-match interfaces and a constructor-bound authenticated user. It creates role-specific projections rather than exposing Claims or reports indiscriminately.
+4. `claim.ui` depends on application-facing state and JavaFX. It does not read repositories, inspect paths, derive eligibility, or perform transitions.
+5. Existing report and matching domains do not depend on Claims. The only report-owned changes are neutral workspace-composition hooks described in the cross-owner section.
 
-There is no existing neutral navigation/workspace package or interface in the
-verified repository. Placing shared composition types in `auth.ui` would make
-Developer 1-owned report UI depend on an authentication-presentation package
-for a non-authentication concern. The design therefore proposes the neutral
-`base.workspace` package, owned under Developer 2's package-architecture and
-role-navigation responsibility. It contains only `WorkspaceFeature` and
-`SessionView`; it is not a registry, plugin system, or generic feature
-framework. Developer 1-owned Student UI composition consumes only those small
-neutral values and imports no Claim model, repository, service, or auth UI.
+There is no existing neutral navigation/workspace package or interface in the verified repository. Placing shared composition types in `auth.ui` would make Developer 1-owned report UI depend on an authentication-presentation package for a non-authentication concern. The design therefore proposes the neutral `base.workspace` package, owned under Developer 2's package-architecture and role-navigation responsibility. It contains only `WorkspaceFeature` and `SessionView`; it is not a registry, plugin system, or generic feature framework. Developer 1-owned Student UI composition consumes only those small neutral values and imports no Claim model, repository, service, or auth UI.
 
-Primary requirement support: PRD-IC-001–PRD-IC-004, PRD-NF-004,
-PRD-AC-X05.
+Primary requirement support: PRD-IC-001–PRD-IC-004, PRD-NF-004, PRD-AC-X05.
 
 ## 4. Claim domain model
 
 ### 4.1 Types and exact retained fields
 
-`claim.model.ClaimId` is an immutable wrapper around one non-null UUID. It
-exposes the UUID for persistence/application identity and derives the stable
-visible reference described in section 14. It has value equality and a
-redacted `toString`.
+`claim.model.ClaimId` is an immutable wrapper around one non-null UUID. It exposes the UUID for persistence/application identity and derives the stable visible reference described in section 14. It has value equality and a redacted `toString`.
 
 `claim.model.ClaimStatus` has exactly:
 
@@ -168,36 +113,25 @@ Optional<Instant> terminalAt
 Optional<String> decisionReason
 ```
 
-There is deliberately no link ID, match score, match reason, copied report
-field, officer ID, mutable evidence, deletion flag, collection state, return
-state, or persisted lock record.
+There is deliberately no link ID, match score, match reason, copied report field, officer ID, mutable evidence, deletion flag, collection state, return state, or persisted lock record.
 
 Construction paths are:
 
 - `Claim.createPending(...)` for a validated new claim;
 - `Claim.restore(...)` for strict persistence reconstruction;
-- `approve(Optional<String>, Instant)`, `reject(String, Instant)`, and
-  `withdraw(Instant)` returning complete immutable copies.
+- `approve(Optional<String>, Instant)`, `reject(String, Instant)`, and `withdraw(Instant)` returning complete immutable copies.
 
-The transition operations accept only Pending review. Calling one on a
-terminal Claim returns a typed domain conflict rather than a changed object.
-The repository uses these operations while holding its consistency lock.
-`equals`/`hashCode` cover all retained fields. `toString` is always
-`Claim[redacted]`.
+The transition operations accept only Pending review. Calling one on a terminal Claim returns a typed domain conflict rather than a changed object. The repository uses these operations while holding its consistency lock. `equals`/`hashCode` cover all retained fields. `toString` is always `Claim[redacted]`.
 
 ### 4.2 Per-record invariants
 
-- Claim ID, claimant ID, both report IDs, evidence, status, and submission time
-  are required.
+- Claim ID, claimant ID, both report IDs, evidence, status, and submission time are required.
 - LOST and FOUND Report IDs must differ.
-- Claimant ID is the already-normalized authenticated `userId`; it must be
-  nonblank and is preserved exactly. It is never a username or display label.
-- Evidence is the normalized required text defined in section 4.3 and never
-  changes after creation.
+- Claimant ID is the already-normalized authenticated `userId`; it must be nonblank and is preserved exactly. It is never a username or display label.
+- Evidence is the normalized required text defined in section 4.3 and never changes after creation.
 - All stored times use UTC `Instant` values truncated to exactly milliseconds.
 - `PENDING_REVIEW`: no terminal time and no decision reason.
-- `APPROVED`: terminal time required; decision reason absent or valid optional
-  text.
+- `APPROVED`: terminal time required; decision reason absent or valid optional text.
 - `REJECTED`: terminal time and a valid nonblank decision reason required.
 - `WITHDRAWN`: terminal time required and decision reason absent.
 - A terminal time cannot precede submission time.
@@ -205,37 +139,19 @@ The repository uses these operations while holding its consistency lock.
 
 ### 4.3 Shared text policy
 
-`ClaimTextPolicy` is the single implementation of evidence and decision-reason
-text rules. It applies `String.strip()` to leading/trailing Unicode whitespace,
-then counts Unicode code points. The maximum is 500 code points after
-trimming. A required value needs at least one code point that is not whitespace,
-an ISO control, or a Unicode FORMAT code point. Ordinary punctuation and valid
-Unicode are retained.
+`ClaimTextPolicy` is the single implementation of evidence and decision-reason text rules. It applies `String.strip()` to leading/trailing Unicode whitespace, then counts Unicode code points. The maximum is 500 code points after trimming. A required value needs at least one code point that is not whitespace, an ISO control, or a Unicode FORMAT code point. Ordinary punctuation and valid Unicode are retained.
 
-Internal LF and CRLF line breaks are accepted and preserved; lone CR, tab,
-other ISO control characters, malformed surrogate pairs, and absent values are
-rejected. Optional approval input that is absent or becomes blank after
-trimming becomes `Optional.empty`; otherwise it uses the same validation.
-Evidence and reasons are never HTML or markup.
+Internal LF and CRLF line breaks are accepted and preserved; lone CR, tab, other ISO control characters, malformed surrogate pairs, and absent values are rejected. Optional approval input that is absent or becomes blank after trimming becomes `Optional.empty`; otherwise it uses the same validation. Evidence and reasons are never HTML or markup.
 
-`ClaimValidationException` carries only a field category (EVIDENCE or
-DECISION_REASON) and fixed actionable copy. It never repeats the submitted
-text. Semantic Student-safety of a decision reason cannot be reliably inferred
-by code; the officer UI states the constraint and the stored/displayed reason
-is exactly the validated officer input.
+`ClaimValidationException` carries only a field category (EVIDENCE or DECISION_REASON) and fixed actionable copy. It never repeats the submitted text. Semantic Student-safety of a decision reason cannot be reliably inferred by code; the officer UI states the constraint and the stored/displayed reason is exactly the validated officer input.
 
-Primary requirement support: PRD-LC-001, PRD-LC-002, PRD-SC-007,
-PRD-ST-003–PRD-ST-004, PRD-DC-002–PRD-DC-003, PRD-DC-006,
-PRD-PR-002, PRD-PR-006.
+Primary requirement support: PRD-LC-001, PRD-LC-002, PRD-SC-007, PRD-ST-003–PRD-ST-004, PRD-DC-002–PRD-DC-003, PRD-DC-006, PRD-PR-002, PRD-PR-006.
 
 ## 5. Lifecycle, locks, closures, and retained history
 
-`ClaimLedger` is an immutable derived view over a complete Claim snapshot. It
-centralizes submission eligibility and store-wide validation. It exposes no
-mutation and no report data.
+`ClaimLedger` is an immutable derived view over a complete Claim snapshot. It centralizes submission eligibility and store-wide validation. It exposes no mutation and no report data.
 
-Persisted facts are Claim records and their events. The following are derived
-on every authoritative load/mutation:
+Persisted facts are Claim records and their events. The following are derived on every authoritative load/mutation:
 
 | Derived fact | Derivation |
 | --- | --- |
@@ -246,50 +162,28 @@ on every authoritative load/mutation:
 | Rejection closure | Any Rejected claim closes `(claimantUserId, foundReportId)` permanently |
 | Withdrawal release | Withdrawn contributes no active lock or closure |
 
-There is no second lock map or closure file to become inconsistent. Restart
-reconstructs every consequence from retained Claims.
+There is no second lock map or closure file to become inconsistent. Restart reconstructs every consequence from retained Claims.
 
 Submission evaluation occurs in this order without leaking other claimants:
 
-1. If the same claimant has an active claim for the exact pair, return that
-   existing Claim as `OWN_ACTIVE_CLAIM`.
-2. If the same claimant has another active Claim whose LOST or FOUND endpoint
-   blocks this target, return that own Claim as `OWN_ACTIVE_CLAIM` so the UI can
-   direct the Student to My claims.
-3. If an approval closes either endpoint, a Pending claim locks either
-   endpoint, or a rejection closes claimant-to-FOUND, return generic `BLOCKED`.
+1. If the same claimant has an active claim for the exact pair, return that existing Claim as `OWN_ACTIVE_CLAIM`.
+2. If the same claimant has another active Claim whose LOST or FOUND endpoint blocks this target, return that own Claim as `OWN_ACTIVE_CLAIM` so the UI can direct the Student to My claims.
+3. If an approval closes either endpoint, a Pending claim locks either endpoint, or a rejection closes claimant-to-FOUND, return generic `BLOCKED`.
 4. Otherwise the claim-state portion is eligible.
 
-The application separately proves the current durable link, report
-availability, LOST/FOUND direction, and LOST ownership before calling the
-atomic submit operation.
+The application separately proves the current durable link, report availability, LOST/FOUND direction, and LOST ownership before calling the atomic submit operation.
 
-Submission appends a new Pending claim. Withdrawal and rejection replace one
-Pending record with a terminal record and thereby release both active locks.
-Approval replaces it with Approved and thereby turns both endpoint locks into
-permanent closures. Because every mutation is a replacement of the complete
-Claim document, the lifecycle event and its lock/closure consequence have one
-commit point.
+Submission appends a new Pending claim. Withdrawal and rejection replace one Pending record with a terminal record and thereby release both active locks. Approval replaces it with Approved and thereby turns both endpoint locks into permanent closures. Because every mutation is a replacement of the complete Claim document, the lifecycle event and its lock/closure consequence have one commit point.
 
-The store preserves submission insertion order. During load it rejects
-duplicate Claim IDs, invalid records, a second active LOST or FOUND lock,
-multiple approvals involving a closed endpoint, an active Claim involving an
-approved endpoint, a later stored claim violating an earlier rejection
-closure, and same-pair resubmission unless the preceding same-pair Claim is
-Withdrawn. Rejected and withdrawn history sharing endpoints in ways permitted
-by the PRD remains valid. No retained terminal Claim is deleted.
+The store preserves submission insertion order. During load it rejects duplicate Claim IDs, invalid records, a second active LOST or FOUND lock, multiple approvals involving a closed endpoint, an active Claim involving an approved endpoint, a later stored claim violating an earlier rejection closure, and same-pair resubmission unless the preceding same-pair Claim is Withdrawn. Rejected and withdrawn history sharing endpoints in ways permitted by the PRD remains valid. No retained terminal Claim is deleted.
 
-Transient UI facts—selected row, active sub-tab, draft evidence/reason,
-confirmation visibility, feedback, and last loaded projections—are never
-Claim fields and never persisted.
+Transient UI facts—selected row, active sub-tab, draft evidence/reason, confirmation visibility, feedback, and last loaded projections—are never Claim fields and never persisted.
 
-Primary requirement support: PRD-LC-003–PRD-LC-009, PRD-ST-005–PRD-ST-006,
-PRD-DC-005, PRD-IC-003, PRD-NF-001–PRD-NF-002.
+Primary requirement support: PRD-LC-003–PRD-LC-009, PRD-ST-005–PRD-ST-006, PRD-DC-005, PRD-IC-003, PRD-NF-001–PRD-NF-002.
 
 ## 6. Claim repository interface
 
-The public persistence interface is intentionally workflow-aware only where
-needed to make claim mutation atomic:
+The public persistence interface is intentionally workflow-aware only where needed to make claim mutation atomic:
 
 ```text
 List<Claim> loadAll() throws ClaimStoreException
@@ -309,56 +203,35 @@ TerminalResult reject(
     throws ClaimStoreException
 ```
 
-`SubmissionResult` and `TerminalResult` are immutable nested result types in
-`ClaimRepository`; collection/Claim values are defensively copied and their
-`toString` values are redacted.
+`SubmissionResult` and `TerminalResult` are immutable nested result types in `ClaimRepository`; collection/Claim values are defensively copied and their `toString` values are redacted.
 
 `SubmissionOutcome` is:
 
 - `CREATED`: the candidate was committed;
-- `ID_COLLISION`: its Claim ID already exists; no other eligibility fact is
-  revealed;
-- `OWN_ACTIVE_CLAIM`: no write; includes only the same claimant's blocking
-  Claim;
+- `ID_COLLISION`: its Claim ID already exists; no other eligibility fact is revealed;
+- `OWN_ACTIVE_CLAIM`: no write; includes only the same claimant's blocking Claim;
 - `BLOCKED`: no write and no blocking Claim is returned.
 
 `TerminalOutcome` is:
 
 - `CHANGED`: one Pending Claim became the requested terminal state durably;
-- `ALREADY_TERMINAL`: no write; includes the authoritative current terminal
-  Claim so stale UI can report its status;
+- `ALREADY_TERMINAL`: no write; includes the authoritative current terminal Claim so stale UI can report its status;
 - `NOT_FOUND`: no write;
 - `NOT_AUTHORIZED`: withdrawal claimant mismatch; no Claim is returned.
 
-Approve/reject do not accept or store officer identity. Role authorization and
-current-report revalidation occur in the officer application module before the
-repository command; claim-state finality remains enforced again atomically in
-the repository. Withdrawal ownership is also checked inside the repository so
-a stale or fabricated Student handle cannot cross the claimant boundary.
+Approve/reject do not accept or store officer identity. Role authorization and current-report revalidation occur in the officer application module before the repository command; claim-state finality remains enforced again atomically in the repository. Withdrawal ownership is also checked inside the repository so a stale or fabricated Student handle cannot cross the claimant boundary.
 
-Every method rereads and validates the complete current file. `submit` derives
-current locks/closures and checks ID uniqueness while synchronized. Terminal
-methods locate the authoritative Claim, verify Pending, validate the requested
-transition, encode the complete replacement, and report success only after
-commit. Callers never perform `loadAll` plus an unconstrained public `saveAll`.
-There is no public generic transaction callback, raw snapshot replacement, or
-lock-management method.
+Every method rereads and validates the complete current file. `submit` derives current locks/closures and checks ID uniqueness while synchronized. Terminal methods locate the authoritative Claim, verify Pending, validate the requested transition, encode the complete replacement, and report success only after commit. Callers never perform `loadAll` plus an unconstrained public `saveAll`. There is no public generic transaction callback, raw snapshot replacement, or lock-management method.
 
-Primary requirement support: PRD-LC-003–PRD-LC-009, PRD-PR-001–PRD-PR-002,
-PRD-FL-001, PRD-NF-001–PRD-NF-002.
+Primary requirement support: PRD-LC-003–PRD-LC-009, PRD-PR-001–PRD-PR-002, PRD-FL-001, PRD-NF-001–PRD-NF-002.
 
 ## 7. Dedicated persistence format
 
 ### 7.1 Location, bound, and schema
 
-Claims use `data/claims.json`. Report-store v1 remains
-`data/reports.json`; possible-match storage remains
-`data/possible-match-links.txt`.
+Claims use `data/claims.json`. Report-store v1 remains `data/reports.json`; possible-match storage remains `data/possible-match-links.txt`.
 
-The Claim store is strict UTF-8 JSON with an inclusive 16,777,216-byte input
-and output bound, matching existing local-store resource policy. A missing file
-means an empty new store and causes no write. Zero bytes, an empty JSON object,
-or malformed content is corrupt, not empty.
+The Claim store is strict UTF-8 JSON with an inclusive 16,777,216-byte input and output bound, matching existing local-store resource policy. A missing file means an empty new store and causes no write. Zero bytes, an empty JSON object, or malformed content is corrupt, not empty.
 
 Canonical shape:
 
@@ -381,37 +254,21 @@ Canonical shape:
 }
 ```
 
-The example is synthetic. The root has exactly `schemaVersion` and `claims`.
-Every Claim object has exactly the nine members shown. IDs use canonical
-lowercase UUID text. Times use UTC ISO-8601 with exactly three fractional
-digits. `terminalAt` and `decisionReason` are either JSON null or a string;
-all other Claim values are strings. `schemaVersion` accepts only the numeric
-token `1`.
+The example is synthetic. The root has exactly `schemaVersion` and `claims`. Every Claim object has exactly the nine members shown. IDs use canonical lowercase UUID text. Times use UTC ISO-8601 with exactly three fractional digits. `terminalAt` and `decisionReason` are either JSON null or a string; all other Claim values are strings. `schemaVersion` accepts only the numeric token `1`.
 
-The array is authoritative stable submission insertion order. A terminal
-mutation replaces its record in place; submission appends. Encoder member
-order, two-space indentation, LF line endings, escaping, and a final LF are
-fixed. Existing valid but non-canonical whitespace/member order is accepted on
-read and canonicalized only by a later genuine mutation; a read never rewrites.
+The array is authoritative stable submission insertion order. A terminal mutation replaces its record in place; submission appends. Encoder member order, two-space indentation, LF line endings, escaping, and a final LF are fixed. Existing valid but non-canonical whitespace/member order is accepted on read and canonicalized only by a later genuine mutation; a read never rewrites.
 
 ### 7.2 Strict decoding and validation
 
-The dedicated codec follows the proven report-store pattern without importing
-or changing report codec classes. It rejects:
+The dedicated codec follows the proven report-store pattern without importing or changing report codec classes. It rejects:
 
-- malformed UTF-8, BOM, trailing non-whitespace, duplicate/unknown/missing
-  members, wrong JSON types, unsupported/nonnumeric versions, and invalid
-  string escapes or surrogate pairs;
+- malformed UTF-8, BOM, trailing non-whitespace, duplicate/unknown/missing members, wrong JSON types, unsupported/nonnumeric versions, and invalid string escapes or surrogate pairs;
 - noncanonical UUID/time strings and unknown status names;
 - duplicate Claim IDs or any per-record invariant failure;
-- a store-wide lock, approval-closure, rejection-closure, or same-pair history
-  contradiction described in section 5; and
+- a store-wide lock, approval-closure, rejection-closure, or same-pair history contradiction described in section 5; and
 - input larger than the bound.
 
-The complete document is validated before any Claim is returned. There is no
-partial recovery, line skipping, guessed field, copied report repair,
-migration, automatic reset, or silent empty fallback. Unsupported version and
-corruption leave the bytes untouched and make Claims unavailable.
+The complete document is validated before any Claim is returned. There is no partial recovery, line skipping, guessed field, copied report repair, migration, automatic reset, or silent empty fallback. Unsupported version and corruption leave the bytes untouched and make Claims unavailable.
 
 `ClaimStoreException.Reason` is:
 
@@ -421,17 +278,13 @@ corruption leave the bytes untouched and make Claims unavailable.
 - `WRITE_FAILURE`; and
 - `RESULT_TOO_LARGE`.
 
-Messages are fixed and privacy-safe. They contain no cause, path, Claim ID,
-claimant ID, evidence, reason, report value, JSON token, or file excerpt.
+Messages are fixed and privacy-safe. They contain no cause, path, Claim ID, claimant ID, evidence, reason, report value, JSON token, or file excerpt.
 
-Primary requirement support: PRD-LC-001, PRD-IC-001–PRD-IC-003,
-PRD-NF-001, PRD-PR-006, PRD-FL-001–PRD-FL-002.
+Primary requirement support: PRD-LC-001, PRD-IC-001–PRD-IC-003, PRD-NF-001, PRD-PR-006, PRD-FL-001–PRD-FL-002.
 
 ## 8. Atomicity, durability, recovery, and supported concurrency
 
-`JsonClaimRepository` normalizes its path to absolute form and synchronizes
-all public methods on the application-lifetime repository instance. It keeps
-no durable-state cache between calls.
+`JsonClaimRepository` normalizes its path to absolute form and synchronizes all public methods on the application-lifetime repository instance. It keeps no durable-state cache between calls.
 
 One mutation is:
 
@@ -439,48 +292,19 @@ One mutation is:
 2. strict decode and full Claim-ledger validation;
 3. atomic business check and immutable candidate construction in memory;
 4. bounded canonical encoding before touching the target;
-5. creation of the parent when needed and one unique sibling
-   `.claim-store-*.tmp`;
-6. complete channel write, `force(true)`, close, then `ATOMIC_MOVE` with
-   `REPLACE_EXISTING`; and
+5. creation of the parent when needed and one unique sibling `.claim-store-*.tmp`;
+6. complete channel write, `force(true)`, close, then `ATOMIC_MOVE` with `REPLACE_EXISTING`; and
 7. return of success with no later fallible storage read.
 
-Unsupported atomic move is a write failure; there is no truncation or
-non-atomic fallback. Before commit, failure leaves the previous target (or
-absence) authoritative and cleans up only this operation's temporary file on a
-best-effort basis. Orphan temporary files are ignored and never promoted.
-After commit, the target alone is authoritative. Reads do not create, repair,
-or delete files.
+Unsupported atomic move is a write failure; there is no truncation or non-atomic fallback. Before commit, failure leaves the previous target (or absence) authoritative and cleans up only this operation's temporary file on a best-effort basis. Orphan temporary files are ignored and never promoted. After commit, the target alone is authoritative. Reads do not create, repair, or delete files.
 
-Claim and lock/closure state cannot be partially committed because locks and
-closures are derived from the one Claim document. A failed submission adds no
-record and therefore acquires no lock. A failed terminal operation leaves the
-Pending record and its locks unchanged. Success is reported only after the
-atomic replacement has returned successfully.
+Claim and lock/closure state cannot be partially committed because locks and closures are derived from the one Claim document. A failed submission adds no record and therefore acquires no lock. A failed terminal operation leaves the Pending record and its locks unchanged. Success is reported only after the atomic replacement has returned successfully.
 
-The guaranteed consistency boundary is one JVM, one shared
-`JsonClaimRepository` instance, and its public operations. Concurrent calls on
-that instance are serial-equivalent. Therefore two competing submissions
-cannot both obtain a conflicting LOST/FOUND lock, duplicate active pair, or
-ID; and competing approve/reject/withdraw calls can commit only the first
-Pending-to-terminal transition. Later calls observe and return the durable
-terminal Claim.
+The guaranteed consistency boundary is one JVM, one shared `JsonClaimRepository` instance, and its public operations. Concurrent calls on that instance are serial-equivalent. Therefore two competing submissions cannot both obtain a conflicting LOST/FOUND lock, duplicate active pair, or ID; and competing approve/reject/withdraw calls can commit only the first Pending-to-terminal transition. Later calls observe and return the durable terminal Claim.
 
-The application uses synchronous JavaFX actions and one logged-in route at a
-time. Report/link revalidation and a Claim commit are not a cross-file
-transaction. The supported application has no competing report deletion API,
-and all in-process UI actions are serialized; this is sufficient for the local
-application. Distinct repository instances/processes, external writers,
-network filesystems, distributed locking, and hostile filesystem races are not
-guaranteed. A later need for those guarantees would require a separately
-approved storage design.
+The application uses synchronous JavaFX actions and one logged-in route at a time. Report/link revalidation and a Claim commit are not a cross-file transaction. The supported application has no competing report deletion API, and all in-process UI actions are serialized; this is sufficient for the local application. Distinct repository instances/processes, external writers, network filesystems, distributed locking, and hostile filesystem races are not guaranteed. A later need for those guarantees would require a separately approved storage design.
 
-Durability matches the existing stores: complete file bytes are forced before
-atomic replacement and are visible to a fresh application run. There is no
-directory-entry fsync guarantee and no claim of surviving arbitrary power or
-storage-controller failure. After an interrupted operation with no returned
-outcome, the target present on restart is authoritative; no retrospective
-success is inferred.
+Durability matches the existing stores: complete file bytes are forced before atomic replacement and are visible to a fresh application run. There is no directory-entry fsync guarantee and no claim of surviving arbitrary power or storage-controller failure. After an interrupted operation with no returned outcome, the target present on restart is authoritative; no retrospective success is inferred.
 
 | Storage state / fault | Result |
 | --- | --- |
@@ -491,17 +315,13 @@ success is inferred.
 | Stage/write/force/close/move failure | `WRITE_FAILURE`; no success; old committed target remains authoritative under the supported filesystem model |
 | Orphan sibling temp | Ignore; target only is authoritative |
 
-Primary requirement support: PRD-LC-003–PRD-LC-009, PRD-SC-009,
-PRD-ST-006, PRD-DC-005, PRD-FL-001, PRD-NF-001–PRD-NF-002.
+Primary requirement support: PRD-LC-003–PRD-LC-009, PRD-SC-009, PRD-ST-006, PRD-DC-005, PRD-FL-001, PRD-NF-001–PRD-NF-002.
 
 ## 9. Student application module and projections
 
 ### 9.1 Constructor authority and operations
 
-`StudentClaimsService` is constructed per login with the complete
-`AuthenticatedUser`, Claim repository, Report repository, Possible Match
-repository, `Clock`, and `Supplier<UUID>`. Construction rejects any role other
-than STUDENT. The stable user ID is retained; username is presentation-only.
+`StudentClaimsService` is constructed per login with the complete `AuthenticatedUser`, Claim repository, Report repository, Possible Match repository, `Clock`, and `Supplier<UUID>`. Construction rejects any role other than STUDENT. The stable user ID is retained; username is presentation-only.
 
 Its application-facing operations are:
 
@@ -517,52 +337,19 @@ withdraw(StudentClaimHandle)
 clear()
 ```
 
-`enter` selects Available matches and performs its authoritative load. Entry,
-re-entry, sub-tab selection, Refresh, Retry, and authoritative selection
-reconciliation do not clear or overwrite unsaved evidence. The pane, not the
-service load operation, owns the transient evidence text and its associated
-opaque target context. If refresh makes that target stale or unavailable, the
-text remains retained and cannot be submitted against another target; any later
-submission still requires a fresh valid handle, review, and confirmation. The
-pane calls the applicable refresh when a Claims sub-tab is entered and on
-explicit Refresh/Retry. There is no timer, polling, subscription, or
-notification.
+`enter` selects Available matches and performs its authoritative load. Entry, re-entry, sub-tab selection, Refresh, Retry, and authoritative selection reconciliation do not clear or overwrite unsaved evidence. The pane, not the service load operation, owns the transient evidence text and its associated opaque target context. If refresh makes that target stale or unavailable, the text remains retained and cannot be submitted against another target; any later submission still requires a fresh valid handle, review, and confirmation. The pane calls the applicable refresh when a Claims sub-tab is entered and on explicit Refresh/Retry. There is no timer, polling, subscription, or notification.
 
-`reviewSubmission` validates/normalizes evidence and returns a read-only
-`SubmissionReview` containing only the opaque target handle, approved safe
-summary, and normalized evidence. It creates no Claim and performs no write.
-The JavaFX pane presents this value in an explicit confirmation dialog.
-Cancellation returns to the editable field unchanged.
+`reviewSubmission` validates/normalizes evidence and returns a read-only `SubmissionReview` containing only the opaque target handle, approved safe summary, and normalized evidence. It creates no Claim and performs no write. The JavaFX pane presents this value in an explicit confirmation dialog. Cancellation returns to the editable field unchanged.
 
-On confirmation, `submit` performs a fresh report/link/claim read, resolves the
-handle against the original selected directional pair, checks that the durable
-link still exists, both reports are present, the first is LOST, the second is
-FOUND, and the LOST Reporter ID equals the bound Student user ID. It does not
-rerun or require the matching score. It creates a millisecond Instant and tries
-at most three UUIDs from the injected supplier; an `ID_COLLISION` consumes only
-another UUID, not another time. Exhaustion is an internal safe failure. The
-repository then atomically rechecks Claim locks/closures.
+On confirmation, `submit` performs a fresh report/link/claim read, resolves the handle against the original selected directional pair, checks that the durable link still exists, both reports are present, the first is LOST, the second is FOUND, and the LOST Reporter ID equals the bound Student user ID. It does not rerun or require the matching score. It creates a millisecond Instant and tries at most three UUIDs from the injected supplier; an `ID_COLLISION` consumes only another UUID, not another time. Exhaustion is an internal safe failure. The repository then atomically rechecks Claim locks/closures.
 
-On `CREATED`, the committed Claim is selected in My claims, the draft clears,
-and Available matches is reloaded. A post-commit view-load failure must not
-rewrite committed success as failure: the committed claim/status is shown,
-and the affected list becomes unavailable with Retry. `OWN_ACTIVE_CLAIM`
-opens/directs to that Student's existing Claim. `BLOCKED` reports only that the
-match is no longer available and refreshes without revealing why. Every
-non-`CREATED` outcome preserves the evidence text; confirmation cancellation
-also returns to editing with the text unchanged.
+On `CREATED`, the committed Claim is selected in My claims, the draft clears, and Available matches is reloaded. A post-commit view-load failure must not rewrite committed success as failure: the committed claim/status is shown, and the affected list becomes unavailable with Retry. `OWN_ACTIVE_CLAIM` opens/directs to that Student's existing Claim. `BLOCKED` reports only that the match is no longer available and refreshes without revealing why. Every non-`CREATED` outcome preserves the evidence text; confirmation cancellation also returns to editing with the text unchanged.
 
-Withdrawal uses only the selected opaque Claim handle, bound Student ID,
-current Instant, and Claim repository. It deliberately does not load or require
-reports or links. The repository atomically checks ownership and Pending state.
-The UI asks for irreversible confirmation before calling it. `CHANGED` shows
-Withdrawn and refreshes; `ALREADY_TERMINAL` shows the returned current final
-status; `NOT_AUTHORIZED` reveals no Claim.
+Withdrawal uses only the selected opaque Claim handle, bound Student ID, current Instant, and Claim repository. It deliberately does not load or require reports or links. The repository atomically checks ownership and Pending state. The UI asks for irreversible confirmation before calling it. `CHANGED` shows Withdrawn and refreshes; `ALREADY_TERMINAL` shows the returned current final status; `NOT_AUTHORIZED` reveals no Claim.
 
 ### 9.2 Structurally narrow Student projections
 
-`StudentClaimsState` contains independent Available/My-claims availability,
-typed safe feedback, and these nested immutable projections:
+`StudentClaimsState` contains independent Available/My-claims availability, typed safe feedback, and these nested immutable projections:
 
 | Projection | Fields exposed |
 | --- | --- |
@@ -573,56 +360,27 @@ typed safe feedback, and these nested immutable projections:
 | `StudentClaimDetail` | visible claim reference; own immutable evidence; status; safe report summary with only PRD-SC-004 fields or unavailable markers; submission/terminal Instants; optional Student-visible decision reason |
 | `SubmissionReview` | opaque match handle; safe summary; normalized evidence; no IDs or hidden fields |
 
-Opaque handle classes have no public ID accessor and a redacted `toString`.
-Only the service can resolve them to report/Claim IDs. This prevents a JavaFX
-cell from accidentally rendering an internal Report ID or using a visible
-claim reference as authorization.
+Opaque handle classes have no public ID accessor and a redacted `toString`. Only the service can resolve them to report/Claim IDs. This prevents a JavaFX cell from accidentally rendering an internal Report ID or using a visible claim reference as authorization.
 
-Available loading reads reports, links, and Claims. It orients each unordered
-durable link only when one endpoint is the bound Student's LOST report and the
-other is FOUND; same-reporter FOUND reports are allowed. Missing/misdirected
-links are omitted. The Claim ledger emits cards only for available targets,
-own-active notices for that Student's blockers, and nothing for every other
-blocker.
+Available loading reads reports, links, and Claims. It orients each unordered durable link only when one endpoint is the bound Student's LOST report and the other is FOUND; same-reporter FOUND reports are allowed. Missing/misdirected links are omitted. The Claim ledger emits cards only for available targets, own-active notices for that Student's blockers, and nothing for every other blocker.
 
-LOST groups sort by report `createdAt` descending, then LOST UUID string
-ascending as a reproducible internal tie-break. Cards sort by FOUND occurrence
-date descending, then FOUND UUID string ascending. The only empty sentence is
-exactly `No available matches right now.`
+LOST groups sort by report `createdAt` descending, then LOST UUID string ascending as a reproducible internal tie-break. Cards sort by FOUND occurrence date descending, then FOUND UUID string ascending. The only empty sentence is exactly `No available matches right now.`
 
-My claims filters stored claimant ID before projection and sorts submission
-time descending, then Claim ID string ascending for an internal tie. A
-successful report-store load that lacks one referenced report produces
-unavailable report-derived fields while retaining/selecting the Claim. A whole
-report-store or Claim-store load failure clears stale rows/detail and shows
-Unavailable plus Retry; it is not an empty state. These authoritative view
-changes do not clear the pane's unsaved evidence.
+My claims filters stored claimant ID before projection and sorts submission time descending, then Claim ID string ascending for an internal tie. A successful report-store load that lacks one referenced report produces unavailable report-derived fields while retaining/selecting the Claim. A whole report-store or Claim-store load failure clears stale rows/detail and shows Unavailable plus Retry; it is not an empty state. These authoritative view changes do not clear the pane's unsaved evidence.
 
 ### 9.3 Resolved row category projection source
 
-PRD-ST-002, PRD-DO-003, and PRD-DO-008 incorporate the product-owner
-clarification that the singular `category` in `MyClaimRow`, `PendingClaimRow`,
-and `HistoryClaimRow` is the FOUND report's category. The projection reads it
-from the current canonical FOUND report and shows the approved unavailable
-marker when that report-derived field is unavailable. It does not compare,
-reconcile, or assume equality with the LOST report's category, and it does not
-add a second category field.
+PRD-ST-002, PRD-DO-003, and PRD-DO-008 incorporate the product-owner clarification that the singular `category` in `MyClaimRow`, `PendingClaimRow`, and `HistoryClaimRow` is the FOUND report's category. The projection reads it from the current canonical FOUND report and shows the approved unavailable marker when that report-derived field is unavailable. It does not compare, reconcile, or assume equality with the LOST report's category, and it does not add a second category field.
 
-This is consistent with `AvailableMatchCard` and the Student safe match summary,
-for which PRD-SC-004 already identifies the FOUND item's category. No other
-approved projection is reopened.
+This is consistent with `AvailableMatchCard` and the Student safe match summary, for which PRD-SC-004 already identifies the FOUND item's category. No other approved projection is reopened.
 
-Primary requirement support: PRD-SC-001–PRD-SC-009,
-PRD-ST-001–PRD-ST-006, PRD-PR-001–PRD-PR-003, PRD-FL-001–PRD-FL-004,
-PRD-NF-003.
+Primary requirement support: PRD-SC-001–PRD-SC-009, PRD-ST-001–PRD-ST-006, PRD-PR-001–PRD-PR-003, PRD-FL-001–PRD-FL-004, PRD-NF-003.
 
 ## 10. Desk Officer application module and projections
 
 ### 10.1 Constructor authority and operations
 
-`OfficerClaimsService` is per-login and requires a DESK_OFFICER
-`AuthenticatedUser`, Claim repository, read-only Report repository, and Clock.
-It never retains or sends the officer user ID to Claim persistence.
+`OfficerClaimsService` is per-login and requires a DESK_OFFICER `AuthenticatedUser`, Claim repository, read-only Report repository, and Clock. It never retains or sends the officer user ID to Claim persistence.
 
 Operations are:
 
@@ -638,35 +396,11 @@ approve(DecisionReview) / reject(DecisionReview)
 clear()
 ```
 
-Entry selects Pending review and loads current Claims/reports. Entry, re-entry,
-inner-tab selection, Refresh, Retry, and authoritative selection reconciliation
-do not clear or overwrite unsaved decision text. The pane owns that transient
-text and associates it with the selected opaque Claim handle so it is never
-silently transferred to another Claim. Pending and history have separate
-availability, rows, selection, and Retry state. A full store load failure clears
-affected rows/private detail/actions as required by PRD-FL-002, but preserves
-the unsaved decision text; a later action still requires a current reviewable
-Claim and fresh confirmation. A successful load with a missing referenced Item
-Report keeps the row and retained Claim but marks the report-derived field
-unavailable.
+Entry selects Pending review and loads current Claims/reports. Entry, re-entry, inner-tab selection, Refresh, Retry, and authoritative selection reconciliation do not clear or overwrite unsaved decision text. The pane owns that transient text and associates it with the selected opaque Claim handle so it is never silently transferred to another Claim. Pending and history have separate availability, rows, selection, and Retry state. A full store load failure clears affected rows/private detail/actions as required by PRD-FL-002, but preserves the unsaved decision text; a later action still requires a current reviewable Claim and fresh confirmation. A successful load with a missing referenced Item Report keeps the row and retained Claim but marks the report-derived field unavailable.
 
-Selection is read-only. `reviewDecision` validates optional approval or
-mandatory rejection text before the pane offers confirmation. `DecisionReview`
-contains an opaque handle, action, claim reference, and normalized optional or
-required reason; it is redacted.
+Selection is read-only. `reviewDecision` validates optional approval or mandatory rejection text before the pane offers confirmation. `DecisionReview` contains an opaque handle, action, claim reference, and normalized optional or required reason; it is redacted.
 
-Immediately before approve/reject, the service reloads Claims and canonical
-reports, verifies the selected Claim still exists as Pending, and verifies
-both report IDs are present. The original possible-match link is irrelevant
-and is not loaded. Missing reports disable and block both decisions while the
-Claim remains Pending. When current reports exist, the repository transition
-is the final atomic Pending check. `CHANGED` clears pending selection/detail,
-shows final-status success, removes the row, and makes the committed Claim
-available in history. Only this durable successful decision clears its
-associated reason draft. `ALREADY_TERMINAL` changes nothing, preserves unsaved
-text, and refreshes/reports the returned current status. Persistence failure
-preserves reason text and Pending presentation, reports no success, and permits
-explicit retry.
+Immediately before approve/reject, the service reloads Claims and canonical reports, verifies the selected Claim still exists as Pending, and verifies both report IDs are present. The original possible-match link is irrelevant and is not loaded. Missing reports disable and block both decisions while the Claim remains Pending. When current reports exist, the repository transition is the final atomic Pending check. `CHANGED` clears pending selection/detail, shows final-status success, removes the row, and makes the committed Claim available in history. Only this durable successful decision clears its associated reason draft. `ALREADY_TERMINAL` changes nothing, preserves unsaved text, and refreshes/reports the returned current status. Persistence failure preserves reason text and Pending presentation, reports no success, and permits explicit retry.
 
 ### 10.2 Structurally narrow officer projections
 
@@ -679,133 +413,63 @@ explicit retry.
 | `OfficerClaimDetail` | reference; claimant user ID; immutable evidence; status; submission/terminal Instants; optional reason; separate optional current LOST and FOUND `ItemReport` values |
 | `DecisionReview` | opaque handle; reference; decision kind; normalized reason; no officer identity |
 
-Pending rows contain every and only Pending Claim, sorted submission time
-ascending then Claim ID string ascending. There is no pending filter. History
-contains every and only terminal Claim, filtered by exactly All/Approved/
-Rejected/Withdrawn, sorted terminal time descending then Claim ID string
-ascending. Tie-breaks are deterministic implementation details, not additional
-visible priority.
+Pending rows contain every and only Pending Claim, sorted submission time ascending then Claim ID string ascending. There is no pending filter. History contains every and only terminal Claim, filtered by exactly All/Approved/ Rejected/Withdrawn, sorted terminal time descending then Claim ID string ascending. Tie-breaks are deterministic implementation details, not additional visible priority.
 
-Full canonical `ItemReport` values appear only inside selected
-`OfficerClaimDetail`. The queue/history records cannot expose Reporter ID,
-descriptions, private detail, evidence, claimant ID, or decision reason because
-those fields do not exist in those projection types. Detail and all nested
-values have redacted `toString` implementations.
+Full canonical `ItemReport` values appear only inside selected `OfficerClaimDetail`. The queue/history records cannot expose Reporter ID, descriptions, private detail, evidence, claimant ID, or decision reason because those fields do not exist in those projection types. Detail and all nested values have redacted `toString` implementations.
 
-Primary requirement support: PRD-DO-001–PRD-DO-009,
-PRD-DC-001–PRD-DC-006, PRD-PR-001, PRD-PR-004,
-PRD-FL-001–PRD-FL-004, PRD-NF-003.
+Primary requirement support: PRD-DO-001–PRD-DO-009, PRD-DC-001–PRD-DC-006, PRD-PR-001, PRD-PR-004, PRD-FL-001–PRD-FL-004, PRD-NF-003.
 
 ## 11. Report, possible-match, and authentication integration
 
 ### Reports
 
-Claims call only `ReportRepository.loadAll`. Application code indexes the
-complete list by Report ID and rejects a duplicate-ID snapshot as unavailable
-rather than choosing one. It never calls `insert`, `replace`, or
-`ItemReport.withStatus`.
+Claims call only `ReportRepository.loadAll`. Application code indexes the complete list by Report ID and rejects a duplicate-ID snapshot as unavailable rather than choosing one. It never calls `insert`, `replace`, or `ItemReport.withStatus`.
 
-At new submission the current reports establish direction, ownership, and
-availability. After submission, the stored directional IDs remain the Claim
-target. Current reports are loaded only for projections and officer decision
-availability; they are never reconstructed from Claim data. A successfully
-loaded report snapshot missing an ID is distinct from a report-store load
-failure.
+At new submission the current reports establish direction, ownership, and availability. After submission, the stored directional IDs remain the Claim target. Current reports are loaded only for projections and officer decision availability; they are never reconstructed from Claim data. A successfully loaded report snapshot missing an ID is distinct from a report-store load failure.
 
-Both existing ReportStatus values remain acceptable because the approved PRD
-does not restrict Claim eligibility by report review status. Status never
-becomes a Claim lock or closure.
+Both existing ReportStatus values remain acceptable because the approved PRD does not restrict Claim eligibility by report review status. Status never becomes a Claim lock or closure.
 
 ### Possible-match links
 
-Student discovery and confirmation call only `PossibleMatchRepository.loadAll`
-and compare `PossibleMatchPair.of(lostId, foundId)`. Matching score/evaluation
-is never called. Link removal after Claim commit changes only future
-submission discovery/revalidation. Withdrawal, officer review, decisions, and
-history do not require a link. No Claim action calls `link` or `unlink`.
+Student discovery and confirmation call only `PossibleMatchRepository.loadAll` and compare `PossibleMatchPair.of(lostId, foundId)`. Matching score/evaluation is never called. Link removal after Claim commit changes only future submission discovery/revalidation. Withdrawal, officer review, decisions, and history do not require a link. No Claim action calls `link` or `unlink`.
 
 ### Authentication
 
-Each Claims application module receives the full `AuthenticatedUser` from the
-existing authenticated-route factory and rejects the wrong role at
-construction. Student operations use only the bound stable user ID for report
-ownership, Claim filtering, and withdrawal. Officer operations retain only the
-fact that the per-login module was constructed for DESK_OFFICER; no deciding
-identity enters a command or record.
+Each Claims application module receives the full `AuthenticatedUser` from the existing authenticated-route factory and rejects the wrong role at construction. Student operations use only the bound stable user ID for report ownership, Claim filtering, and withdrawal. Officer operations retain only the fact that the per-login module was constructed for DESK_OFFICER; no deciding identity enters a command or record.
 
-The UI constructs Claims content only inside the matching authenticated route.
-Logout removes and clears the per-login service/pane. A later login constructs
-fresh services and reloads durable state. There is no persistent session or
-new auth role.
+The UI constructs Claims content only inside the matching authenticated route. Logout removes and clears the per-login service/pane. A later login constructs fresh services and reloads durable state. There is no persistent session or new auth role.
 
-Primary requirement support: PRD-SC-002–PRD-SC-003, PRD-ST-002–PRD-ST-005,
-PRD-DO-005–PRD-DO-006, PRD-DC-001, PRD-PR-001–PRD-PR-004,
-PRD-IC-001–PRD-IC-002, PRD-NF-004.
+Primary requirement support: PRD-SC-002–PRD-SC-003, PRD-ST-002–PRD-ST-005, PRD-DO-005–PRD-DO-006, PRD-DC-001, PRD-PR-001–PRD-PR-004, PRD-IC-001–PRD-IC-002, PRD-NF-004.
 
 ## 12. JavaFX design
 
 ### 12.1 Student Claims
 
-`StudentClaimsPane` is a BorderPane with fixed inner tabs **Available
-matches** and **My claims**, Available selected by default.
+`StudentClaimsPane` is a BorderPane with fixed inner tabs **Available matches** and **My claims**, Available selected by default.
 
-- Available matches: header with Refresh/Retry and safe feedback; a scrollable
-  group list; approved cards; own-active notices linking to My claims; exact
-  empty sentence; and no IDs/tooltips/accessibility text containing excluded
-  data.
-- Submission: opening a card shows the safe directional summary and a
-  multi-line evidence field. Review calls the service validator; a confirmation
-  dialog shows the same safe summary and trimmed evidence. Cancel returns to
-  editing. Durable success clears the field and selects the new My claims
-  detail. Failure retains the field. Leaving/re-entering Claims, changing
-  Claims sub-tabs, Refresh, Retry, unavailable state, and selection
-  reconciliation also retain the field and its target context.
-- My claims: Refresh/Retry, newest-first single-select rows, and a scrollable
-  selected detail. Withdrawal appears only for a loaded owned Pending Claim and
-  uses an irreversible confirmation dialog with no reason field.
-- Unavailable clears rows/detail and disables actions. A missing individual
-  report uses an unavailable placeholder without hiding retained Claim data.
+- Available matches: header with Refresh/Retry and safe feedback; a scrollable group list; approved cards; own-active notices linking to My claims; exact empty sentence; and no IDs/tooltips/accessibility text containing excluded data.
+- Submission: opening a card shows the safe directional summary and a multi-line evidence field. Review calls the service validator; a confirmation dialog shows the same safe summary and trimmed evidence. Cancel returns to editing. Durable success clears the field and selects the new My claims detail. Failure retains the field. Leaving/re-entering Claims, changing Claims sub-tabs, Refresh, Retry, unavailable state, and selection reconciliation also retain the field and its target context.
+- My claims: Refresh/Retry, newest-first single-select rows, and a scrollable selected detail. Withdrawal appears only for a loaded owned Pending Claim and uses an irreversible confirmation dialog with no reason field.
+- Unavailable clears rows/detail and disables actions. A missing individual report uses an unavailable placeholder without hiding retained Claim data.
 
 The existing Report an item and My reports panes are not redesigned.
 
 ### 12.2 Desk Officer Claims
 
-`DeskOfficerClaimsPane` is a BorderPane with fixed inner tabs **Pending
-review** and **Claim history**, Pending review selected by default.
+`DeskOfficerClaimsPane` is a BorderPane with fixed inner tabs **Pending review** and **Claim history**, Pending review selected by default.
 
-- Pending: oldest-first single-select ListView, no filters, selected-detail
-  ScrollPane, reason TextArea, separate Approve and Reject buttons, Refresh,
-  Retry, feedback, and a clear successful-empty state.
-- Detail: Claim facts first, then clearly separated complete read-only LOST and
-  FOUND report groups. Evidence and private report data never appear in row
-  cells. If either report is absent, its group says unavailable, both decision
-  buttons disable, and Retry remains available.
-- Decision: rejection validates a required reason before confirmation;
-  approval validates optional text before confirmation. Each dialog identifies
-  the visible claim reference and irreversible final status. Cancel preserves
-  editable text. Success clears selection/detail/reason and makes the Claim
-  immediately reachable in history. Outer/inner tab changes, entry/re-entry,
-  Refresh, Retry, unavailable state, stale outcomes, and selection
-  reconciliation do not clear decision text or apply it to another Claim.
-- History: exactly four filter toggles, newest-terminal-first rows, read-only
-  selected detail, and current-report unavailable placeholders without copied
-  report reconstruction.
+- Pending: oldest-first single-select ListView, no filters, selected-detail ScrollPane, reason TextArea, separate Approve and Reject buttons, Refresh, Retry, feedback, and a clear successful-empty state.
+- Detail: Claim facts first, then clearly separated complete read-only LOST and FOUND report groups. Evidence and private report data never appear in row cells. If either report is absent, its group says unavailable, both decision buttons disable, and Retry remains available.
+- Decision: rejection validates a required reason before confirmation; approval validates optional text before confirmation. Each dialog identifies the visible claim reference and irreversible final status. Cancel preserves editable text. Success clears selection/detail/reason and makes the Claim immediately reachable in history. Outer/inner tab changes, entry/re-entry, Refresh, Retry, unavailable state, stale outcomes, and selection reconciliation do not clear decision text or apply it to another Claim.
+- History: exactly four filter toggles, newest-terminal-first rows, read-only selected detail, and current-report unavailable placeholders without copied report reconstruction.
 
-Both panes follow current programmatic JavaFX conventions: render guards while
-replacing lists/restoring selection, custom cells cleared on reuse, plain text
-Labels/TextAreas, scoped `claims.css`, synchronous service calls, and no
-background thread or listener surviving logout.
+Both panes follow current programmatic JavaFX conventions: render guards while replacing lists/restoring selection, custom cells cleared on reuse, plain text Labels/TextAreas, scoped `claims.css`, synchronous service calls, and no background thread or listener surviving logout.
 
-Primary requirement support: PRD-SC-001, PRD-SC-003–PRD-SC-009,
-PRD-ST-001–PRD-ST-006, PRD-DO-001–PRD-DO-009,
-PRD-DC-001–PRD-DC-005, PRD-FL-002–PRD-FL-004.
+Primary requirement support: PRD-SC-001, PRD-SC-003–PRD-SC-009, PRD-ST-001–PRD-ST-006, PRD-DO-001–PRD-DO-009, PRD-DC-001–PRD-DC-005, PRD-FL-002–PRD-FL-004.
 
 ## 13. Composition, refresh, and logout lifecycle
 
-`ClaimWorkspaceFactory` is the production composition module. One instance is
-created with the application-lifetime report, link, and Claim repositories,
-`Clock.systemUTC()`, and `UUID::randomUUID`. It creates fresh per-login Student
-or Desk Officer services/panes and returns a neutral `WorkspaceFeature` value:
+`ClaimWorkspaceFactory` is the production composition module. One instance is created with the application-lifetime report, link, and Claim repositories, `Clock.systemUTC()`, and `UUID::randomUUID`. It creates fresh per-login Student or Desk Officer services/panes and returns a neutral `WorkspaceFeature` value:
 
 ```text
 Node content
@@ -814,79 +478,38 @@ BooleanSupplier hasUnsavedText
 Runnable clearSessionState
 ```
 
-`WorkspaceFeature` belongs to the neutral `base.workspace` package. Developer 2
-owns that package placement through package architecture and role navigation.
-It contains no authentication or Claim type. The package has only this value
-and `SessionView`; it is a small real seam used by both role workspaces, not a
-feature framework.
+`WorkspaceFeature` belongs to the neutral `base.workspace` package. Developer 2 owns that package placement through package architecture and role navigation. It contains no authentication or Claim type. The package has only this value and `SessionView`; it is a small real seam used by both role workspaces, not a feature framework.
 
-The Student report workspace receives the feature, appends its Node as the
-third non-closable **Claims** tab, and calls `onEnter` whenever that tab becomes
-selected. The officer workspace appends the feature after **Possible matches**
-and does the same. Claims panes call the relevant subview refresh on inner-tab
-entry and explicit Refresh/Retry. Every entry callback is authoritative data
-refresh only. It does not own, reset, or replace evidence/reason controls or
-their transient target association.
+The Student report workspace receives the feature, appends its Node as the third non-closable **Claims** tab, and calls `onEnter` whenever that tab becomes selected. The officer workspace appends the feature after **Possible matches** and does the same. Claims panes call the relevant subview refresh on inner-tab entry and explicit Refresh/Retry. Every entry callback is authoritative data refresh only. It does not own, reset, or replace evidence/reason controls or their transient target association.
 
-`SessionView` is a two-method neutral interface implemented by the two
-top-level role workspaces:
+`SessionView` is a two-method neutral interface implemented by the two top-level role workspaces:
 
 ```text
 boolean hasUnsavedText()
 void clearSessionState()
 ```
 
-They delegate only to the Claims feature. `AuthenticationPane` consults this
-interface before logout. If false, it clears and logs out normally. If true, it
-shows one confirmation warning. Cancel performs neither clear nor logout and
-leaves the same view/text. Confirm calls `clearSessionState` before coordinator
-logout and login rendering.
+They delegate only to the Claims feature. `AuthenticationPane` consults this interface before logout. If false, it clears and logs out normally. If true, it shows one confirmation warning. Cancel performs neither clear nor logout and leaves the same view/text. Confirm calls `clearSessionState` before coordinator logout and login rendering.
 
-Claims `clear` empties lists, selections, private report details, confirmation
-state, feedback, and text fields, and releases service snapshots. It performs
-no storage call and is invoked only after confirmed logout. Draft
-evidence/reason exists only in JavaFX controls and is never restored after a
-later login. Durable Claims are unaffected. Outside confirmed logout, only a
-durably successful submission may clear its evidence and only a durably
-successful officer decision may clear its associated reason. Confirmation
-cancellation, navigation, entry/re-entry, refresh/retry, load failure,
-unavailable state, stale outcomes, and scene attachment/detachment do not clear
-draft text. Any additional discard action would require an upstream product
-decision and is not designed here.
+Claims `clear` empties lists, selections, private report details, confirmation state, feedback, and text fields, and releases service snapshots. It performs no storage call and is invoked only after confirmed logout. Draft evidence/reason exists only in JavaFX controls and is never restored after a later login. Durable Claims are unaffected. Outside confirmed logout, only a durably successful submission may clear its evidence and only a durably successful officer decision may clear its associated reason. Confirmation cancellation, navigation, entry/re-entry, refresh/retry, load failure, unavailable state, stale outcomes, and scene attachment/detachment do not clear draft text. Any additional discard action would require an upstream product decision and is not designed here.
 
-Primary requirement support: PRD-SC-001, PRD-DO-001, PRD-FL-003–PRD-FL-005,
-PRD-IC-004, PRD-AC-X06.
+Primary requirement support: PRD-SC-001, PRD-DO-001, PRD-FL-003–PRD-FL-005, PRD-IC-004, PRD-AC-X06.
 
 ## 14. Claim IDs, references, clocks, and UTC display
 
-Internal identity is a random UUID wrapped by `ClaimId`, generated from an
-injected `Supplier<UUID>`. The repository detects duplicate Claim IDs before
-any eligibility write. The Student submission module retries with at most
-three supplied UUIDs for the same confirmed action and same submission time;
-exhaustion produces safe internal failure and no Claim. Deterministic suppliers
-make this behaviour testable.
+Internal identity is a random UUID wrapped by `ClaimId`, generated from an injected `Supplier<UUID>`. The repository detects duplicate Claim IDs before any eligibility write. The Student submission module retries with at most three supplied UUIDs for the same confirmed action and same submission time; exhaustion produces safe internal failure and no Claim. Deterministic suppliers make this behaviour testable.
 
-The user-visible reference is a pure one-to-one rendering of the persisted
-Claim ID:
+The user-visible reference is a pure one-to-one rendering of the persisted Claim ID:
 
 ```text
 CLM- + 32 uppercase hexadecimal UUID digits without hyphens
 ```
 
-For example, UUID `00000000-0000-0000-0000-000000000001` displays as
-`CLM-00000000000000000000000000000001`. It is not separately stored and cannot
-drift or collide independently. It appears only in approved details and
-officer rows; it is never an authorization credential.
+For example, UUID `00000000-0000-0000-0000-000000000001` displays as `CLM-00000000000000000000000000000001`. It is not separately stored and cannot drift or collide independently. It appears only in approved details and officer rows; it is never an authorization credential.
 
-Both services receive a `Clock`. Each state-changing command samples once and
-truncates to milliseconds. Persistence uses exact `Instant` strings with three
-fractional digits. UI formatting occurs only in `ClaimTimeFormatter`, using a
-fixed UTC-zone formatter such as `uuuu-MM-dd HH:mm:ss.SSS UTC`; it never uses
-the machine default zone or a relative label. Projections retain `Instant`, so
-formatting does not alter stored facts.
+Both services receive a `Clock`. Each state-changing command samples once and truncates to milliseconds. Persistence uses exact `Instant` strings with three fractional digits. UI formatting occurs only in `ClaimTimeFormatter`, using a fixed UTC-zone formatter such as `uuuu-MM-dd HH:mm:ss.SSS UTC`; it never uses the machine default zone or a relative label. Projections retain `Instant`, so formatting does not alter stored facts.
 
-Primary requirement support: PRD-LC-001, PRD-LC-007, PRD-PR-005,
-PRD-NF-001, PRD-NF-003.
+Primary requirement support: PRD-LC-001, PRD-LC-007, PRD-PR-005, PRD-NF-001, PRD-NF-003.
 
 ## 15. Failure taxonomy and privacy-safe UI mapping
 
@@ -904,15 +527,9 @@ Application state uses typed outcomes, never exception messages.
 | Claim write failure/size limit | Candidate did not commit | Preserve last confirmed state and draft; safe failure + explicit retry; no success | Retryable except persistent capacity/configuration fault |
 | Exhausted ID collisions / invalid internal snapshot | Contract/runtime invariant could not be satisfied | Fixed generic failure, no mutation; no internals | Internal/log-only category without sensitive logging |
 
-Logs, exceptions, object strings, screenshots, tests, docs, and handoffs must not
-contain evidence, decision reasons, private report fields, another Student's
-identity/Claim, unsafe input, credentials, paths, JSON excerpts, or raw causes.
-No Claim code logs domain values. Manual/test data is synthetic.
+Logs, exceptions, object strings, screenshots, tests, docs, and handoffs must not contain evidence, decision reasons, private report fields, another Student's identity/Claim, unsafe input, credentials, paths, JSON excerpts, or raw causes. No Claim code logs domain values. Manual/test data is synthetic.
 
-Primary requirement support: PRD-SC-006–PRD-SC-009,
-PRD-ST-002–PRD-ST-006, PRD-DO-002–PRD-DO-009,
-PRD-DC-001–PRD-DC-005, PRD-PR-003–PRD-PR-006,
-PRD-FL-001–PRD-FL-003, PRD-AC-X03–PRD-AC-X04.
+Primary requirement support: PRD-SC-006–PRD-SC-009, PRD-ST-002–PRD-ST-006, PRD-DO-002–PRD-DO-009, PRD-DC-001–PRD-DC-005, PRD-PR-003–PRD-PR-006, PRD-FL-001–PRD-FL-003, PRD-AC-X03–PRD-AC-X04.
 
 ## 16. State and sequence design
 
@@ -1024,8 +641,7 @@ After commit: new target and its derived locks/closures remain authoritative.
 
 ## 17. Testability design (not Requirements-to-Tests)
 
-The proposed public seams are part of this design for owner review. No test
-file, test inventory, test ID, or Requirements-to-Tests mapping is created now.
+The proposed public seams are part of this design for owner review. No test file, test inventory, test ID, or Requirements-to-Tests mapping is created now.
 
 | Seam | Why it is a real seam |
 | --- | --- |
@@ -1038,13 +654,7 @@ file, test inventory, test ID, or Requirements-to-Tests mapping is created now.
 | Existing repository interfaces with small scripted adapters | Deterministic report/link disappearance and safe checked failures are true cross-module seams. No production deletion or fault toggle is added. |
 | JavaFX/manual/source review | Exact tab placement, confirmations, draft preservation across entry/re-entry/sub-tab/refresh/retry/failure, wrapping, selected-only private content, long text, small-window usability, and logout warning are presentation facts not requiring a new JavaFX dependency. |
 
-Tests later approved by Requirements-to-Tests must use behaviour through these
-interfaces, real temporary Claim storage where practical, independent literal
-expected values/bytes, and synthetic data. They must not mock Claim internals,
-inspect private fields, add a raw `saveAll`, or read application `data/`.
-Implementation should proceed in vertical behaviour slices rather than writing
-a horizontal imagined suite, but exact tests and evidence belong to the next
-planning stage.
+Tests later approved by Requirements-to-Tests must use behaviour through these interfaces, real temporary Claim storage where practical, independent literal expected values/bytes, and synthetic data. They must not mock Claim internals, inspect private fields, add a raw `saveAll`, or read application `data/`. Implementation should proceed in vertical behaviour slices rather than writing a horizontal imagined suite, but exact tests and evidence belong to the next planning stage.
 
 ## 18. Consequential technical decisions
 
@@ -1064,8 +674,7 @@ planning stage.
 
 ## 19. Exact proposed file plan
 
-Paths are repository-relative. No file in this section is created or modified
-by this TDD except this TDD itself.
+Paths are repository-relative. No file in this section is created or modified by this TDD except this TDD itself.
 
 ### A. Developer 2-owned new production files
 
@@ -1112,10 +721,7 @@ by this TDD except this TDD itself.
 | `src/main/java/io/github/cs32272610mp2xcode/finderskeepers/report/ui/StudentReportHomePane.java` | Developer 1 | Add an overload accepting the neutral feature; retain Report an item/My reports unchanged; append non-closable Claims, call its entry callback when selected, and implement `SessionView` by delegating draft/clear only. |
 | `.gitignore` | Shared/repository-level; `AGENTS.md` assigns no explicit Developer owner | Add only `/data/claims.json` and `/data/.claim-store-*.tmp`; keep this repository-level edit behind later implementation authorization |
 
-No exact test files are fixed here because Requirements-to-Tests is the next
-separately authorized artifact. Later Claim tests belong under corresponding
-`src/test/java/.../claim/...` packages. Later guide files are also excluded
-from this authorization.
+No exact test files are fixed here because Requirements-to-Tests is the next separately authorized artifact. Later Claim tests belong under corresponding `src/test/java/.../claim/...` packages. Later guide files are also excluded from this authorization.
 
 ## 20. Cross-Owner Integration Requests
 
@@ -1123,87 +729,46 @@ These are design requests for later owner approval, not authorized edits.
 
 ### Request 1 — application composition
 
-1. **Exact file:**
-   `src/main/java/io/github/cs32272610mp2xcode/finderskeepers/FindersKeepersApp.java`
+1. **Exact file:** `src/main/java/io/github/cs32272610mp2xcode/finderskeepers/FindersKeepersApp.java`
 2. **Current owner:** Developer 1 / shared application composition.
-3. **Why required:** only the entry point creates application-lifetime local
-   repositories and injects both authenticated role destinations. One shared
-   Claim repository instance is required for the supported synchronization
-   boundary.
-4. **Smallest sufficient change:** the construction/wiring described in file
-   plan C; no scene, stage, auth, report, matching, smoke, or release change.
-5. **Why Developer 2 code cannot avoid it cleanly:** constructing repositories
-   inside panes would create multiple unsynchronized instances and hide runtime
-   paths; a parallel shell would violate the mission.
-6. **Could Developer 1 make it instead?** Yes, and may do so from the approved
-   factory interface.
+3. **Why required:** only the entry point creates application-lifetime local repositories and injects both authenticated role destinations. One shared Claim repository instance is required for the supported synchronization boundary.
+4. **Smallest sufficient change:** the construction/wiring described in file plan C; no scene, stage, auth, report, matching, smoke, or release change.
+5. **Why Developer 2 code cannot avoid it cleanly:** constructing repositories inside panes would create multiple unsynchronized instances and hide runtime paths; a parallel shell would violate the mission.
+6. **Could Developer 1 make it instead?** Yes, and may do so from the approved factory interface.
 
 ### Request 2 — Student workspace factory extension
 
-1. **Exact file:**
-   `src/main/java/io/github/cs32272610mp2xcode/finderskeepers/report/bootstrap/StudentReportWorkspaceFactory.java`
+1. **Exact file:** `src/main/java/io/github/cs32272610mp2xcode/finderskeepers/report/bootstrap/StudentReportWorkspaceFactory.java`
 2. **Current owner:** Developer 1.
-3. **Why required:** it privately owns correct report-controller composition
-   and is the existing authenticated Student destination factory.
-4. **Smallest sufficient change:** one backwards-compatible overload accepting
-   the neutral Claims feature factory and forwarding that feature to the home
-   pane; existing overloads/behaviour remain.
-5. **Why Developer 2 code cannot avoid it cleanly:** duplicating its private
-   composition would shadow the Student report workflow; wrapping its two-tab
-   result would not produce the approved three peer tabs.
-6. **Could Developer 1 make it instead?** Yes; this is preferred if ownership
-   is kept strict.
+3. **Why required:** it privately owns correct report-controller composition and is the existing authenticated Student destination factory.
+4. **Smallest sufficient change:** one backwards-compatible overload accepting the neutral Claims feature factory and forwarding that feature to the home pane; existing overloads/behaviour remain.
+5. **Why Developer 2 code cannot avoid it cleanly:** duplicating its private composition would shadow the Student report workflow; wrapping its two-tab result would not produce the approved three peer tabs.
+6. **Could Developer 1 make it instead?** Yes; this is preferred if ownership is kept strict.
 
 ### Request 3 — Student third tab and logout delegation
 
-1. **Exact file:**
-   `src/main/java/io/github/cs32272610mp2xcode/finderskeepers/report/ui/StudentReportHomePane.java`
+1. **Exact file:** `src/main/java/io/github/cs32272610mp2xcode/finderskeepers/report/ui/StudentReportHomePane.java`
 2. **Current owner:** Developer 1.
-3. **Why required:** it owns the existing top-level Student TabPane and exact
-   ordering.
-4. **Smallest sufficient change:** backwards-compatible constructor/overload,
-   append Claims after My reports, invoke the neutral entry callback, and
-   delegate the neutral session lifecycle. Do not alter existing tab content or
-   refresh behaviour.
-5. **Why Developer 2 code cannot avoid it cleanly:** nesting or replacing this
-   pane would change the approved top-level navigation or duplicate report UI.
-6. **Could Developer 1 make it instead?** Yes; the neutral feature value means
-   no Claim domain knowledge is required.
+3. **Why required:** it owns the existing top-level Student TabPane and exact ordering.
+4. **Smallest sufficient change:** backwards-compatible constructor/overload, append Claims after My reports, invoke the neutral entry callback, and delegate the neutral session lifecycle. Do not alter existing tab content or refresh behaviour.
+5. **Why Developer 2 code cannot avoid it cleanly:** nesting or replacing this pane would change the approved top-level navigation or duplicate report UI.
+6. **Could Developer 1 make it instead?** Yes; the neutral feature value means no Claim domain knowledge is required.
 
-The Developer 2-owned `AuthenticationPane` and `DeskOfficerWorkspacePane`
-changes do not require cross-owner approval, but still require later production
-implementation authorization. `AGENTS.md` does not assign `.gitignore` to
-Developer 2; its two proposed Claim runtime exclusions are therefore classified
-as a shared/repository-level edit and also remain behind later implementation
-authorization. The new neutral `base.workspace` package is within Developer
-2's package-architecture and role-navigation ownership, while each import/edit
-inside a Developer 1 file remains covered by Requests 2 and 3. No report model,
-report status, report persistence, matching model, or possible-match
-persistence change is requested.
+The Developer 2-owned `AuthenticationPane` and `DeskOfficerWorkspacePane` changes do not require cross-owner approval, but still require later production implementation authorization. `AGENTS.md` does not assign `.gitignore` to Developer 2; its two proposed Claim runtime exclusions are therefore classified as a shared/repository-level edit and also remain behind later implementation authorization. The new neutral `base.workspace` package is within Developer 2's package-architecture and role-navigation ownership, while each import/edit inside a Developer 1 file remains covered by Requests 2 and 3. No report model, report status, report persistence, matching model, or possible-match persistence change is requested.
 
 ## 21. Delivery order after later gates
 
-After this TDD approval, the remaining gates are a separate
-Requirements-to-Tests approval, implementation authorization, and each
-cross-owner authorization. Only after those later gates:
+After this TDD approval, the remaining gates are a separate Requirements-to-Tests approval, implementation authorization, and each cross-owner authorization. Only after those later gates:
 
-1. implement Claim identity/text/lifecycle and ledger behind their public
-   interfaces;
-2. implement the real temporary-file Claim repository and one atomic Pending
-   submission path, then terminal replacements and fault handling;
-3. implement Student projections/load path, then confirmed submission, then
-   tracking/withdrawal;
-4. implement officer queue/history projections, then selected verification,
-   approval and rejection;
-5. add thin role panes, scoped styling, UTC rendering, confirmations, and
-   logout lifecycle;
-6. perform authorized workspace/application composition last, without
-   broadening cross-owner edits; and
-7. after separately authorized documentation delivery, update only the
-   Claim-relevant guide sections and interaction evidence.
+1. implement Claim identity/text/lifecycle and ledger behind their public interfaces;
+2. implement the real temporary-file Claim repository and one atomic Pending submission path, then terminal replacements and fault handling;
+3. implement Student projections/load path, then confirmed submission, then tracking/withdrawal;
+4. implement officer queue/history projections, then selected verification, approval and rejection;
+5. add thin role panes, scoped styling, UTC rendering, confirmations, and logout lifecycle;
+6. perform authorized workspace/application composition last, without broadening cross-owner edits; and
+7. after separately authorized documentation delivery, update only the Claim-relevant guide sections and interaction evidence.
 
-This ordering describes dependency-aware vertical capability slices, not a
-Requirements-to-Tests checklist or an authorization to write tests/code.
+This ordering describes dependency-aware vertical capability slices, not a Requirements-to-Tests checklist or an authorization to write tests/code.
 
 ## 22. Risks and controls
 
@@ -1225,15 +790,11 @@ Requirements-to-Tests checklist or an authorization to write tests/code.
 | Logout leaves private content | Central warning, cancellation semantics, confirmed session clear, fresh per-login modules; no unconfirmed detach clear |
 | Manual codec complexity | Small fixed schema, strict whole-document validation, existing proven pattern, later real-byte/fault evidence |
 
-No new dependency, unresolved technical choice, or unresolved product
-projection remains. The row-category source is fixed by section 9.3. The main
-delivery risk is obtaining the three explicit cross-owner integration
-approvals; this is not a reason to weaken approved behaviour.
+No new dependency, unresolved technical choice, or unresolved product projection remains. The row-category source is fixed by section 9.3. The main delivery risk is obtaining the three explicit cross-owner integration approvals; this is not a reason to weaken approved behaviour.
 
 ## 23. Architectural requirements traceability
 
-This is architectural traceability only. It does not assign test IDs or create
-the later Requirements-to-Tests evidence map.
+This is architectural traceability only. It does not assign test IDs or create the later Requirements-to-Tests evidence map.
 
 | PRD group | Technical realization |
 | --- | --- |
@@ -1263,10 +824,7 @@ the later Requirements-to-Tests evidence map.
 | PRD-NF-003 | Sections 9.2 and 10.2: explicit primary comparators and stable internal UUID tie-breaks |
 | PRD-NF-004 | Sections 2–3, 11, and 19–20: reuse without shadow types or silent contract changes |
 
-Acceptance-level coverage is plausible for PRD-AC-S01–PRD-AC-S10 through
-sections 4, 9, 12, 13, 15, and 16; PRD-AC-D01–PRD-AC-D09 through sections 4, 6,
-9.3, 10, 12, 15, and 16; and PRD-AC-X01–PRD-AC-X06 through sections 3, 5–8, 11,
-13–17. Exact evidence and test IDs remain deliberately deferred to RTT.
+Acceptance-level coverage is plausible for PRD-AC-S01–PRD-AC-S10 through sections 4, 9, 12, 13, 15, and 16; PRD-AC-D01–PRD-AC-D09 through sections 4, 6, 9.3, 10, 12, 15, and 16; and PRD-AC-X01–PRD-AC-X06 through sections 3, 5–8, 11, 13–17. Exact evidence and test IDs remain deliberately deferred to RTT.
 
 ## 24. Completeness audit and approval gate
 
@@ -1274,10 +832,8 @@ The design was rechecked against the complete approved PRD:
 
 - every requirement group has a concrete module/interface realization;
 - the four observable statuses and every transition remain unchanged;
-- active locks, approval closures, rejection closure, withdrawal release, and
-  same-pair resubmission are enforceable from durable retained facts;
-- duplicate/competing submissions and terminal actions serialize at one real
-  repository consistency boundary;
+- active locks, approval closures, rejection closure, withdrawal release, and same-pair resubmission are enforceable from durable retained facts;
+- duplicate/competing submissions and terminal actions serialize at one real repository consistency boundary;
 - success is not returned before atomic Claim-store commit;
 - report-store v1 and possible-match format/semantics are untouched;
 - no report, link, score, or private report field is copied into a Claim;
@@ -1286,28 +842,12 @@ The design was rechecked against the complete approved PRD:
 - Student and officer row/detail projections are structurally separate;
 - no deciding-officer identity is accepted or retained;
 - event times persist and display as explicitly labelled UTC;
-- entry/re-entry, sub-tab navigation, refresh/retry, unavailable/load failure,
-  stale outcomes, and scene attachment changes do not clear unsaved evidence or
-  decision text;
-- only durable corresponding action success or completed confirmed logout
-  clears its approved transient state; logout cancellation preserves the view;
-- the My claims, pending-row, and history-row category is consistently sourced
-  from the FOUND report without assuming LOST/FOUND category equality;
-- the neutral workspace seam no longer places Developer 1 report UI under an
-  authentication-UI dependency;
-- `.gitignore` is classified as shared/repository-level because no explicit
-  Developer 2 ownership is recorded;
-- all required cross-owner files and smallest changes are explicit and remain
-  unauthorized;
-- no test suite, Requirements-to-Tests artifact, production code, dependency,
-  guide, branch, commit, push, pull request, or merge is included.
+- entry/re-entry, sub-tab navigation, refresh/retry, unavailable/load failure, stale outcomes, and scene attachment changes do not clear unsaved evidence or decision text;
+- only durable corresponding action success or completed confirmed logout clears its approved transient state; logout cancellation preserves the view;
+- the My claims, pending-row, and history-row category is consistently sourced from the FOUND report without assuming LOST/FOUND category equality;
+- the neutral workspace seam no longer places Developer 1 report UI under an authentication-UI dependency;
+- `.gitignore` is classified as shared/repository-level because no explicit Developer 2 ownership is recorded;
+- all required cross-owner files and smallest changes are explicit and remain unauthorized;
+- no test suite, Requirements-to-Tests artifact, production code, dependency, guide, branch, commit, push, pull request, or merge is included.
 
-No upstream contradiction, infeasible requirement, or unresolved upstream
-ambiguity remains. The category-source clarification is reflected consistently
-in the PRD and section 9.3. The repository owner approved this TDD on
-2026-09-22; all other approved architecture, persistence, locking, concurrency,
-privacy, lifecycle, and integration decisions remain unchanged. This approval
-covers only the technical design and proposed public seams. It does not
-authorize Requirements-to-Tests, implementation, tests, cross-owner edits,
-documentation delivery, branch creation, commits, pushes, pull requests,
-release changes, or merging.
+No upstream contradiction, infeasible requirement, or unresolved upstream ambiguity remains. The category-source clarification is reflected consistently in the PRD and section 9.3. The repository owner approved this TDD on 2026-09-22; all other approved architecture, persistence, locking, concurrency, privacy, lifecycle, and integration decisions remain unchanged. This approval covers only the technical design and proposed public seams. It does not authorize Requirements-to-Tests, implementation, tests, cross-owner edits, documentation delivery, branch creation, commits, pushes, pull requests, release changes, or merging.

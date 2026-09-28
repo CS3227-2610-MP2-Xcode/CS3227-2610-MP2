@@ -6,37 +6,19 @@
 - Approver: Repository owner
 - Approval date: 2026-09-22
 - Feature: Claims and Verification
-- Mission Brief: `docs/mission-briefs/S3-D2-01-claims-and-verification.md`
-  (Approved 2026-09-22)
-- Decision ledger: `docs/features/S3-D2-01/GrillingDecisions.md`
-  (Approved and complete 2026-09-22)
+- Mission Brief: `docs/mission-briefs/S3-D2-01-claims-and-verification.md` (Approved 2026-09-22)
+- Decision ledger: `docs/features/S3-D2-01/GrillingDecisions.md` (Approved and complete 2026-09-22)
 - PRD: `docs/features/S3-D2-01/PRD.md` (Approved 2026-09-22)
 - TDD: `docs/features/S3-D2-01/TDD.md` (Approved 2026-09-22)
-- Implementation, test-code, branch, commit, push, pull-request, merge, guide,
-  and cross-owner production-change authorization: Not granted
+- Implementation, test-code, branch, commit, push, pull-request, merge, guide, and cross-owner production-change authorization: Not granted
 
 ## 1. Authority, scope, and preflight
 
-This artifact defines how evidence will demonstrate the approved Sprint 3
-requirements. Precedence is `AGENTS.md`, the approved Mission Brief, approved
-Grilling Decisions, approved PRD, approved TDD, verified repository testing
-conventions, then this document. The older upstream metadata saying that RTT
-was not yet authorized records the gate state when those artifacts were
-written; the repository owner's 2026-09-22 request is the separate authorization
-to create only this artifact.
+This artifact defines how evidence will demonstrate the approved Sprint 3 requirements. Precedence is `AGENTS.md`, the approved Mission Brief, approved Grilling Decisions, approved PRD, approved TDD, verified repository testing conventions, then this document. The older upstream metadata saying that RTT was not yet authorized records the gate state when those artifacts were written; the repository owner's 2026-09-22 request is the separate authorization to create only this artifact.
 
-The complete upstream artifacts were read in order. All are approved, their
-dates and scope agree, and no unresolved product or technical decision remains.
-Every PRD requirement has a plausible verification path through an approved TDD
-seam. No product rule or architecture is changed here.
+The complete upstream artifacts were read in order. All are approved, their dates and scope agree, and no unresolved product or technical decision remains. Every PRD requirement has a plausible verification path through an approved TDD seam. No product rule or architecture is changed here.
 
-The repository uses JUnit Jupiter 5.14.4, `@TempDir`, fixed `Clock` values,
-deterministic UUID fixtures/suppliers, immutable state assertions, small
-scripted repository adapters, and package-local filesystem fault adapters. Real
-local repositories are preferred for persistence evidence. No JavaFX test
-framework exists, and none is proposed. Existing RTTs use detailed evidence
-plans, traceability matrices, manual JavaFX checklists, regression reuse, and
-implementation-phase command evidence; this artifact follows that convention.
+The repository uses JUnit Jupiter 5.14.4, `@TempDir`, fixed `Clock` values, deterministic UUID fixtures/suppliers, immutable state assertions, small scripted repository adapters, and package-local filesystem fault adapters. Real local repositories are preferred for persistence evidence. No JavaFX test framework exists, and none is proposed. Existing RTTs use detailed evidence plans, traceability matrices, manual JavaFX checklists, regression reuse, and implementation-phase command evidence; this artifact follows that convention.
 
 The traceability chain is:
 
@@ -47,10 +29,7 @@ PRD requirement or acceptance criterion
     -> automated, manual, review, regression, or command evidence
 ```
 
-This plan contains **43 automated verification case families**, **12 manual
-JavaFX cases**, and **5 review/command evidence cases**. A family may use
-parameterized inputs and multiple assertions; it is one conceptual behavior,
-not an inflated count of trivial variations.
+This plan contains **43 automated verification case families**, **12 manual JavaFX cases**, and **5 review/command evidence cases**. A family may use parameterized inputs and multiple assertions; it is one conceptual behavior, not an inflated count of trivial variations.
 
 ## 2. Evidence categories and rules
 
@@ -66,12 +45,7 @@ not an inflated count of trivial variations.
 | Manual JavaFX | `MV-CLM-*` | Rendered placement, field visibility, confirmations, controls, draft/logout interaction, and small-window usability. |
 | Review/command | `RV-CLM-*` | Source/design boundaries, cross-owner edits, build commands, diff/status, and data-safety audit. |
 
-Automated tests use only synthetic users, reports, claims, evidence, and
-reasons. Real persistence tests use unique `@TempDir` paths and never resolve
-the application's `data/claims.json`. Privacy sentinels may be asserted absent
-but must not be printed in assertion labels, logs, snapshots, or handoffs.
-Manual evidence uses synthetic stores and pass/fail notes; screenshots are not
-required.
+Automated tests use only synthetic users, reports, claims, evidence, and reasons. Real persistence tests use unique `@TempDir` paths and never resolve the application's `data/claims.json`. Privacy sentinels may be asserted absent but must not be printed in assertion labels, logs, snapshots, or handoffs. Manual evidence uses synthetic stores and pass/fail notes; screenshots are not required.
 
 ## 3. Domain and lifecycle automated cases
 
@@ -86,8 +60,7 @@ required.
 
 ## 4. Persistence and competing-action automated cases
 
-Every real-filesystem case below uses a unique `@TempDir` target and fresh
-repository instances where restart is part of the behavior.
+Every real-filesystem case below uses a unique `@TempDir` target and fresh repository instances where restart is part of the behavior.
 
 | ID and name | Upstream requirements | Setup and action | Expected observable outcome and negative assertion | Approved seam |
 | --- | --- | --- | --- | --- |
@@ -102,10 +75,7 @@ repository instances where restart is part of the behavior.
 
 ## 5. Student application automated cases
 
-`StudentClaimsService` tests use fixed clocks and deterministic UUID suppliers.
-Real repositories are used for end-to-end durability; small scripted report,
-link, and Claim repositories are used only for deterministic staleness and
-failure outcomes.
+`StudentClaimsService` tests use fixed clocks and deterministic UUID suppliers. Real repositories are used for end-to-end durability; small scripted report, link, and Claim repositories are used only for deterministic staleness and failure outcomes.
 
 | ID and name | Upstream requirements | Setup and action | Expected observable outcome and negative assertion | Approved seam |
 | --- | --- | --- | --- | --- |
@@ -151,10 +121,7 @@ failure outcomes.
 
 ## 8. Manual JavaFX verification
 
-Run with an isolated synthetic copied data directory or temporary launch
-fixture. Record pass/fail notes only. Do not capture credentials, evidence,
-private report details, identities, paths, or other sensitive content in
-screenshots or handoffs.
+Run with an isolated synthetic copied data directory or temporary launch fixture. Record pass/fail notes only. Do not capture credentials, evidence, private report details, identities, paths, or other sensitive content in screenshots or handoffs.
 
 | ID and name | Requirements | Procedure and expected evidence |
 | --- | --- | --- |
@@ -196,8 +163,7 @@ screenshots or handoffs.
 | `PossibleMatchPairTest`, `DeterministicMatcherTest`, `FilePossibleMatchRepositoryTest`, `FilePossibleMatchRepositoryFormatTest`, `FilePossibleMatchRepositoryRecoveryTest`, `OfficerMatchingServiceTest`, `OfficerMatchingPersistenceTest` | Pair/link semantics, matching, possible-match persistence, officer matching, privacy, and link invariance. |
 | `ProjectSetupTest` | Application metadata and Java 25 baseline. |
 
-These suites prove inherited contracts only. They do not replace Claim domain,
-Claim persistence, Claim service, privacy, or manual UI evidence.
+These suites prove inherited contracts only. They do not replace Claim domain, Claim persistence, Claim service, privacy, or manual UI evidence.
 
 ### Cross-owner integration evidence (not implementation authorization)
 
@@ -210,8 +176,7 @@ Claim persistence, Claim service, privacy, or manual UI evidence.
 
 ## 10. Requirement-to-evidence matrix
 
-Every substantive PRD requirement appears exactly once below as a row; reused
-evidence is intentional.
+Every substantive PRD requirement appears exactly once below as a row; reused evidence is intentional.
 
 | Requirement | Verification IDs |
 | --- | --- |
@@ -274,8 +239,7 @@ evidence is intentional.
 | PRD-NF-003 | STU-002, STU-006, OFF-001, OFF-004 |
 | PRD-NF-004 | STU-010, INT-001–INT-004, MV-CLM-012, RV-CLM-001–RV-CLM-003 |
 
-In this matrix, abbreviated automated IDs such as `DOM-001` mean
-`TC-CLM-DOM-001`; the full stable IDs are defined in sections 3–7.
+In this matrix, abbreviated automated IDs such as `DOM-001` mean `TC-CLM-DOM-001`; the full stable IDs are defined in sections 3–7.
 
 ## 11. Acceptance-criterion-to-evidence matrix
 
@@ -309,8 +273,7 @@ In this matrix, abbreviated automated IDs such as `DOM-001` mean
 
 ## 12. Reverse traceability: verification case to requirements
 
-Each automated case already states its requirement IDs in sections 3–7. This
-compact index makes orphan evidence obvious without duplicating the case text.
+Each automated case already states its requirement IDs in sections 3–7. This compact index makes orphan evidence obvious without duplicating the case text.
 
 | Case family | Requirement groups covered |
 | --- | --- |
@@ -324,14 +287,11 @@ compact index makes orphan evidence obvious without duplicating the case text.
 | `MV-CLM-001–012` | Presentation/interaction portions of SC-001/003–009, ST-001–006, DO-001–009, DC-001–005, PR-004/005, FL-001–005, IC-004, NF-004 |
 | `RV-CLM-001–005` | LC-001; SC-001; DO-001; DC-006; PR-003–006; FL-004/005; IC-001–004; NF-004; repository handoff obligations |
 
-No case lacks an approved requirement. Manual evidence supplements but does
-not replace automated domain, application, persistence, concurrency, privacy,
-or failure assertions.
+No case lacks an approved requirement. Manual evidence supplements but does not replace automated domain, application, persistence, concurrency, privacy, or failure assertions.
 
 ## 13. Planned test structure and fixtures
 
-No test file is created by this artifact. Likely cohesive implementation-time
-locations are:
+No test file is created by this artifact. Likely cohesive implementation-time locations are:
 
 | Likely test location | Cases |
 | --- | --- |
@@ -349,14 +309,7 @@ locations are:
 | `src/test/java/.../claim/bootstrap/ClaimWorkspaceFactoryTest.java` | FLT-004, INT-004 |
 | Existing suites in section 9 | INT-001–003 and inherited regression evidence |
 
-The ellipsis expands to
-`io/github/cs32272610mp2xcode/finderskeepers`. Tests should use JUnit
-parameterized families for text/schema partitions, fixed millisecond Instants,
-recognizable UUIDs, a supplier that scripts collisions, report pairs with
-different categories, and sentinel strings used only for negative privacy
-assertions. Scripted repositories should record calls and support snapshot
-changes/fail-next behavior without adding production fault toggles. Real
-filesystem behavior remains primary wherever practical.
+The ellipsis expands to `io/github/cs32272610mp2xcode/finderskeepers`. Tests should use JUnit parameterized families for text/schema partitions, fixed millisecond Instants, recognizable UUIDs, a supplier that scripts collisions, report pairs with different categories, and sentinel strings used only for negative privacy assertions. Scripted repositories should record calls and support snapshot changes/fail-next behavior without adding production fault toggles. Real filesystem behavior remains primary wherever practical.
 
 ## 14. Suggested later red-green order
 
@@ -364,13 +317,10 @@ This ordering is a planning aid only and does not authorize tests or code:
 
 1. Claim identity, text, lifecycle, and ledger invariants (`DOM-*`).
 2. Strict real Claim storage and atomic workflow commands (`PER-*`).
-3. Student discovery/projections, then durable submission and withdrawal
-   (`STU-*`, relevant `PRV-*`/`FLT-*`).
-4. Officer queue/history projections, then durable decisions
-   (`OFF-*`, remaining `PRV-*`/`FLT-*`).
+3. Student discovery/projections, then durable submission and withdrawal (`STU-*`, relevant `PRV-*`/`FLT-*`).
+4. Officer queue/history projections, then durable decisions (`OFF-*`, remaining `PRV-*`/`FLT-*`).
 5. Thin JavaFX panes and manual interaction evidence (`MV-*`).
-6. Separately authorized composition, compatibility regressions, release
-   smoke, and final repository audit (`INT-*`, `RV-*`).
+6. Separately authorized composition, compatibility regressions, release smoke, and final repository audit (`INT-*`, `RV-*`).
 
 ## 15. Implementation-phase commands
 
@@ -388,50 +338,22 @@ git diff
 git status --short
 ```
 
-`release` and packaged synthetic smoke are required only after the separately
-authorized startup/composition changes. Before handoff, confirm no test read or
-wrote the application's normal `data/` store and no real user data appears in
-outputs.
+`release` and packaged synthetic smoke are required only after the separately authorized startup/composition changes. Before handoff, confirm no test read or wrote the application's normal `data/` store and no real user data appears in outputs.
 
 ## 16. Coverage audit and approval gate
 
-- All **58** substantive PRD requirements are present in section 10 and map to
-  at least one concrete evidence ID.
-- All **25** PRD acceptance criteria are present in section 11 and map to
-  concrete evidence.
-- Reverse references in sections 3–8 and 12 leave no orphan test/evidence
-  family.
-- Domain, text, persistence, restart, atomicity, competition, stale action,
-  service projection, authorization, and privacy rules use automated seams.
-- Manual evidence is limited to rendered JavaFX placement, field visibility,
-  confirmation, draft/logout interaction, and usability.
-- Privacy requirements have structural allowlists and explicit negative
-  sentinel assertions, not only visual review.
-- Persistence covers missing/round-trip/restart/strict format/version/size,
-  corrupt or contradictory stores, failed write preservation, and no partial
-  success.
-- Supported competing actions are deterministic on one shared repository
-  instance; this plan makes no multi-process guarantee.
-- Report-store v1 and possible-match byte/semantic preservation use new
-  invariance checks plus existing regression suites rather than duplicating
-  those suites.
-- The three Developer 1/shared production files, the Developer 2 auth/officer
-  files, and `.gitignore` integration evidence are identified but no edit is
-  authorized or performed by this artifact.
-- No JavaFX testing dependency, public test-only API, raw `saveAll`, Claim
-  deletion, copied report data, deciding-officer identity, polling, or code
-  coverage threshold is introduced.
+- All **58** substantive PRD requirements are present in section 10 and map to at least one concrete evidence ID.
+- All **25** PRD acceptance criteria are present in section 11 and map to concrete evidence.
+- Reverse references in sections 3–8 and 12 leave no orphan test/evidence family.
+- Domain, text, persistence, restart, atomicity, competition, stale action, service projection, authorization, and privacy rules use automated seams.
+- Manual evidence is limited to rendered JavaFX placement, field visibility, confirmation, draft/logout interaction, and usability.
+- Privacy requirements have structural allowlists and explicit negative sentinel assertions, not only visual review.
+- Persistence covers missing/round-trip/restart/strict format/version/size, corrupt or contradictory stores, failed write preservation, and no partial success.
+- Supported competing actions are deterministic on one shared repository instance; this plan makes no multi-process guarantee.
+- Report-store v1 and possible-match byte/semantic preservation use new invariance checks plus existing regression suites rather than duplicating those suites.
+- The three Developer 1/shared production files, the Developer 2 auth/officer files, and `.gitignore` integration evidence are identified but no edit is authorized or performed by this artifact.
+- No JavaFX testing dependency, public test-only API, raw `saveAll`, Claim deletion, copied report data, deciding-officer identity, polling, or code coverage threshold is introduced.
 
-Requirements that deliberately use more than one evidence type are the UI
-integration/projection and lifecycle interactions: PRD-SC-001,
-PRD-SC-003–PRD-SC-009, PRD-ST-002–PRD-ST-006, PRD-DO-001–PRD-DO-009,
-PRD-DC-001–PRD-DC-005, PRD-PR-003–PRD-PR-005, PRD-FL-001–PRD-FL-005,
-PRD-IC-004, and PRD-NF-004. Their business rules are automated while rendered
-interaction is manual and composition/privacy boundaries receive source or
-regression review.
+Requirements that deliberately use more than one evidence type are the UI integration/projection and lifecycle interactions: PRD-SC-001, PRD-SC-003–PRD-SC-009, PRD-ST-002–PRD-ST-006, PRD-DO-001–PRD-DO-009, PRD-DC-001–PRD-DC-005, PRD-PR-003–PRD-PR-005, PRD-FL-001–PRD-FL-005, PRD-IC-004, and PRD-NF-004. Their business rules are automated while rendered interaction is manual and composition/privacy boundaries receive source or regression review.
 
-No upstream contradiction, unverifiable requirement, or traceability gap was
-found. The repository owner approved this Requirements-to-Tests artifact on
-2026-09-22, completing the planning traceability gate. This approval does not
-authorize test or production implementation, cross-owner edits, guides,
-branches, commits, pushes, pull requests, release changes, or merging.
+No upstream contradiction, unverifiable requirement, or traceability gap was found. The repository owner approved this Requirements-to-Tests artifact on 2026-09-22, completing the planning traceability gate. This approval does not authorize test or production implementation, cross-owner edits, guides, branches, commits, pushes, pull requests, release changes, or merging.
