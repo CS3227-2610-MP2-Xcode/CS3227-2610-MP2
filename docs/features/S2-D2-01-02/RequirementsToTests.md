@@ -14,15 +14,7 @@
 
 ## 1. Traceability sources and preflight
 
-This plan uses, in order, the approved Mission Brief, the completed
-`GrillingDecisions.md`, the approved PRD, and the approved TDD. `AGENTS.md`
-governs repository ownership, privacy, temporary-storage use, verification,
-and handoff. Preflight found all four artifacts present and mutually
-consistent. Their approval metadata names the Repository owner and 2026-09-21.
-The ledger records no unresolved product decision. The TDD records the owner's
-GD-009 reconciliation, explains that earlier authorization fields are
-historical, and provides a technical realization for every final PRD
-acceptance criterion. No approved source was modified by this planning step.
+This plan uses, in order, the approved Mission Brief, the completed `GrillingDecisions.md`, the approved PRD, and the approved TDD. `AGENTS.md` governs repository ownership, privacy, temporary-storage use, verification, and handoff. Preflight found all four artifacts present and mutually consistent. Their approval metadata names the Repository owner and 2026-09-21. The ledger records no unresolved product decision. The TDD records the owner's GD-009 reconciliation, explains that earlier authorization fields are historical, and provides a technical realization for every final PRD acceptance criterion. No approved source was modified by this planning step.
 
 The traceability hierarchy is:
 
@@ -33,15 +25,7 @@ Mission scope and functional requirement
     -> planned automated, manual, review, build, or smoke evidence
 ```
 
-The Mission Brief contains 29 functional requirements and 23 acceptance
-criteria. The final PRD contains 30 acceptance criteria. The Mission Brief and
-PRD reuse some `ME-AC-*` and `OW-AC-*` labels while refining their wording.
-This document therefore qualifies those labels by source, for example
-"Mission Brief ME-AC-001" and "PRD ME-AC-001". This is not a new identifier;
-it prevents two approved statements with the same label from being confused.
-All 82 approved source statements are explicitly mapped below. The 47
-`GD-*` decisions are covered by their reconciled PRD criteria and the detailed
-boundary plans in sections 3 through 10.
+The Mission Brief contains 29 functional requirements and 23 acceptance criteria. The final PRD contains 30 acceptance criteria. The Mission Brief and PRD reuse some `ME-AC-*` and `OW-AC-*` labels while refining their wording. This document therefore qualifies those labels by source, for example "Mission Brief ME-AC-001" and "PRD ME-AC-001". This is not a new identifier; it prevents two approved statements with the same label from being confused. All 82 approved source statements are explicitly mapped below. The 47 `GD-*` decisions are covered by their reconciled PRD criteria and the detailed boundary plans in sections 3 through 10.
 
 ## 2. Verification categories and evidence rules
 
@@ -58,78 +42,31 @@ The smallest proportionate evidence type is used:
 | Build/repository check | Focused Gradle tests, complete `check`, diff/status review, and real-data exclusion. |
 | Packaged smoke verification | Conditional implementation-phase `release` plus launch/login/workspace/logout smoke because startup composition changes. |
 
-Deterministic domain, service, and persistence behavior receives automated
-evidence. Manual evidence is limited to JavaFX behavior whose automation would
-require disproportionate infrastructure. No JavaFX testing dependency is
-planned or authorized.
+Deterministic domain, service, and persistence behavior receives automated evidence. Manual evidence is limited to JavaFX behavior whose automation would require disproportionate infrastructure. No JavaFX testing dependency is planned or authorized.
 
 ## 3. Matching-engine verification plan
 
 ### Eligibility, category, text, date, score, and reasons
 
-`DeterministicMatcherTest` will use literal expected values rather than a
-second matcher implementation.
+`DeterministicMatcherTest` will use literal expected values rather than a second matcher implementation.
 
-- Eligibility covers all four allowed status combinations
-  (`SUBMITTED/SUBMITTED`, `SUBMITTED/UNDER_REVIEW`,
-  `UNDER_REVIEW/SUBMITTED`, `UNDER_REVIEW/UNDER_REVIEW`), LOST/FOUND input in
-  either order, same-type pairs, self IDs, unsupported/invalid snapshots, and
-  reverse-duplicate suppression. Status and Reporter ID never add points.
-- Category covers exact enum equality, unequal categories, and `OTHER` only
-  matching `OTHER`. Category is both the 40-point component and a mandatory
-  gate.
-- Keywords cover `Locale.ROOT` case behavior under a temporarily changed
-  default locale; spaces, tabs, punctuation, and symbols as separators;
-  duplicate separator runs; leading/trailing separators; duplicate tokens;
-  one-code-point tokens discarded; supplementary Unicode letters counted by
-  code point; one and multiple exact overlaps; no overlap; substring,
-  singular/plural, accent, and Unicode-normalization exclusions; sorted shared
-  token detail; and the fixed 20-or-0 result.
-- Location covers case normalization; leading/trailing separators; spaces,
-  tabs, punctuation, and symbols as equivalent separator runs; `Hall A`,
-  `Hall-A`, and `Hall★A`; `Library, Level 2` versus `Library - Level 2`;
-  one-character runs retained; separator-only strings normalizing to equal
-  empty strings; complete unequal strings; and rejection of partial, alias,
-  accent-folded, or Unicode-normalized matches.
-- Date covers day 0, days 1 and 6, day 7 inclusive, day 8, FOUND before LOST,
-  both input orders, extreme `LocalDate` values, and the absence of clock,
-  time-zone, time-of-day, or creation-time effects.
-- Score covers each component independently, 50 below threshold, 70 exactly at
-  threshold, 80, and 100; failed category/date gates despite otherwise high
-  raw points; exact 40/20/30/10 accounting; and no count-based keyword bonus or
-  hidden contribution.
-- Reasons cover fixed component order, a positive reason only for each passing
-  component, neutral failure outcomes, sorted exact shared-token details, date
-  gap detail, no raw non-qualifying presentation total, and absence of Reporter
-  ID, public/private descriptions, creation time, or unsafe input repetition.
+- Eligibility covers all four allowed status combinations (`SUBMITTED/SUBMITTED`, `SUBMITTED/UNDER_REVIEW`, `UNDER_REVIEW/SUBMITTED`, `UNDER_REVIEW/UNDER_REVIEW`), LOST/FOUND input in either order, same-type pairs, self IDs, unsupported/invalid snapshots, and reverse-duplicate suppression. Status and Reporter ID never add points.
+- Category covers exact enum equality, unequal categories, and `OTHER` only matching `OTHER`. Category is both the 40-point component and a mandatory gate.
+- Keywords cover `Locale.ROOT` case behavior under a temporarily changed default locale; spaces, tabs, punctuation, and symbols as separators; duplicate separator runs; leading/trailing separators; duplicate tokens; one-code-point tokens discarded; supplementary Unicode letters counted by code point; one and multiple exact overlaps; no overlap; substring, singular/plural, accent, and Unicode-normalization exclusions; sorted shared token detail; and the fixed 20-or-0 result.
+- Location covers case normalization; leading/trailing separators; spaces, tabs, punctuation, and symbols as equivalent separator runs; `Hall A`, `Hall-A`, and `Hall★A`; `Library, Level 2` versus `Library - Level 2`; one-character runs retained; separator-only strings normalizing to equal empty strings; complete unequal strings; and rejection of partial, alias, accent-folded, or Unicode-normalized matches.
+- Date covers day 0, days 1 and 6, day 7 inclusive, day 8, FOUND before LOST, both input orders, extreme `LocalDate` values, and the absence of clock, time-zone, time-of-day, or creation-time effects.
+- Score covers each component independently, 50 below threshold, 70 exactly at threshold, 80, and 100; failed category/date gates despite otherwise high raw points; exact 40/20/30/10 accounting; and no count-based keyword bonus or hidden contribution.
+- Reasons cover fixed component order, a positive reason only for each passing component, neutral failure outcomes, sorted exact shared-token details, date gap detail, no raw non-qualifying presentation total, and absence of Reporter ID, public/private descriptions, creation time, or unsafe input repetition.
 
 ### Determinism, excluded fields, and read-only behavior
 
-Automated evidence will evaluate the same snapshot repeatedly and across
-several explicit shuffles. Assertions compare candidate pair identity,
-component outcomes, shared tokens, reason text, scores, and complete ordering.
-Score ties use UUIDs chosen so canonical UUID-string order differs from natural
-signed-UUID order, proving the TDD comparator: score descending, then canonical
-first ID and second ID ascending. Linked ordering receives the corresponding
-qualifying-first and canonical-pair tie checks in service tests.
+Automated evidence will evaluate the same snapshot repeatedly and across several explicit shuffles. Assertions compare candidate pair identity, component outcomes, shared tokens, reason text, scores, and complete ordering. Score ties use UUIDs chosen so canonical UUID-string order differs from natural signed-UUID order, proving the TDD comparator: score descending, then canonical first ID and second ID ascending. Linked ordering receives the corresponding qualifying-first and canonical-pair tie checks in service tests.
 
-Parameterized fixture copies will change only Reporter ID, public description,
-private identifying detail, creation time, and each other non-matching field.
-Status changes remain within the two eligible values. Qualification, score,
-reasons, and order must remain identical. Report references and all eleven
-values are snapshotted before generation, selection, refresh, Link, and Unlink;
-matching-only operations must leave report values, status, link repository
-contents, and report-store bytes unchanged.
+Parameterized fixture copies will change only Reporter ID, public description, private identifying detail, creation time, and each other non-matching field. Status changes remain within the two eligible values. Qualification, score, reasons, and order must remain identical. Report references and all eleven values are snapshotted before generation, selection, refresh, Link, and Unlink; matching-only operations must leave report values, status, link repository contents, and report-store bytes unchanged.
 
 ### Empty and failure behavior
 
-Matcher tests distinguish an empty report list, only LOST reports, only FOUND
-reports, and eligible pairs with no qualifier. Service integration tests map a
-report-load failure, link-store-load failure, invalid duplicate-ID snapshot,
-and evaluation failure to typed unavailable states. No failure may appear as
-"no eligible pair", "no qualifying possible match", or "no linked possible
-matches". Safe feedback is asserted without paths, JSON, exception text, IDs,
-or private report values.
+Matcher tests distinguish an empty report list, only LOST reports, only FOUND reports, and eligible pairs with no qualifier. Service integration tests map a report-load failure, link-store-load failure, invalid duplicate-ID snapshot, and evaluation failure to typed unavailable states. No failure may appear as "no eligible pair", "no qualifying possible match", or "no linked possible matches". Safe feedback is asserted without paths, JSON, exception text, IDs, or private report values.
 
 ## 4. Possible-match relationship verification plan
 
@@ -140,179 +77,81 @@ or private report values.
 - canonical UUID-string ordering and independence from LOST/FOUND orientation;
 - set-level duplicate and reverse-duplicate prevention;
 - non-exclusive `A-B` and `A-C` relationships with neither displaced;
-- storage of canonical Report IDs only, with no `ItemReport`, Reporter ID,
-  report field, score, timestamp, or report copy in the relationship file;
-- Link and Unlink changing only the selected pair set, never a report value or
-  status; and
-- unknown report IDs retained as structurally valid relationships so stale
-  links remain removable.
+- storage of canonical Report IDs only, with no `ItemReport`, Reporter ID, report field, score, timestamp, or report copy in the relationship file;
+- Link and Unlink changing only the selected pair set, never a report value or status; and
+- unknown report IDs retained as structurally valid relationships so stale links remain removable.
 
 ## 5. Persistence verification plan
 
-All persistence tests use a unique `@TempDir` path. They must assert that no
-application `data/` path or user store is read or written.
+All persistence tests use a unique `@TempDir` path. They must assert that no application `data/` path or user store is read or written.
 
-`FilePossibleMatchRepositoryTest` covers missing target and parent (empty
-without creating storage), header-only valid empty store, valid pairs, LF and
-CRLF input, optional final newline, reversed/unsorted input canonicalization,
-exact canonical output bytes, fresh-instance reconstruction, Link durability,
-Unlink durability, repeated Link/Unlink no-ops, reverse duplicate prevention,
-non-exclusive links, unknown IDs retained, and deterministic output ordering.
+`FilePossibleMatchRepositoryTest` covers missing target and parent (empty without creating storage), header-only valid empty store, valid pairs, LF and CRLF input, optional final newline, reversed/unsorted input canonicalization, exact canonical output bytes, fresh-instance reconstruction, Link durability, Unlink durability, repeated Link/Unlink no-ops, reverse duplicate prevention, non-exclusive links, unknown IDs retained, and deterministic output ordering.
 
-`FilePossibleMatchRepositoryFormatTest` covers zero bytes, whitespace-only,
-bad magic, nonnumeric version, unsupported numeric version, blank/extra lines,
-unknown columns, invalid/uppercase/short UUIDs, self-pairs, exact duplicates,
-reverse duplicates, malformed separators, BOM, oversized input, and oversized
-result. Every invalid store rejects the whole read; it never yields a partial
-set or an empty success and is never silently rewritten.
+`FilePossibleMatchRepositoryFormatTest` covers zero bytes, whitespace-only, bad magic, nonnumeric version, unsupported numeric version, blank/extra lines, unknown columns, invalid/uppercase/short UUIDs, self-pairs, exact duplicates, reverse duplicates, malformed separators, BOM, oversized input, and oversized result. Every invalid store rejects the whole read; it never yields a partial set or an empty success and is never silently rewritten.
 
-`FilePossibleMatchRepositoryRecoveryTest` exercises the package-local file
-seam through repository operations. Scripted read, parent creation, staging,
-partial-write, force, close, atomic-move, unsupported-atomic-move, and cleanup
-failures verify typed failures, no false success, no non-atomic fallback, and
-the old target (or prior absence) remains authoritative before the commit
-point. Orphan sibling temporary files are ignored. A successful atomic move is
-the commit point and is not followed by a fallible reload. Tests cover regular
-target checks, symlink/directory/inaccessible targets where the platform
-permits deterministic setup, and the 16,777,216-byte bounds. No test claims
-multi-process, network-filesystem, directory-fsync, or arbitrary power-loss
-guarantees beyond the approved TDD.
+`FilePossibleMatchRepositoryRecoveryTest` exercises the package-local file seam through repository operations. Scripted read, parent creation, staging, partial-write, force, close, atomic-move, unsupported-atomic-move, and cleanup failures verify typed failures, no false success, no non-atomic fallback, and the old target (or prior absence) remains authoritative before the commit point. Orphan sibling temporary files are ignored. A successful atomic move is the commit point and is not followed by a fallible reload. Tests cover regular target checks, symlink/directory/inaccessible targets where the platform permits deterministic setup, and the 16,777,216-byte bounds. No test claims multi-process, network-filesystem, directory-fsync, or arbitrary power-loss guarantees beyond the approved TDD.
 
 ## 6. Link operation verification plan
 
-`OfficerMatchingServiceTest` and `OfficerMatchingPersistenceTest` cover the
-complete Link flow:
+`OfficerMatchingServiceTest` and `OfficerMatchingPersistenceTest` cover the complete Link flow:
 
-- a selected qualifying unlinked pair is authoritatively reloaded and
-  reevaluated before the write;
-- a committed Link appears only after repository `link` returns true, moves
-  the pair from suggestions to linked possible matches, preserves selection,
-  enables Unlink, and survives a fresh link-repository/service instance;
-- a report missing before Link, same-type change, category/date gate failure,
-  or score below 70 produces `STALE_PAIR`, no write, no success, and cleared
-  invalid private selection; both currently approved statuses remain eligible;
-- an existing pair, including a reverse-order request, yields
-  `ALREADY_LINKED`, remains linked, and creates no duplicate; self/null input
-  yields `INVALID_PAIR` before storage mutation;
-- report-load, relationship-load, evaluation, and relationship-write failures
-  retain the last-known unlinked state, label it as last-known, expose safe
-  retry, and never publish optimistic linked state;
+- a selected qualifying unlinked pair is authoritatively reloaded and reevaluated before the write;
+- a committed Link appears only after repository `link` returns true, moves the pair from suggestions to linked possible matches, preserves selection, enables Unlink, and survives a fresh link-repository/service instance;
+- a report missing before Link, same-type change, category/date gate failure, or score below 70 produces `STALE_PAIR`, no write, no success, and cleared invalid private selection; both currently approved statuses remain eligible;
+- an existing pair, including a reverse-order request, yields `ALREADY_LINKED`, remains linked, and creates no duplicate; self/null input yields `INVALID_PAIR` before storage mutation;
+- report-load, relationship-load, evaluation, and relationship-write failures retain the last-known unlinked state, label it as last-known, expose safe retry, and never publish optimistic linked state;
 - one report can be linked with multiple reports; and
-- no Link path calls report `insert`, `replace`, or `withStatus`, changes report
-  bytes, confirms ownership, or creates any status transition.
+- no Link path calls report `insert`, `replace`, or `withStatus`, changes report bytes, confirms ownership, or creates any status transition.
 
 ## 7. Unlink operation verification plan
 
 The same service/persistence suites cover:
 
-- removal of one existing relationship only, with durable absence through a
-  fresh persistence instance;
+- removal of one existing relationship only, with durable absence through a fresh persistence instance;
 - other links, including links sharing either endpoint, remaining intact;
-- an absent pair returning `ALREADY_UNLINKED` as an idempotent no-op with no
-  new-removal success;
-- write failure retaining last-known linked state and retry without false
-  success;
-- a still-qualifying pair returning to suggestions, remaining selected, and
-  exposing Link after committed removal;
-- a non-qualifying, ineligible, or missing-report pair creating no suggestion
-  and clearing selection after committed removal;
-- missing one or both canonical reports never blocking removal of the stored
-  relationship; and
-- every report field/status and every non-target relationship remaining
-  unchanged.
+- an absent pair returning `ALREADY_UNLINKED` as an idempotent no-op with no new-removal success;
+- write failure retaining last-known linked state and retry without false success;
+- a still-qualifying pair returning to suggestions, remaining selected, and exposing Link after committed removal;
+- a non-qualifying, ineligible, or missing-report pair creating no suggestion and clearing selection after committed removal;
+- missing one or both canonical reports never blocking removal of the stored relationship; and
+- every report field/status and every non-target relationship remaining unchanged.
 
 ## 8. Officer service and state verification plan
 
-Plain-Java integration tests are primary. They cover `enter`, `refresh`,
-`retry`, `select`, `link`, `unlink`, and `clear` through returned immutable
-`MatchingWorkspaceState` values.
+Plain-Java integration tests are primary. They cover `enter`, `refresh`, `retry`, `select`, `link`, `unlink`, and `clear` through returned immutable `MatchingWorkspaceState` values.
 
-Evidence includes load order (reports, then links, then evaluation); publication
-of READY only after the whole snapshot succeeds; separation of qualifying
-unlinked suggestions and every stored linked relationship; exact score-first
-and canonical-pair ordering; all-qualifying-pairs-linked versus no-qualifying
-distinction; independent linked-empty state; selection in either section;
-selection preservation only when the same pair remains in the same section;
-refresh clearing moved/disappeared selection; retry starting a fresh load;
-stale/non-qualifying/missing linked rows; action enablement; and immutable
-collections/state.
+Evidence includes load order (reports, then links, then evaluation); publication of READY only after the whole snapshot succeeds; separation of qualifying unlinked suggestions and every stored linked relationship; exact score-first and canonical-pair ordering; all-qualifying-pairs-linked versus no-qualifying distinction; independent linked-empty state; selection in either section; selection preservation only when the same pair remains in the same section; refresh clearing moved/disappeared selection; retry starting a fresh load; stale/non-qualifying/missing linked rows; action enablement; and immutable collections/state.
 
-Row assertions enumerate the permitted projection fields and prove absence of
-Report ID rendering, Reporter ID, descriptions, status, creation time, exact
-tokens, and `ItemReport` references. Selected comparison assertions permit
-canonical reports only in an authenticated officer service instance, keep
-public and private detail distinct, show actual type for stale same-type pairs,
-and never reconstruct a missing side. `clear()` releases rows, snapshots,
-selection, reasons, feedback, and restricted data without writing either
-repository.
+Row assertions enumerate the permitted projection fields and prove absence of Report ID rendering, Reporter ID, descriptions, status, creation time, exact tokens, and `ItemReport` references. Selected comparison assertions permit canonical reports only in an authenticated officer service instance, keep public and private detail distinct, show actual type for stale same-type pairs, and never reconstruct a missing side. `clear()` releases rows, snapshots, selection, reasons, feedback, and restricted data without writing either repository.
 
 ## 9. Authorization and privacy verification plan
 
-Existing `AuthenticationCoordinatorTest` supplies role derivation and logout
-session evidence. Source review of `AuthenticationPane` verifies that the
-officer supplier is invoked only on `DESK_OFFICER`, the Student route receives
-only the Student workspace, and logout replaces the authenticated subtree.
-After the separately approved composition change, source review and packaged
-smoke verification confirm lazy matching construction, Student exclusion,
-fresh officer objects on later login, and no stale selection restoration.
+Existing `AuthenticationCoordinatorTest` supplies role derivation and logout session evidence. Source review of `AuthenticationPane` verifies that the officer supplier is invoked only on `DESK_OFFICER`, the Student route receives only the Student workspace, and logout replaces the authenticated subtree. After the separately approved composition change, source review and packaged smoke verification confirm lazy matching construction, Student exclusion, fresh officer objects on later login, and no stale selection restoration.
 
-Automated state tests use synthetic sentinel strings for Reporter ID, public
-description, and private detail and assert that the restricted sentinels are
-absent from row/state `toString`, reasons, empty/error/feedback text, and
-exception messages. Source review verifies no object-dump logging and no
-restricted data in accessibility text or tooltips. Manual evidence uses only
-synthetic reports and must not capture Reporter ID, private detail, signed-in
-identity, credentials, storage paths, or raw errors. No screenshot is required
-by the approved artifacts.
+Automated state tests use synthetic sentinel strings for Reporter ID, public description, and private detail and assert that the restricted sentinels are absent from row/state `toString`, reasons, empty/error/feedback text, and exception messages. Source review verifies no object-dump logging and no restricted data in accessibility text or tooltips. Manual evidence uses only synthetic reports and must not capture Reporter ID, private detail, signed-in identity, credentials, storage paths, or raw errors. No screenshot is required by the approved artifacts.
 
-Reporter ID and private identifying detail may appear only after an
-authenticated Desk Officer selects an available comparison. They must never
-appear in suggestion/linked rows, reasons, empty/error copy, logs, screenshots,
-test output, handoff summaries, or Student UI. Report ID is permitted only in
-the selected comparison and, for an otherwise ambiguous missing endpoint, the
-stale linked entry allowed by the PRD.
+Reporter ID and private identifying detail may appear only after an authenticated Desk Officer selects an available comparison. They must never appear in suggestion/linked rows, reasons, empty/error copy, logs, screenshots, test output, handoff summaries, or Student UI. Report ID is permitted only in the selected comparison and, for an otherwise ambiguous missing endpoint, the stale linked entry allowed by the PRD.
 
 ## 10. Concise manual JavaFX verification
 
-Use a temporary copied application data directory or an explicitly synthetic
-demo store; never use real user data. Record pass/fail notes, not screenshots.
+Use a temporary copied application data directory or an explicitly synthetic demo store; never use real user data. Record pass/fail notes, not screenshots.
 
-1. Log in as a synthetic Student and confirm no possible-match tab, rows,
-   scores, reasons, links, comparison, or other report data is available.
-2. Log in as a synthetic Desk Officer and confirm the existing review tab is
-   preserved and the possible-match workspace is available.
-3. Confirm unlinked suggestions appear in the automated expected order with
-   LOST/FOUND labels, exact approved row fields, rule score, brief positive
-   reasons, possible-match wording, and no restricted fields.
-4. Confirm linked pairs appear once in a distinct section; qualifying links
-   precede stale/unavailable links; no-suggestions, no-qualifying, no-links,
-   and unavailable states are visually distinct.
-5. Select a pair and confirm side-by-side read-only LOST/FOUND groups show all
-   eleven fields, public/private descriptions are visibly separated, private
-   detail is labelled officer-only, all four component outcomes are shown, and
-   no edit control exists.
-6. Confirm Link is enabled only for a current unlinked suggestion, durable
-   success moves the pair to linked state without ownership language, and
-   Unlink is then enabled. Confirm Unlink removes only that relationship and
-   produces the approved qualifying/non-qualifying post-state.
-7. Trigger each safe synthetic unavailable/action-failure fixture available in
-   the implementation smoke setup; confirm old rows are not presented as
-   current after load failure, action failure retains a clearly last-known
-   state, and explicit Retry behaves as approved.
-8. With a stale missing-side link, confirm only available data and the allowed
-   Report ID placeholder appear, Unlink remains available, and no missing
-   content is invented.
-9. Use maximum-length valid synthetic names, locations, and descriptions at a
-   small supported window size; confirm scrolling keeps comparison, reasons,
-   Link/Unlink, and officer-only separation usable.
+1. Log in as a synthetic Student and confirm no possible-match tab, rows, scores, reasons, links, comparison, or other report data is available.
+2. Log in as a synthetic Desk Officer and confirm the existing review tab is preserved and the possible-match workspace is available.
+3. Confirm unlinked suggestions appear in the automated expected order with LOST/FOUND labels, exact approved row fields, rule score, brief positive reasons, possible-match wording, and no restricted fields.
+4. Confirm linked pairs appear once in a distinct section; qualifying links precede stale/unavailable links; no-suggestions, no-qualifying, no-links, and unavailable states are visually distinct.
+5. Select a pair and confirm side-by-side read-only LOST/FOUND groups show all eleven fields, public/private descriptions are visibly separated, private detail is labelled officer-only, all four component outcomes are shown, and no edit control exists.
+6. Confirm Link is enabled only for a current unlinked suggestion, durable success moves the pair to linked state without ownership language, and Unlink is then enabled. Confirm Unlink removes only that relationship and produces the approved qualifying/non-qualifying post-state.
+7. Trigger each safe synthetic unavailable/action-failure fixture available in the implementation smoke setup; confirm old rows are not presented as current after load failure, action failure retains a clearly last-known state, and explicit Retry behaves as approved.
+8. With a stale missing-side link, confirm only available data and the allowed Report ID placeholder appear, Unlink remains available, and no missing content is invented.
+9. Use maximum-length valid synthetic names, locations, and descriptions at a small supported window size; confirm scrolling keeps comparison, reasons, Link/Unlink, and officer-only separation usable.
 10. Log out while private detail is visible; confirm all officer content is
     removed. Log in again as a Desk Officer; confirm a fresh authoritative
     load, durable links preserved, and no restored selection.
 
 ## 11. Existing regression coverage reused
 
-The following existing suites must remain green and are reused rather than
-duplicated:
+The following existing suites must remain green and are reused rather than duplicated:
 
 | Existing suite(s) | Existing evidence retained |
 | --- | --- |
@@ -324,9 +163,7 @@ duplicated:
 | `DeskOfficerReviewServiceTest`, `DeskOfficerReviewPersistenceTest` | Existing review queue, selection, private-detail boundary, authoritative status mutation, retry, and persistence behavior. |
 | `ProjectSetupTest` | Application metadata and Java 25 baseline. |
 
-These suites are regression evidence only where they already prove an inherited
-contract. They do not replace new matcher, link-persistence, matching-service,
-or JavaFX manual evidence.
+These suites are regression evidence only where they already prove an inherited contract. They do not replace new matcher, link-persistence, matching-service, or JavaFX manual evidence.
 
 ## 12. Cross-owner integration verification
 
@@ -453,61 +290,33 @@ No test file is created by this plan.
 | Existing suites listed in section 11 | Preserve canonical, persistence, auth, Student, review, and setup contracts. | Inherited contracts and regression obligations | Existing regression |
 | JavaFX checklist in section 10 | Rendered fields, layout, wording, enablement, lifecycle, role visibility. | OW-FR-001–008; PRD OW-AC-001–005/009/010/013–015 | Manual JavaFX |
 
-The ellipsis in paths expands to
-`io/github/cs32272610mp2xcode/finderskeepers`. Cohesive behavior suites are
-preferred over one class per requirement.
+The ellipsis in paths expands to `io/github/cs32272610mp2xcode/finderskeepers`. Cohesive behavior suites are preferred over one class per requirement.
 
 ## 15. Test data strategy
 
-All fixtures are synthetic and deterministic. A shared test fixture helper may
-construct canonical reports but must not duplicate matcher logic.
+All fixtures are synthetic and deterministic. A shared test fixture helper may construct canonical reports but must not duplicate matcher logic.
 
-- Use fixed UUIDs with recognizable final segments and at least one pair whose
-  canonical string ordering differs from `UUID.compareTo` signed-long order.
-- Use fixed `LocalDate` values around 2026-09-01 for day -1, 0, 1, 7, and 8,
-  plus extreme-date cases; use fixed millisecond-precision `Instant` values.
-- Include LOST and FOUND reports in every allowed status combination and all
-  canonical categories needed for equal, unequal, and `OTHER` boundaries.
-- Use item names such as `Blue Pencil-Case`, duplicate-token cases, only
-  one-code-point tokens, supplementary Unicode letters, substring and
-  singular/plural exclusions, punctuation/symbol runs, and no-overlap names.
-- Use locations covering repeated whitespace, tabs, commas, hyphens, `★`,
-  one-character runs, separator-only values, exact normalized equality,
-  partial mismatch, and accent/normalization non-equivalence.
-- Construct component totals 50, 70, 80, and 100, plus raw high totals with a
-  failed mandatory gate and equal-score tied suggestions.
-- Create `A-B` and `A-C` to prove non-exclusive links, as well as stored links
-  with a missing endpoint and a current non-qualifying pair.
-- Use explicit private sentinels solely for negative assertions. Never print
-  them in assertion labels, logs, snapshots, or handoff output.
-- Use `@TempDir` for every real report/link store and scripted in-memory
-  repository doubles only for deterministic failure/staleness. Never point at
-  `data/`, a home directory, or real application/user files.
+- Use fixed UUIDs with recognizable final segments and at least one pair whose canonical string ordering differs from `UUID.compareTo` signed-long order.
+- Use fixed `LocalDate` values around 2026-09-01 for day -1, 0, 1, 7, and 8, plus extreme-date cases; use fixed millisecond-precision `Instant` values.
+- Include LOST and FOUND reports in every allowed status combination and all canonical categories needed for equal, unequal, and `OTHER` boundaries.
+- Use item names such as `Blue Pencil-Case`, duplicate-token cases, only one-code-point tokens, supplementary Unicode letters, substring and singular/plural exclusions, punctuation/symbol runs, and no-overlap names.
+- Use locations covering repeated whitespace, tabs, commas, hyphens, `★`, one-character runs, separator-only values, exact normalized equality, partial mismatch, and accent/normalization non-equivalence.
+- Construct component totals 50, 70, 80, and 100, plus raw high totals with a failed mandatory gate and equal-score tied suggestions.
+- Create `A-B` and `A-C` to prove non-exclusive links, as well as stored links with a missing endpoint and a current non-qualifying pair.
+- Use explicit private sentinels solely for negative assertions. Never print them in assertion labels, logs, snapshots, or handoff output.
+- Use `@TempDir` for every real report/link store and scripted in-memory repository doubles only for deterministic failure/staleness. Never point at `data/`, a home directory, or real application/user files.
 
 ## 16. Failure-injection strategy
 
-- Report-load failure: a small scripted `ReportRepository` implements the
-  existing interface and throws each `ReportStoreException.Reason` on the next
-  `loadAll`; no production API changes.
-- Relationship-load/write failure: a scripted `PossibleMatchRepository`
-  returns a fixed set or throws the approved checked reason on `loadAll`,
-  `link`, or `unlink`. It records attempted operations without report content.
-- Evaluation failure: supply the approved duplicate-ID/invalid snapshot at the
-  matcher boundary or a repository snapshot that triggers the documented
-  contract failure; do not add a public matcher failure toggle.
-- Stale/missing reports: change the scripted repository snapshot between
-  `select` and Link/Unlink, or use fresh real repository instances where the
-  existing API can express the change. Do not add report deletion or future
-  status APIs solely for tests.
-- Filesystem failures: inject the TDD's package-local
-  `PossibleMatchStoreFiles` seam and fail read, staging, partial write, force,
-  close, atomic move, and cleanup in turn. Complement with real `@TempDir`
-  integration. No production test switch or raw-cause exposure.
+- Report-load failure: a small scripted `ReportRepository` implements the existing interface and throws each `ReportStoreException.Reason` on the next `loadAll`; no production API changes.
+- Relationship-load/write failure: a scripted `PossibleMatchRepository` returns a fixed set or throws the approved checked reason on `loadAll`, `link`, or `unlink`. It records attempted operations without report content.
+- Evaluation failure: supply the approved duplicate-ID/invalid snapshot at the matcher boundary or a repository snapshot that triggers the documented contract failure; do not add a public matcher failure toggle.
+- Stale/missing reports: change the scripted repository snapshot between `select` and Link/Unlink, or use fresh real repository instances where the existing API can express the change. Do not add report deletion or future status APIs solely for tests.
+- Filesystem failures: inject the TDD's package-local `PossibleMatchStoreFiles` seam and fail read, staging, partial write, force, close, atomic move, and cleanup in turn. Complement with real `@TempDir` integration. No production test switch or raw-cause exposure.
 
 ## 17. Implementation-phase verification commands
 
-These commands are recorded, not run for this documentation-only transition.
-On Windows, from the repository root:
+These commands are recorded, not run for this documentation-only transition. On Windows, from the repository root:
 
 ```text
 gradlew.bat test --tests "io.github.cs32272610mp2xcode.finderskeepers.matching.model.PossibleMatchPairTest" --tests "io.github.cs32272610mp2xcode.finderskeepers.matching.model.DeterministicMatcherTest"
@@ -520,45 +329,19 @@ git diff
 git status --short
 ```
 
-`release` and packaged smoke are required when the approved application
-composition/startup edit is implemented. The smoke launches the packaged
-artifact with isolated synthetic stores and verifies Student routing, Desk
-Officer entry, matching load, Link/Unlink, logout, and fresh login. Before
-handoff, confirm that tests did not create or modify real user data and that
-only intended source, test, documentation, resource, and exact ignore-file
-changes appear.
+`release` and packaged smoke are required when the approved application composition/startup edit is implemented. The smoke launches the packaged artifact with isolated synthetic stores and verifies Student routing, Desk Officer entry, matching load, Link/Unlink, logout, and fresh login. Before handoff, confirm that tests did not create or modify real user data and that only intended source, test, documentation, resource, and exact ignore-file changes appear.
 
 ## 18. Coverage audit and approval gate
 
-- Every Mission Brief completion obligation is represented by the 29
-  functional-requirement rows, 23 Mission Brief AC rows, detailed plans, and
-  regression/cross-owner sections.
-- Every final PRD acceptance criterion has a dedicated matrix row and concrete
-  evidence location; every `GD-001` through `GD-047` decision is represented
-  through its reconciled criterion and boundary scenario.
-- Every TDD obligation requiring verification has evidence: pair invariants,
-  exact matcher policy, reason derivation, comparator, strict storage grammar,
-  fresh-instance durability, atomic failure behavior, service state machine,
-  privacy, JavaFX lifecycle, composition, and documentation/build checks.
-- Every rule boundary is automated, including non-letter/digit separators,
-  code-point token length, separator-only location equality, day 0/7/8 and
-  negative direction, gates versus totals, threshold 70, and deterministic
-  UUID tie-breaking.
-- Every persistence mutation has success, no-op, fresh-instance, and failure
-  evidence. All real I/O is isolated under `@TempDir`.
-- Authorization and privacy have automated, existing-regression,
-  source-review, and manual evidence. No restricted value is required in
-  screenshots or handoff summaries.
-- The sole cross-owner shell edit is identified but not authorized or
-  performed. Existing Developer 1 behavior has explicit regression evidence.
-- No planned test changes approved behavior, relies on an unapproved field or
-  status, adds JavaFX automation, or introduces a test-only production API.
+- Every Mission Brief completion obligation is represented by the 29 functional-requirement rows, 23 Mission Brief AC rows, detailed plans, and regression/cross-owner sections.
+- Every final PRD acceptance criterion has a dedicated matrix row and concrete evidence location; every `GD-001` through `GD-047` decision is represented through its reconciled criterion and boundary scenario.
+- Every TDD obligation requiring verification has evidence: pair invariants, exact matcher policy, reason derivation, comparator, strict storage grammar, fresh-instance durability, atomic failure behavior, service state machine, privacy, JavaFX lifecycle, composition, and documentation/build checks.
+- Every rule boundary is automated, including non-letter/digit separators, code-point token length, separator-only location equality, day 0/7/8 and negative direction, gates versus totals, threshold 70, and deterministic UUID tie-breaking.
+- Every persistence mutation has success, no-op, fresh-instance, and failure evidence. All real I/O is isolated under `@TempDir`.
+- Authorization and privacy have automated, existing-regression, source-review, and manual evidence. No restricted value is required in screenshots or handoff summaries.
+- The sole cross-owner shell edit is identified but not authorized or performed. Existing Developer 1 behavior has explicit regression evidence.
+- No planned test changes approved behavior, relies on an unapproved field or status, adds JavaFX automation, or introduces a test-only production API.
 - No requirement is mapped to vague evidence where a plain-Java seam exists.
 - No unresolved traceability blocker remains.
 
-The repository owner explicitly approved this complete requirements-to-tests
-plan on 2026-09-21. This approval completes the Mission Brief, product,
-technical-design, and traceability planning gates. It does not authorize branch
-creation, production code, tests, the cross-owner `FindersKeepersApp` edit,
-dependencies, commits, pushes, pull requests, release changes, or merging;
-those require separate authorization.
+The repository owner explicitly approved this complete requirements-to-tests plan on 2026-09-21. This approval completes the Mission Brief, product, technical-design, and traceability planning gates. It does not authorize branch creation, production code, tests, the cross-owner `FindersKeepersApp` edit, dependencies, commits, pushes, pull requests, release changes, or merging; those require separate authorization.
