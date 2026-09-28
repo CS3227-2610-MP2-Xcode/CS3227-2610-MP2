@@ -193,7 +193,7 @@ At the top of **Appointments**, choose **Help: how appointments work**. The help
 
 ### 5.1 Review reports
 
-Open **Report review**. Select a report to see its full details. Use the status actions only after reviewing the public and officer-only information. Reports that belong to an approved Claim are removed from the active review queue.
+Open **Report review**. Select a report to see its full details. This page is read-only: selecting a report does not change its status. Reports that belong to an approved Claim are removed from the active review queue.
 
 ### 5.2 Link possible matches
 
