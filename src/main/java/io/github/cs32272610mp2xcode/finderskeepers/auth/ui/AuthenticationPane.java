@@ -114,6 +114,7 @@ public final class AuthenticationPane extends StackPane {
         error.getStyleClass().add("login-error");
 
         Button login = new Button("Log in");
+        login.getStyleClass().add("primary-button");
         login.setDefaultButton(true);
         login.setOnAction(event -> {
             AuthenticationResult result = coordinator.login(
@@ -126,6 +127,7 @@ public final class AuthenticationPane extends StackPane {
         });
 
         Button clear = new Button("Clear");
+        clear.getStyleClass().add("quiet-button");
         clear.setOnAction(event -> {
             username.clear();
             password.clear();
@@ -135,18 +137,29 @@ public final class AuthenticationPane extends StackPane {
         });
 
         HBox actions = new HBox(10, login, clear);
-        actions.setAlignment(Pos.CENTER);
-        VBox form = new VBox(12,
-                heading(AppMetadata.NAME),
-                new Label("Log in to continue"),
-                username,
-                password,
+        actions.setAlignment(Pos.CENTER_LEFT);
+
+        Label formHeading = new Label("Welcome back");
+        formHeading.getStyleClass().add("login-heading");
+        Label formCopy = new Label("Sign in to continue to your workspace.");
+        formCopy.getStyleClass().add("muted-text");
+        VBox form = new VBox(14,
+                formHeading,
+                formCopy,
+                field("Username", username),
+                field("Password", password),
                 error,
                 actions);
-        form.setAlignment(Pos.CENTER);
-        form.setMaxWidth(360);
-        form.setPadding(new Insets(32));
-        getChildren().setAll(form);
+        form.getStyleClass().add("login-card");
+        form.setAlignment(Pos.CENTER_LEFT);
+        form.setPrefWidth(430);
+
+        VBox brand = loginBrand();
+        HBox shell = new HBox(brand, form);
+        shell.getStyleClass().add("login-shell");
+        shell.setMaxWidth(940);
+        shell.setMaxHeight(560);
+        getChildren().setAll(shell);
     }
 
     private void showAuthenticatedRoute() {
@@ -157,45 +170,84 @@ public final class AuthenticationPane extends StackPane {
             return;
         }
         RoutePresentation presentation = RoutePresentation.forRoute(coordinator.route());
-        Label identity = new Label("Signed in as " + user.username());
-        identity.getStyleClass().add("status-label");
         Button logout = new Button("Log out");
-        VBox view = new VBox(16,
+        logout.getStyleClass().add("quiet-button");
+        VBox emptyState = new VBox(12,
                 heading(presentation.title()),
-                identity,
                 new Label(presentation.description()));
+        emptyState.setAlignment(Pos.CENTER);
+        emptyState.setPadding(new Insets(32));
         Node officerContent = null;
         if (coordinator.route() == ApplicationRoute.DESK_OFFICER
                 && deskOfficerContentFactory != null) {
             officerContent = Objects.requireNonNull(
                     deskOfficerContentFactory.apply(user),
                     "officerContentFactory result");
-            VBox.setVgrow(officerContent, Priority.ALWAYS);
-            view.getChildren().add(officerContent);
-            view.setAlignment(Pos.TOP_CENTER);
-            view.setPadding(new Insets(20));
-        } else {
-            view.setAlignment(Pos.CENTER);
-            view.setPadding(new Insets(32));
         }
         Node sessionContent = officerContent;
         logout.setOnAction(event -> requestLogout(sessionContent));
-        view.getChildren().add(logout);
+        BorderPane view = new BorderPane(officerContent == null ? emptyState : officerContent);
+        view.getStyleClass().add("workspace");
+        view.setTop(sessionHeader(user, presentation.title(), logout));
         getChildren().setAll(view);
     }
 
     private void showStudentWorkspace(AuthenticatedUser user, Node workspace) {
         Objects.requireNonNull(workspace, "studentFactory result");
-        Label identity = new Label("Signed in as " + user.username());
-        identity.getStyleClass().add("status-label");
         Button logout = new Button("Log out");
+        logout.getStyleClass().add("quiet-button");
         logout.setOnAction(event -> requestLogout(workspace));
-        HBox header = new HBox(16, identity, logout);
-        header.setAlignment(Pos.CENTER_RIGHT);
-        header.setPadding(new Insets(18, 24, 8, 24));
         BorderPane view = new BorderPane(workspace);
-        view.setTop(header);
+        view.getStyleClass().add("workspace");
+        view.setTop(sessionHeader(user, AppMetadata.STUDENT_ROLE, logout));
         getChildren().setAll(view);
+    }
+
+    private static VBox loginBrand() {
+        Label mark = new Label("F");
+        mark.getStyleClass().add("brand-mark");
+        Label title = new Label(AppMetadata.NAME);
+        title.getStyleClass().add("brand-title");
+        Label copy = new Label("A safer, simpler way for your school community\n"
+                + "to reunite belongings with their owners.");
+        copy.getStyleClass().add("brand-copy");
+        Label report = brandFeature("Report lost or found items");
+        Label track = brandFeature("Track Claims and collection updates");
+        Label protect = brandFeature("Keep ownership evidence private");
+        VBox brand = new VBox(18, mark, title, copy, report, track, protect);
+        brand.getStyleClass().add("login-brand-panel");
+        brand.setAlignment(Pos.CENTER_LEFT);
+        brand.setPrefWidth(510);
+        return brand;
+    }
+
+    private static Label brandFeature(String text) {
+        Label label = new Label("\u2022  " + text);
+        label.getStyleClass().add("brand-feature");
+        return label;
+    }
+
+    private static VBox field(String labelText, Node control) {
+        Label label = new Label(labelText);
+        label.getStyleClass().add("field-label");
+        return new VBox(6, label, control);
+    }
+
+    private static HBox sessionHeader(AuthenticatedUser user, String role, Button logout) {
+        Label mark = new Label("F");
+        mark.getStyleClass().add("brand-mark-small");
+        Label brand = new Label(AppMetadata.NAME);
+        brand.getStyleClass().add("top-bar-brand");
+        Label route = new Label(role);
+        route.getStyleClass().add("top-bar-role");
+        VBox titles = new VBox(1, brand, route);
+        Label identity = new Label(user.username());
+        identity.getStyleClass().add("status-label");
+        HBox spacer = new HBox();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox header = new HBox(10, mark, titles, spacer, identity, logout);
+        header.getStyleClass().add("top-bar");
+        return header;
     }
 
     private void requestLogout(Node workspace) {
