@@ -8,6 +8,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.application.OfficerAppointmentService;
+import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.AuditEvent;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CaseStatus;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CollectionCase;
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.model.CollectionSlot;
@@ -54,6 +55,8 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
 
     private final ListView<CollectionCase> cases = new ListView<>();
 
+    private final ListView<AuditEvent> audit = new ListView<>();
+
     private final Label feedback = new Label();
 
     private final Button addSlot = new Button("+");
@@ -93,13 +96,23 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
                         + " — " + item.custodyStatus().name());
             }
         });
+        audit.setCellFactory(view -> new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(AuditEvent item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : formatAuditEvent(item));
+            }
+        });
         cases.getSelectionModel().selectedItemProperty().addListener(
                 (observable, previous, selected) -> {
                     location.clear();
+                    audit.getItems().setAll(selected == null
+                            ? java.util.List.of() : selected.auditEvents());
                     updateControls();
                 });
         slots.setMinHeight(100);
         cases.setMinHeight(140);
+        audit.setMinHeight(100);
         feedback.setWrapText(true);
         Button refresh = new Button("Refresh");
         addSlot.setTooltip(new Tooltip("Add a 30-minute collection slot"));
@@ -117,7 +130,8 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
         slotHeader.setAlignment(Pos.CENTER_RIGHT);
         HBox.setHgrow(slotsLabel, Priority.ALWAYS);
         VBox content = new VBox(8, slotHeader, slots, new Separator(),
-                new Label("Booked and custody cases"), cases, location, store, ready,
+                new Label("Booked and custody cases"), cases,
+                new Label("Audit history (officer view)"), audit, location, store, ready,
                 confirm, noShow, returned, close, refresh, feedback);
         content.setPadding(new Insets(12));
         ScrollPane scroll = new ScrollPane(content);
@@ -138,18 +152,24 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
         try {
             ClaimId selectedClaim = cases.getSelectionModel().getSelectedItem() == null
                     ? null : cases.getSelectionModel().getSelectedItem().claimId();
+            String storageDraft = location.getText();
             slots.getItems().setAll(service.loadSlots());
             cases.getItems().setAll(service.loadCases());
-            if (selectedClaim != null) {
-                cases.getItems().stream()
-                        .filter(caseState -> caseState.claimId().equals(selectedClaim))
-                        .findFirst().ifPresent(cases.getSelectionModel()::select);
+            CollectionCase refreshedSelection = selectedClaim == null ? null
+                    : cases.getItems().stream()
+                            .filter(caseState -> caseState.claimId().equals(selectedClaim))
+                            .findFirst().orElse(null);
+            if (refreshedSelection != null) {
+                cases.getSelectionModel().select(refreshedSelection);
             }
+            location.setText(storageDraftAfterRefresh(selectedClaim, refreshedSelection,
+                    storageDraft));
         } catch (AppointmentStoreException failure) {
             slots.getSelectionModel().clearSelection();
             slots.getItems().clear();
             cases.getSelectionModel().clearSelection();
             cases.getItems().clear();
+            audit.getItems().clear();
             feedback.setText("Appointment information is unavailable. Retry later.");
         }
         updateControls();
@@ -167,6 +187,7 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
         slots.getItems().clear();
         cases.getSelectionModel().clearSelection();
         cases.getItems().clear();
+        audit.getItems().clear();
         feedback.setText("");
         updateControls();
     }
@@ -432,6 +453,23 @@ public final class OfficerAppointmentPane extends BorderPane implements SessionV
     private static void show(Node node, boolean visible) {
         node.setVisible(visible);
         node.setManaged(visible);
+    }
+
+    static String storageDraftAfterRefresh(ClaimId previousClaim,
+            CollectionCase refreshedSelection, String draft) {
+        Objects.requireNonNull(draft, "draft");
+        return previousClaim != null && refreshedSelection != null
+                && previousClaim.equals(refreshedSelection.claimId()) ? draft : "";
+    }
+
+    static String formatAuditEvent(AuditEvent event) {
+        Objects.requireNonNull(event, "event");
+        String role = switch (event.actorRole()) {
+            case STUDENT -> "Student";
+            case DESK_OFFICER -> "Desk Officer";
+        };
+        return DISPLAY.withZone(ZONE).format(event.occurredAt()) + " — "
+                + event.eventType().name() + " — " + role + " " + event.actorUserId();
     }
 
     private void showError(String title, String message) {
