@@ -78,6 +78,15 @@ class ClaimLedgerTest {
         Claim afterRejection = pending(3, "student-1", LOST_B, FOUND_A, 20);
         Claim approved = pending.approve(java.util.Optional.empty(), BASE_TIME.plusSeconds(10));
         Claim afterApproval = pending(4, "student-2", LOST_B, FOUND_A, 20);
+        Claim sharedFound = pending(5, "student-3", uuid(103), FOUND_A, 30);
+        Claim samePairAfterPending = pending(6, "student-1", LOST_A, FOUND_A, 40);
+        Claim approvalAfterPending = pending(7, "student-4", uuid(104), uuid(204), 50)
+                .approve(java.util.Optional.empty(), BASE_TIME.plusSeconds(60));
+        Claim pendingBeforeApproval = pending(8, "student-5", uuid(104), uuid(205), 40);
+        Claim firstApproval = pending(9, "student-6", uuid(106), uuid(206), 70)
+                .approve(java.util.Optional.empty(), BASE_TIME.plusSeconds(80));
+        Claim secondApproval = pending(10, "student-7", uuid(106), uuid(207), 90)
+                .approve(java.util.Optional.empty(), BASE_TIME.plusSeconds(100));
 
         assertThrows(IllegalArgumentException.class,
                 () -> ClaimLedger.from(List.of(pending, duplicateId)));
@@ -87,6 +96,26 @@ class ClaimLedgerTest {
                 () -> ClaimLedger.from(List.of(rejected, afterRejection)));
         assertThrows(IllegalArgumentException.class,
                 () -> ClaimLedger.from(List.of(approved, afterApproval)));
+        assertThrows(IllegalArgumentException.class,
+                () -> ClaimLedger.from(List.of(pending, sharedFound)));
+        assertThrows(IllegalArgumentException.class,
+                () -> ClaimLedger.from(List.of(pending, samePairAfterPending)));
+        assertThrows(IllegalArgumentException.class,
+                () -> ClaimLedger.from(List.of(pendingBeforeApproval, approvalAfterPending)));
+        assertThrows(IllegalArgumentException.class,
+                () -> ClaimLedger.from(List.of(firstApproval, secondApproval)));
+        assertThrows(NullPointerException.class,
+                () -> ClaimLedger.from(java.util.Arrays.asList(pending, null)));
+    }
+
+    @Test
+    void rejectsInvalidCandidatesBeforeEvaluatingPrivateBlockers() {
+        ClaimLedger ledger = ClaimLedger.from(List.of());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> ledger.evaluate(" ", LOST_A, FOUND_A));
+        assertThrows(IllegalArgumentException.class,
+                () -> ledger.evaluate("student-1", LOST_A, LOST_A));
     }
 
     private static Claim pending(int id, String claimant, UUID lost, UUID found,

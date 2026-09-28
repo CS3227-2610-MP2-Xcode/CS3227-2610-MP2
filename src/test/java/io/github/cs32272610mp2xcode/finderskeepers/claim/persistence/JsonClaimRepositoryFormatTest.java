@@ -70,6 +70,38 @@ class JsonClaimRepositoryFormatTest {
         assertEquals(compact, Files.readString(store, StandardCharsets.UTF_8));
     }
 
+    @Test
+    void escapedUnicodeEvidenceLoadsAndIsCanonicallyRewrittenOnMutation() throws Exception {
+        Path store = temporaryDirectory.resolve("escaped-claims.json");
+        String escapedEvidence = "Synthetic \\\"quote\\\" \\\\ slash\\/ caf\\u00e9 \\uD83D\\uDE03.";
+        String document = CANONICAL_DOCUMENT.replace(
+                "Synthetic identifying detail.", escapedEvidence);
+        Files.writeString(store, document, StandardCharsets.UTF_8);
+        JsonClaimRepository repository = new JsonClaimRepository(store);
+
+        Claim restored = repository.loadAll().getFirst();
+        assertEquals("Synthetic \"quote\" \\ slash/ café 😃.", restored.ownershipEvidence());
+
+        repository.withdraw(restored.claimId(), restored.claimantUserId(),
+                Instant.parse("2026-09-22T02:02:03.456Z"));
+
+        String canonical = Files.readString(store, StandardCharsets.UTF_8);
+        assertTrue(canonical.contains(
+                "\"ownershipEvidence\": \"Synthetic \\\"quote\\\" \\\\ slash/ café 😃.\""));
+        assertEquals("Synthetic \"quote\" \\ slash/ café 😃.",
+                new JsonClaimRepository(store).loadAll().getFirst().ownershipEvidence());
+    }
+
+    @Test
+    void explicitEmptyVersionOneStoreLoadsWithoutBeingRewritten() throws Exception {
+        Path store = temporaryDirectory.resolve("empty-claims.json");
+        String emptyStore = "{\"claims\":[],\"schemaVersion\":1}";
+        Files.writeString(store, emptyStore, StandardCharsets.UTF_8);
+
+        assertTrue(new JsonClaimRepository(store).loadAll().isEmpty());
+        assertEquals(emptyStore, Files.readString(store, StandardCharsets.UTF_8));
+    }
+
     @ParameterizedTest(name = "invalid document partition {index}")
     @MethodSource("invalidDocuments")
     void invalidDocumentsFailWholeStoreWithoutChangingBytes(String document,
@@ -110,6 +142,12 @@ class JsonClaimRepositoryFormatTest {
     }
 
     private static Stream<Arguments> invalidDocuments() {
+        String claimObject = CANONICAL_DOCUMENT.substring(
+                CANONICAL_DOCUMENT.indexOf("    {"), CANONICAL_DOCUMENT.indexOf("\n  ]"));
+        String contradictoryLedger = CANONICAL_DOCUMENT.replace(claimObject,
+                claimObject + ",\n" + claimObject.replace(
+                        "00000000-0000-0000-0000-000000000001",
+                        "00000000-0000-0000-0000-000000000002"));
         return Stream.of(
                 Arguments.of("", ClaimStoreException.Reason.CORRUPT_STORE),
                 Arguments.of("{}", ClaimStoreException.Reason.CORRUPT_STORE),
@@ -146,6 +184,18 @@ class JsonClaimRepositoryFormatTest {
                         "Synthetic identifying detail.", "Synthetic \\uD800 detail."),
                         ClaimStoreException.Reason.CORRUPT_STORE),
                 Arguments.of(CANONICAL_DOCUMENT.replace(
+                        "Synthetic identifying detail.", "Synthetic \\uDC00 detail."),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
+                        "Synthetic identifying detail.", "Synthetic \\uD83Dx detail."),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
+                        "Synthetic identifying detail.", "Synthetic \\uD83D\\u0041 detail."),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
+                        "Synthetic identifying detail.", "Synthetic \\u12x4 detail."),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
                         "00000000-0000-0000-0000-000000000001",
                         "AAAAAAAA-0000-0000-0000-000000000001"),
                         ClaimStoreException.Reason.CORRUPT_STORE),
@@ -156,6 +206,25 @@ class JsonClaimRepositoryFormatTest {
                         "\"decisionReason\": \"Synthetic reason.\""),
                         ClaimStoreException.Reason.CORRUPT_STORE),
                 Arguments.of(CANONICAL_DOCUMENT.replace(".456Z", "Z"),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of("{\"schemaVersion\":1,\"claims\":[{}]}",
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
+                        ",\n      \"decisionReason\": null", ""),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace("\"claimId\":",
+                        "\"unknownClaimMember\": \"x\", \"claimId\":"),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace("\"claims\": [",
+                        "\"claims\": [], \"claims\": ["),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
+                        "\"schemaVersion\": 1,\n", ""),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(CANONICAL_DOCUMENT.replace(
+                        "\"decisionReason\": null", "\"decisionReason\": true"),
+                        ClaimStoreException.Reason.CORRUPT_STORE),
+                Arguments.of(contradictoryLedger,
                         ClaimStoreException.Reason.CORRUPT_STORE),
                 Arguments.of(CANONICAL_DOCUMENT + "x",
                         ClaimStoreException.Reason.CORRUPT_STORE));
