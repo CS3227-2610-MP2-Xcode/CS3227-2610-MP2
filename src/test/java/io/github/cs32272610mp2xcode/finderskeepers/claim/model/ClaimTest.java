@@ -94,6 +94,7 @@ class ClaimTest {
         Claim different = pending().withdraw(TERMINAL);
 
         assertEquals("CLM-00000000000000000000000000000001", CLAIM_ID.reference());
+        assertEquals("CLM-00000001", CLAIM_ID.shortReference());
         assertEquals(first, equal);
         assertEquals(first.hashCode(), equal.hashCode());
         assertNotEquals(first, different);

@@ -41,6 +41,16 @@ public final class ClaimId {
         return REFERENCE_PREFIX + value.toString().replace("-", "").toUpperCase();
     }
 
+    /**
+     * Returns a compact user-visible reference that still distinguishes Claims.
+     *
+     * @return reference prefixed with {@code CLM-} and ending in eight UUID characters
+     */
+    public String shortReference() {
+        String fullReference = reference();
+        return REFERENCE_PREFIX + fullReference.substring(fullReference.length() - 8);
+    }
+
     @Override
     public boolean equals(Object other) {
         return this == other || other instanceof ClaimId that && value.equals(that.value);

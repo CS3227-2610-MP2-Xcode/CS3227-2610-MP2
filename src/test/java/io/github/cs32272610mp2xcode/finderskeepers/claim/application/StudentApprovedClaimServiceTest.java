@@ -57,7 +57,8 @@ class StudentApprovedClaimServiceTest {
         assertEquals(List.of(owned.claimId()), result.stream().map(ApprovedClaimSummary::claimId)
                 .toList());
         assertEquals(owned.claimId().reference(), result.get(0).claimReference());
-        assertEquals("Blue pencil case · Stationery", result.get(0).displayLabel());
+        assertEquals("Blue pencil case · Stationery · CLM-00000001",
+                result.get(0).displayLabel());
         assertEquals("ApprovedClaimSummary[redacted]", result.get(0).toString());
     }
 
@@ -73,7 +74,7 @@ class StudentApprovedClaimServiceTest {
                 new AuthenticatedUser("student-1", "student", UserRole.STUDENT), repository)
                 .loadApprovedClaims().getFirst();
 
-        assertEquals("Approved item · 00000001", result.displayLabel());
+        assertEquals("Approved item · CLM-00000001", result.displayLabel());
     }
 
     @Test

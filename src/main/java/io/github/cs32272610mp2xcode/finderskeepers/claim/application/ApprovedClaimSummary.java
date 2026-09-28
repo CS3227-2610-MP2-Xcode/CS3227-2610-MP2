@@ -31,14 +31,14 @@ public record ApprovedClaimSummary(ClaimId claimId, String claimReference,
         itemName = itemName.map(value -> requireText(value, "itemName"));
     }
 
-    /** Returns a concise, child-friendly label for appointment selection.
-     * @return item name and category, or a short non-sensitive fallback */
+    /** Returns a concise, distinguishable label for appointment selection.
+     * @return item details and a short Claim reference, or a non-sensitive fallback */
     public String displayLabel() {
         if (itemName.isPresent()) {
-            return itemName.orElseThrow() + " · " + category.orElseThrow().displayName();
+            return itemName.orElseThrow() + " · " + category.orElseThrow().displayName()
+                    + " · " + claimId.shortReference();
         }
-        String reference = claimReference.substring(Math.max(0, claimReference.length() - 8));
-        return "Approved item · " + reference;
+        return "Approved item · " + claimId.shortReference();
     }
 
     private static String requireText(String value, String name) {

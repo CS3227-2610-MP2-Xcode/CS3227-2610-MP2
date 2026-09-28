@@ -2,6 +2,7 @@ package io.github.cs32272610mp2xcode.finderskeepers.appointment.ui;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Objects;
 
 import io.github.cs32272610mp2xcode.finderskeepers.appointment.application.StudentActiveAppointmentSummary;
@@ -65,8 +66,7 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
             @Override
             protected void updateItem(StudentActiveAppointmentSummary item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.status().name()
-                        + " — " + DISPLAY_TIME.format(item.startsAt()));
+                setText(empty || item == null ? null : formatActiveAppointment(item));
             }
         });
         history.setCellFactory(view -> new javafx.scene.control.ListCell<>() {
@@ -178,14 +178,24 @@ public final class StudentAppointmentPane extends BorderPane implements SessionV
     }
 
     private void updateActions() {
-        boolean hasClaim = claims.getValue() != null;
         boolean hasSlot = slots.getSelectionModel().getSelectedItem() != null;
         boolean hasActive = active.getSelectionModel().getSelectedItem() != null;
-        boolean selectedClaimAlreadyActive = hasClaim && active.getItems().stream()
-                .anyMatch(appointment -> appointment.claimId().equals(claims.getValue().claimId()));
-        show(book, hasClaim && hasSlot && !hasActive && !selectedClaimAlreadyActive);
+        show(book, shouldShowBook(claims.getValue(), hasSlot, active.getItems()));
         show(reschedule, hasSlot && hasActive);
         show(cancel, hasActive);
+    }
+
+    static boolean shouldShowBook(ApprovedClaimSummary selectedClaim, boolean hasSlot,
+            List<StudentActiveAppointmentSummary> activeAppointments) {
+        Objects.requireNonNull(activeAppointments, "activeAppointments");
+        return selectedClaim != null && hasSlot && activeAppointments.stream()
+                .noneMatch(appointment -> appointment.claimId().equals(selectedClaim.claimId()));
+    }
+
+    static String formatActiveAppointment(StudentActiveAppointmentSummary appointment) {
+        Objects.requireNonNull(appointment, "appointment");
+        return appointment.claimId().shortReference() + " — " + appointment.status().name()
+                + " — " + DISPLAY_TIME.format(appointment.startsAt());
     }
 
     private static void show(javafx.scene.Node node, boolean visible) {
