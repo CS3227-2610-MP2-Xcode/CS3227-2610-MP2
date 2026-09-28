@@ -155,6 +155,8 @@ For every completed task, report:
 
 ## Lessons from appointment implementation
 
+- When a user excludes directories from inspection, every search command must include explicit prune or glob exclusions before it is run; a feature-focused search must not cross those boundaries incidentally.
+
 - A hand-written JSON writer must test a persisted document immediately after
   every mutation; the first appointment codec omitted field separators and the
   parser then failed only on the next command. Keep canonical writer tests and
