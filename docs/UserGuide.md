@@ -380,9 +380,9 @@ refresh and choose another slot.
 Select an active appointment to reschedule it to another available slot or to
 cancel it. Rescheduling keeps the appointment history while moving the same
 booking to a new slot. Cancellation releases the slot; you may book again for
-the same approved Claim. The active appointment row shows its scheduled date
-and time in Singapore time, including after reopening or rescheduling. Changes
-are not accepted after the slot has started.
+the same approved Claim. Each active appointment row shows a short Claim
+reference with its scheduled date and time in Singapore time, including after
+reopening or rescheduling. Changes are not accepted after the slot has started.
 
 The history list shows each booking attempt for your Claims, including earlier
 cancellations and no-shows after you book again. Each row shows its attempt
@@ -398,7 +398,10 @@ collection desk. Select an unbooked future slot and use **−** to disable it;
 a booked slot cannot be silently removed.
 
 Select a booked case to record its storage location and mark custody ready.
-At the appointment, choose **Confirm collection** to record the collection
+Selecting a case also shows its officer-only audit history, including each
+recorded action, time, actor role, and actor account. Refreshing the screen keeps
+an unfinished storage-location draft when the same case remains selected. At
+the appointment, choose **Confirm collection** to record the collection
 time and officer action. Then choose **Mark item returned**, followed by **Close
 case**. Invalid orderings are rejected and do not change stored data. If the
 Student does not attend, use **NO_SHOW** after the slot has ended; the slot is
