@@ -81,6 +81,10 @@
     -fx-text-fill: #dcebe1;
 }
 
+.login-mascot {
+    -fx-effect: dropshadow(gaussian, rgba(5, 28, 18, 0.24), 14, 0.16, 0, 4);
+}
+
 .brand-feature {
     -fx-font-size: 13px;
     -fx-text-fill: #eff7f2;

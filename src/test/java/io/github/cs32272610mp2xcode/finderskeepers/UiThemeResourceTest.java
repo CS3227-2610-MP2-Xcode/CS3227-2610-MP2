@@ -18,6 +18,7 @@ class UiThemeResourceTest {
             String css = new String(resource.readAllBytes(), StandardCharsets.UTF_8);
             assertAll(
                     () -> assertTrue(css.contains(".login-shell")),
+                    () -> assertTrue(css.contains(".login-mascot")),
                     () -> assertTrue(css.contains(".top-bar")),
                     () -> assertTrue(css.contains(".workspace-tabs")),
                     () -> assertTrue(css.contains(".student-workspace")),
