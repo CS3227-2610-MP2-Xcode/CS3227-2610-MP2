@@ -1,5 +1,7 @@
 package io.github.cs32272610mp2xcode.finderskeepers.auth.ui;
 
+import static io.github.cs32272610mp2xcode.finderskeepers.testsupport.JavaFxTestSupport.runOnFxThread;
+import static io.github.cs32272610mp2xcode.finderskeepers.testsupport.JavaFxTestSupport.startToolkit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,15 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +30,6 @@ import io.github.cs32272610mp2xcode.finderskeepers.auth.persistence.UserStoreExc
 import io.github.cs32272610mp2xcode.finderskeepers.auth.security.PasswordAlgorithm;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.security.PasswordCredential;
 import io.github.cs32272610mp2xcode.finderskeepers.auth.security.PasswordHasher;
-import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -45,23 +40,13 @@ import javafx.scene.control.TextInputControl;
 import javafx.stage.Stage;
 
 class AuthenticationPaneTest {
-    private static final int FX_TIMEOUT_SECONDS = 10;
-
     private static final String STUDENT_PASSWORD = "Student-Demo-27!";
 
     private static final String OFFICER_PASSWORD = "Officer-Demo-42!";
 
     @BeforeAll
     static void startJavaFxToolkit() throws InterruptedException {
-        CountDownLatch started = new CountDownLatch(1);
-        Platform.startup(started::countDown);
-        assertTrue(started.await(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-        Platform.setImplicitExit(false);
-    }
-
-    @AfterAll
-    static void stopJavaFxToolkit() {
-        Platform.exit();
+        startToolkit();
     }
 
     @Test
@@ -241,13 +226,6 @@ class AuthenticationPaneTest {
             return Stream.concat(current, children);
         }
         return current;
-    }
-
-    private static <T> T runOnFxThread(java.util.concurrent.Callable<T> task)
-            throws InterruptedException, ExecutionException, TimeoutException {
-        FutureTask<T> future = new FutureTask<>(task);
-        Platform.runLater(future);
-        return future.get(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
     private static final class MutableUserRepository implements UserRepository {

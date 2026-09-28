@@ -14,36 +14,22 @@
 
 ## Purpose
 
-This checklist maps every revised PRD requirement, acceptance criterion,
-scenario, and extension to stable behavior-level evidence. The repository owner
-approved the mapping and separately authorized implementation on 2026-09-20.
+This checklist maps every revised PRD requirement, acceptance criterion, scenario, and extension to stable behavior-level evidence. The repository owner approved the mapping and separately authorized implementation on 2026-09-20.
 
-A `Deferred` or `Pending` row is not complete. The repository owner confirmed
-TS-01 through TS-05 on 2026-09-19 and approved the temporary shared model,
-TS-06, the 16 MiB limit, the revised planning set, and separate implementation
-authorization on 2026-09-20. Developer 1's canonical domain now supersedes that
-temporary model without changing the persistence operation set or JSON shape.
+A `Deferred` or `Pending` row is not complete. The repository owner confirmed TS-01 through TS-05 on 2026-09-19 and approved the temporary shared model, TS-06, the 16 MiB limit, the revised planning set, and separate implementation authorization on 2026-09-20. Developer 1's canonical domain now supersedes that temporary model without changing the persistence operation set or JSON shape.
 
 ## Status vocabulary
 
-- **Planned:** behavior and evidence are defined but have not yet been observed
-  passing.
-- **Passing:** the approved test or review has been implemented or performed and
-  observed passing.
-- **Deferred - owner:** required input owned outside the active workstream is
-  unavailable. Deferred is not passing.
-- **Confirmed:** the repository owner approved the planning seam, but blocked
-  prerequisites may still prevent implementation.
-- **Pending approval/authorization:** the owner has not yet granted final
-  approval or separately authorized implementation.
-- **External - owner:** the obligation is intentionally outside S1-D2-02 but is
-  traced to the owning workstream.
+- **Planned:** behavior and evidence are defined but have not yet been observed passing.
+- **Passing:** the approved test or review has been implemented or performed and observed passing.
+- **Deferred - owner:** required input owned outside the active workstream is unavailable. Deferred is not passing.
+- **Confirmed:** the repository owner approved the planning seam, but blocked prerequisites may still prevent implementation.
+- **Pending approval/authorization:** the owner has not yet granted final approval or separately authorized implementation.
+- **External - owner:** the obligation is intentionally outside S1-D2-02 but is traced to the owning workstream.
 
 ## Test-seam index
 
-The repository owner confirmed the persistence seams on 2026-09-19. TS-06 now
-references Developer 1's canonical domain APIs and remains part of the final
-approval.
+The repository owner confirmed the persistence seams on 2026-09-19. TS-06 now references Developer 1's canonical domain APIs and remains part of the final approval.
 
 | Seam | Evidence boundary | Policy | Status |
 | --- | --- | --- | --- |
@@ -54,22 +40,15 @@ approval.
 | TS-05 | Source, documentation, and build evidence | Structural review for canonical-domain reuse, bounded resources, privacy-safe tests, storage docs, and Gradle gates | Confirmed - repository owner, 2026-09-19 |
 | TS-06 | Canonical `ItemReport.restore(...)`, enum storage APIs, accessors, equality, and redacted `toString()` | Reuse Developer 1's domain tests and verify persistence reconstructs through the clockless factory without duplicating domain validation; clock-dependent submission policy remains external | Confirmed - repository owner, 2026-09-20 |
 
-Tests do not call codec internals and do not replace repository-owned logic with
-mocks. Normal filesystem behavior always uses the real NIO adapter under an
-isolated temporary directory.
+Tests do not call codec internals and do not replace repository-owned logic with mocks. Normal filesystem behavior always uses the real NIO adapter under an isolated temporary directory.
 
 ## Privacy-safe test policy
 
-- Fixtures contain only synthetic values and live only in test source or
-  temporary test storage.
+- Fixtures contain only synthetic values and live only in test source or temporary test storage.
 - Parameter display names use safe case IDs, never a parameter value.
-- Assertions use fixed descriptions. They do not pass `ItemReport`, report
-  fields, or JSON bytes as an assertion message or rely on an assertion that
-  prints `toString()` or a byte diff on failure.
-- Byte preservation uses `Arrays.equals` on the original byte arrays with a
-  fixed message, rather than a digest or a value-bearing failure dump.
-- Tests do not log or print report objects, JSON, field values, or generated
-  Unicode values.
+- Assertions use fixed descriptions. They do not pass `ItemReport`, report fields, or JSON bytes as an assertion message or rely on an assertion that prints `toString()` or a byte diff on failure.
+- Byte preservation uses `Arrays.equals` on the original byte arrays with a fixed message, rather than a digest or a value-bearing failure dump.
+- Tests do not log or print report objects, JSON, field values, or generated Unicode values.
 - No test reads or writes the application's real configured data location.
 
 ## Implementation evidence catalog
@@ -108,13 +87,11 @@ isolated temporary directory.
 | RT-015 | `versionOneLiteralFixturesLoadAndSuccessfulWritesUseCanonicalBytes` | TS-01, TS-02 | Independently authored empty/populated fixtures cover permitted leading/trailing whitespace, alternate root and report-member order, solidus escape, uppercase escape hex, and a valid surrogate pair; successful output matches fixed order, escaping, required members, UTF-8, indentation, and final-newline policy | Passing - 2026-09-20 |
 | RT-016 | `duplicateCanonicalIdsInvalidateTheWholeStore` | TS-01, TS-02 | Two syntactically valid report objects with the same canonical UUID cause whole-store failure and block both mutations | Passing - 2026-09-20 |
 
-`RT-012` covers each invalid form individually, with safe case-number display
-names:
+`RT-012` covers each invalid form individually, with safe case-number display names:
 
 - empty or truncated JSON;
 - invalid UTF-8;
-- malformed syntax, invalid escape, raw control character, or unpaired escaped
-  surrogate;
+- malformed syntax, invalid escape, raw control character, or unpaired escaped surrogate;
 - excessive or unexpected nesting beyond the fixed version 1 schema;
 - duplicate decoded member names expressed through different escape spellings;
 - trailing non-whitespace content, a UTF-8 BOM, or non-JSON whitespace;
@@ -126,8 +103,7 @@ names:
 - invalid enum, date, time, identifier, or other canonical value; and
 - a report rejected by the canonical reconstruction API.
 
-Duplicate canonical IDs are isolated in `RT-016` so identity equality receives
-direct evidence rather than being hidden inside the grammar matrix.
+Duplicate canonical IDs are isolated in `RT-016` so identity equality receives direct evidence rather than being hidden inside the grammar matrix.
 
 ### Adversarial text and Unicode
 
@@ -138,9 +114,7 @@ direct evidence rather than being hidden inside the grammar matrix.
 | RT-019 | `unencodableTextFailsBeforeInsertOrReplacementMutation` | TS-01 | Unpaired high and low Java UTF-16 surrogates are separate insert/replace cases; first insert leaves target absent and replacement leaves existing bytes identical | Passing - 2026-09-20 |
 | RT-020 | `adversarialReportDataCannotInfluenceTheConfiguredPath` | TS-01 | Every accepted path-looking text case changes only the configured target; no report-derived sibling or directory is created | Passing - 2026-09-20 |
 
-The corpus and generator use the approved code-point limits. Invalid Unicode is
-tested at the repository seam because Java strings can contain unpaired UTF-16
-surrogates even though they cannot be emitted as valid JSON UTF-8.
+The corpus and generator use the approved code-point limits. Invalid Unicode is tested at the repository seam because Java strings can contain unpaired UTF-16 surrogates even though they cannot be emitted as valid JSON UTF-8.
 
 ### Capacity, filesystem transaction, and recovery
 
@@ -178,27 +152,13 @@ surrogates even though they cannot be emitted as valid JSON UTF-8.
 
 Evidence was collected on 2026-09-20:
 
-- The focused canonical-domain and persistence suite passes with
-  `gradlew.bat test --tests "io.github.cs32272610mp2xcode.finderskeepers.report.*"`.
-- The repository-wide `gradlew.bat check` gate passed, including compilation,
-  JUnit, Checkstyle, Javadoc, and JaCoCo report generation.
-- Production source contains one canonical `ItemReport` definition under the
-  `report` package. The repository imports that type, uses the explicit UUID
-  replacement target, and reconstructs with clockless `restore(...)`.
-- Persistence tests use synthetic values with `@TempDir` paths or in-memory
-  package-private filesystem fakes. Parameter names and assertions do not emit
-  report values.
-- Source review confirmed the maximum-plus-one read probe, schema-bounded
-  parser, bounded encoder, same-directory random staging file, `force(true)`,
-  one atomic replacement attempt, no target pre-delete, and no non-atomic
-  fallback.
-- Diff review from the branch base found only the approved report model,
-  persistence, tests, planning/operational documentation, and separately
-  authorized Dev 2 delivery-skill alignment. No dependency, workflow, UI,
-  startup, release, or CI file changed.
-- Documentation contains no complete report example or synthetic/real report
-  content values beyond required schema names and allowed tokens, and no
-  screenshots were produced.
+- The focused canonical-domain and persistence suite passes with `gradlew.bat test --tests "io.github.cs32272610mp2xcode.finderskeepers.report.*"`.
+- The repository-wide `gradlew.bat check` gate passed, including compilation, JUnit, Checkstyle, Javadoc, and JaCoCo report generation.
+- Production source contains one canonical `ItemReport` definition under the `report` package. The repository imports that type, uses the explicit UUID replacement target, and reconstructs with clockless `restore(...)`.
+- Persistence tests use synthetic values with `@TempDir` paths or in-memory package-private filesystem fakes. Parameter names and assertions do not emit report values.
+- Source review confirmed the maximum-plus-one read probe, schema-bounded parser, bounded encoder, same-directory random staging file, `force(true)`, one atomic replacement attempt, no target pre-delete, and no non-atomic fallback.
+- Diff review from the branch base found only the approved report model, persistence, tests, planning/operational documentation, and separately authorized Dev 2 delivery-skill alignment. No dependency, workflow, UI, startup, release, or CI file changed.
+- Documentation contains no complete report example or synthetic/real report content values beyond required schema names and allowed tokens, and no screenshots were produced.
 
 ## Equivalence partitions and boundary representatives
 
@@ -296,53 +256,31 @@ Evidence was collected on 2026-09-20:
 
 Before TDD approval and again before implementation completion:
 
-1. Extract every `FR-*` and `NFR-*` identifier from the approved PRD and compare
-   it with the requirement table.
+1. Extract every `FR-*` and `NFR-*` identifier from the approved PRD and compare it with the requirement table.
 2. Extract every `AC-*` identifier and compare it with the acceptance table.
-3. Extract every `SC-*` main path and extension and compare it with the scenario
-   table.
-4. Extract every `RT-*`, `RV-*`, `VG-*`, and `XW-*` reference from this document
-   and verify that exactly one catalog or obligation row defines it.
-5. Treat any missing identifier, undefined evidence ID, `Deferred` row, skipped
-   test, or failed review as incomplete.
+3. Extract every `SC-*` main path and extension and compare it with the scenario table.
+4. Extract every `RT-*`, `RV-*`, `VG-*`, and `XW-*` reference from this document and verify that exactly one catalog or obligation row defines it.
+5. Treat any missing identifier, undefined evidence ID, `Deferred` row, skipped test, or failed review as incomplete.
 
-The completion audit on 2026-09-20 found all 17 PRD requirement IDs, all 16
-acceptance criteria, and all five scenarios represented. It found 41 evidence
-definitions (32 RT, seven RV, one VG, and one XW), with no undefined reference
-or duplicate definition.
+The completion audit on 2026-09-20 found all 17 PRD requirement IDs, all 16 acceptance criteria, and all five scenarios represented. It found 41 evidence definitions (32 RT, seven RV, one VG, and one XW), with no undefined reference or duplicate definition.
 
 ## Completion gate
 
 S1-D2-02 cannot be declared complete until:
 
-1. D-001 and D-002 remain recorded as resolved, TS-06 and the complete revised
-   planning set receive final owner approval, and D-004 implementation
-   authorization has been given.
-2. Every `RT-*` row is `Passing`; none is skipped, disabled, quarantined, or
-   silently weakened.
+1. D-001 and D-002 remain recorded as resolved, TS-06 and the complete revised planning set receive final owner approval, and D-004 implementation authorization has been given.
+2. Every `RT-*` row is `Passing`; none is skipped, disabled, quarantined, or silently weakened.
 3. RV-001 through RV-007 are recorded as passed reviews.
-4. Every PRD functional requirement, non-functional requirement, acceptance
-   criterion, scenario, and extension maps to defined evidence with no undefined
-   IDs.
-5. All conflict, invalid-input, capacity, and fault tests verify exact prior
-   bytes or target absence without printing those bytes.
+4. Every PRD functional requirement, non-functional requirement, acceptance criterion, scenario, and extension maps to defined evidence with no undefined IDs.
+5. All conflict, invalid-input, capacity, and fault tests verify exact prior bytes or target absence without printing those bytes.
 6. The focused persistence suite passes, followed by `gradlew.bat check`.
-7. Tests use only isolated temporary directories and synthetic canonical values,
-   and their display/assertion/output paths cannot emit report contents.
-8. Storage documentation records the final v1 grammar, byte limit, recovery
-   behavior, atomicity/durability threshold, plaintext and orphan-temp
-   limitations, and unsupported multi-instance/process concurrency.
-9. Structural review confirms exactly one approved shared `ItemReport`, no shadow
-   model, the approved NIO replacement sequence, no persistence-owned transition
-   policy, no unapproved dependency/configuration change, and no scope expansion.
+7. Tests use only isolated temporary directories and synthetic canonical values, and their display/assertion/output paths cannot emit report contents.
+8. Storage documentation records the final v1 grammar, byte limit, recovery behavior, atomicity/durability threshold, plaintext and orphan-temp limitations, and unsupported multi-instance/process concurrency.
+9. Structural review confirms exactly one approved shared `ItemReport`, no shadow model, the approved NIO replacement sequence, no persistence-owned transition policy, no unapproved dependency/configuration change, and no scope expansion.
 10. The implementation handoff reports exact command evidence and unresolved
     external integration accurately, and its retained output and summary contain
     no report field values.
 
-XW-001 remains traced but must not be misrepresented as repository behavior. It
-does not block S1-D2-02 completion; it remains the responsibility of the owning
-domain or later application workflow, while structural review verifies that the
-repository does not enforce transition policy.
+XW-001 remains traced but must not be misrepresented as repository behavior. It does not block S1-D2-02 completion; it remains the responsibility of the owning domain or later application workflow, while structural review verifies that the repository does not enforce transition policy.
 
-Completion result: satisfied on 2026-09-20 for the approved repository-only
-scope. Application wiring and XW-001 remain intentionally outside S1-D2-02.
+Completion result: satisfied on 2026-09-20 for the approved repository-only scope. Application wiring and XW-001 remain intentionally outside S1-D2-02.

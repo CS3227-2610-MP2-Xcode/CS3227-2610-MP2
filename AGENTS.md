@@ -104,6 +104,11 @@ Do not duplicate another developer's types or features to avoid an integration d
   - editing another developer's owned implementation;
   - running destructive filesystem or Git operations.
 - Avoid destructive commands. Prefer reversible operations and inspect the exact target first.
+- In zsh scripts, avoid reserved or special variable names such as `status`; use task-specific names.
+- Resolve generated artifact names from the filesystem before validating them; do not assume filenames from an earlier plan.
+- Test assertions must inspect returned or persisted behaviour; never compare two constants as a substitute for observing the system under test.
+- Multi-command validation scripts must fail fast so a later successful command cannot hide an earlier failed check; use the project's configured Java toolchain for packaged-artifact probes.
+- JavaFX tests that inspect an unskinned `ScrollPane` must traverse `getContent()` directly; its content is not yet present in `getChildrenUnmodifiable()`.
 - Stop repeated attempts after the same failure occurs three times. Report the evidence and current blocker.
 
 ## Verification

@@ -115,6 +115,7 @@ tasks.register('verifyUniversalJar') {
                 'glass.dll',
                 'libglass.so',
                 'libglass.dylib',
+                'io/github/cs32272610mp2xcode/finderskeepers/auth/persistence/demo-users.json',
                 'com/sun/glass/ui/win/WinApplication.class',
                 'com/sun/glass/ui/gtk/GtkApplication.class',
                 'com/sun/glass/ui/mac/MacApplication.class'

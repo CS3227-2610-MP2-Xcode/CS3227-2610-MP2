@@ -33,6 +33,27 @@ class AuthenticationFactoryTest {
     private Path temporaryDirectory;
 
     @Test
+    void bundledDemoCoordinatorAuthenticatesBothRolesWithoutAnExternalStore() {
+        AuthenticationCoordinator coordinator = AuthenticationFactory.createDemoCoordinator();
+        char[] studentPassword = "Student-Demo-27!".toCharArray();
+
+        AuthenticationResult student = coordinator.login("demo.student", studentPassword);
+        assertEquals(AuthenticationStatus.SUCCESS, student.status());
+        assertEquals(UserRole.STUDENT, coordinator.currentUser().orElseThrow().role());
+        assertArrayEquals(new char[studentPassword.length], studentPassword);
+
+        coordinator.logout();
+        char[] officerPassword = "Officer-Demo-42!".toCharArray();
+        AuthenticationResult officer = coordinator.login("demo.officer", officerPassword);
+
+        assertAll(
+                () -> assertEquals(AuthenticationStatus.SUCCESS, officer.status()),
+                () -> assertEquals(UserRole.DESK_OFFICER,
+                        coordinator.currentUser().orElseThrow().role()),
+                () -> assertArrayEquals(new char[officerPassword.length], officerPassword));
+    }
+
+    @Test
     void composesJsonStorageAndPbkdf2Verification() throws UserStoreException {
         Path store = temporaryDirectory.resolve("isolated").resolve("users.json");
         JsonUserRepository repository = new JsonUserRepository(store);

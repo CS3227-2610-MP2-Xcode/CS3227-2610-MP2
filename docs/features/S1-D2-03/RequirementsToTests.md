@@ -16,24 +16,15 @@
 
 ## Purpose and gate
 
-This plan maps every approved S1-D2-03 requirement, acceptance criterion,
-scenario, and extension to the smallest meaningful set of automated, manual,
-review, and command evidence. It defines what must be tested and why; it does
-not add product behavior.
+This plan maps every approved S1-D2-03 requirement, acceptance criterion, scenario, and extension to the smallest meaningful set of automated, manual, review, and command evidence. It defines what must be tested and why; it does not add product behavior.
 
-Approval of this plan does not authorize test or production implementation.
-The required feature branch and implementation remain subject to separate
-authorization. A `Planned` row is not passing evidence.
+Approval of this plan does not authorize test or production implementation. The required feature branch and implementation remain subject to separate authorization. A `Planned` row is not passing evidence.
 
 ## Repository inspection summary
 
-The current repository contains the canonical report domain, Student
-submission workflow, JSON report persistence, authentication/session logic,
-and placeholder role destinations. It contains no `review` package,
-Desk Officer queue, review pane, or S1-D2-03 test.
+The current repository contains the canonical report domain, Student submission workflow, JSON report persistence, authentication/session logic, and placeholder role destinations. It contains no `review` package, Desk Officer queue, review pane, or S1-D2-03 test.
 
-Existing tests already establish inherited contracts that this feature must
-reuse rather than redundantly retest:
+Existing tests already establish inherited contracts that this feature must reuse rather than redundantly retest:
 
 | Existing evidence | Coverage already supplied | S1-D2-03 use |
 | --- | --- | --- |
@@ -51,11 +42,7 @@ reuse rather than redundantly retest:
 | `JsonReportRepositoryFormatTest.canonicalEnumAndTemporalRepresentationsRoundTripExactly` and `everyCanonicalCategoryStoredNameRoundTrips` | Both types/statuses, every category, and canonical temporal values round-trip | Reused for storage compatibility; review presentation still needs canonical label/formatter evidence |
 | `ReportSubmissionServiceTest` and `StudentReportFormControllerTest` | Student submission produces `SUBMITTED` reports and safely handles validation/storage failure | Regression gate only; S1-D2-03 does not duplicate Student tests |
 
-There is no current automated JavaFX test seam. The approved TDD explicitly
-rejects adding one, so rendered controls, exact field inclusion/exclusion,
-read-only behavior, layout, and visible logout privacy use manual evidence plus
-source review. Business behavior remains automated at the plain-Java service
-and real-repository seams.
+There is no current automated JavaFX test seam. The approved TDD explicitly rejects adding one, so rendered controls, exact field inclusion/exclusion, read-only behavior, layout, and visible logout privacy use manual evidence plus source review. Business behavior remains automated at the plain-Java service and real-repository seams.
 
 ## Approved test seams
 
@@ -70,29 +57,17 @@ and real-repository seams.
 
 ## Test design rules
 
-- Use only synthetic reports and users. Real or project-local report data is
-  never read or written.
-- Every real persistence test uses `@TempDir`; no test touches
-  `data/reports.json`.
-- Parameterized case names use fixed safe case IDs. Assertion messages do not
-  include reports, descriptions, Reporter IDs, JSON, paths, exceptions, or
-  unsafe input.
-- Tests assert public state and persisted outcomes, not private method calls.
-  The scripted repository may record whether a mutation occurred only where
-  absence of mutation is itself an approved behavior.
-- Existing persistence tests remain the authority for JSON grammar, byte
-  bounds, atomic replacement, and storage fault mechanics. S1-D2-03 tests do
-  not repeat those matrices.
+- Use only synthetic reports and users. Real or project-local report data is never read or written.
+- Every real persistence test uses `@TempDir`; no test touches `data/reports.json`.
+- Parameterized case names use fixed safe case IDs. Assertion messages do not include reports, descriptions, Reporter IDs, JSON, paths, exceptions, or unsafe input.
+- Tests assert public state and persisted outcomes, not private method calls. The scripted repository may record whether a mutation occurred only where absence of mutation is itself an approved behavior.
+- Existing persistence tests remain the authority for JSON grammar, byte bounds, atomic replacement, and storage fault mechanics. S1-D2-03 tests do not repeat those matrices.
 - Exact approved user-facing messages are independent test literals.
-- Reverse transition is tested as an approved absence: the public review
-  service accepts no caller-selected status, and an authoritative
-  `UNDER_REVIEW` report never reaches `replace(...)`. The production interface
-  must not be widened merely to make a reverse call possible.
+- Reverse transition is tested as an approved absence: the public review service accepts no caller-selected status, and an authoritative `UNDER_REVIEW` report never reaches `replace(...)`. The production interface must not be widened merely to make a reverse call possible.
 
 ### Exact copy oracle
 
-Tests and manual evidence use these owner-approved literals without deriving
-expected values from production constants:
+Tests and manual evidence use these owner-approved literals without deriving expected values from production constants:
 
 | Context | Exact copy |
 | --- | --- |
@@ -107,10 +82,7 @@ expected values from production constants:
 
 ## Planned automated evidence catalog
 
-Unless stated otherwise, these tests belong in
-`DeskOfficerReviewServiceTest`. Real-repository evidence belongs in
-`DeskOfficerReviewPersistenceTest`. The classes may be combined if doing so
-improves readability without changing the public seams.
+Unless stated otherwise, these tests belong in `DeskOfficerReviewServiceTest`. Real-repository evidence belongs in `DeskOfficerReviewPersistenceTest`. The classes may be combined if doing so improves readability without changing the public seams.
 
 | ID | Stable behavior name | Level / seam | Scenarios and reason | Existing coverage reused | Status |
 | --- | --- | --- | --- | --- | --- |
@@ -128,11 +100,7 @@ improves readability without changing the public seams.
 | RT-012 | `startReviewStorageFailuresRetainRetryableSelectionWithoutSuccess` | Unit/component, TS-03 | Precheck load failure and replacement failures other than missing target map to contextual review-failure copy; row, selected canonical report, details, filter, and enabled action remain; no success appears; logical persisted report stays submitted. Parameterized reasons include corrupt/unsupported, I/O/safe replacement, unencodable/over-limit, immutable mismatch, and defensive duplicate ID; assertions prove no technical or report value leaks | Atomic failure preservation and typed reasons are existing lower-level coverage | Planned |
 | RT-013 | `selectedStateExposesCanonicalReportForCompleteRendering` | Unit/component, TS-01 | For each canonical category across both types, selecting a visible report returns that exact canonical instance/value set for rendering; identifiers and temporal values remain complete; no duplicate details DTO exists | Every category and temporal value already round-trips in persistence tests | Planned |
 
-The catalog intentionally does not add separate tests for each field copied by
-`withStatus`, each JSON failure grammar, or each filesystem fault stage. Those
-behaviors already have stronger lower-level coverage. RT-006 supplies the one
-feature-level durable composition test needed to prove the workflow uses those
-contracts correctly.
+The catalog intentionally does not add separate tests for each field copied by `withStatus`, each JSON failure grammar, or each filesystem fault stage. Those behaviors already have stronger lower-level coverage. RT-006 supplies the one feature-level durable composition test needed to prove the workflow uses those contracts correctly.
 
 ## Manual, review, and command evidence catalog
 
@@ -152,9 +120,7 @@ contracts correctly.
 
 ## Requirement traceability and scenario partitions
 
-Each row identifies the approved requirement, observable behavior, appropriate
-level, representative valid/invalid/boundary/empty scenarios, existing
-coverage, new evidence, and the governing TDD component or interaction.
+Each row identifies the approved requirement, observable behavior, appropriate level, representative valid/invalid/boundary/empty scenarios, existing coverage, new evidence, and the governing TDD component or interaction.
 
 | Requirement | Observable behavior | Test level | Valid / invalid / boundary / empty scenarios | Existing coverage | Additional evidence | TDD component / interaction |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -221,48 +187,29 @@ coverage, new evidence, and the governing TDD component or interaction.
 
 ## Red-green implementation order after authorization
 
-1. RT-001 and RT-003: initial queue, immutable state, and missing-store global
-   empty through the real repository.
-2. RT-002, RT-004, and RT-005: filters, selection, both filtered-empty cases,
-   enablement, and deterministic state.
-3. RT-013 plus RV-002/MV-001 preparation: canonical details and presentation
-   inputs without adding a second report model.
-4. RT-006 through RT-008: durable status-only success and invalid-transition
-   absence.
-5. RT-009 through RT-012: stale targets, races, contextual failures, Retry, and
-   privacy-safe mapping.
-6. RV-001/RV-003 and MV-001/MV-002: authenticated mounting, shared repository,
-   logout, and manual workflow.
-7. MV-003, RV-004/RV-005, and VG-001 through VG-003: documentation,
-   screenshot, regressions, release/smoke, and final audits.
+1. RT-001 and RT-003: initial queue, immutable state, and missing-store global empty through the real repository.
+2. RT-002, RT-004, and RT-005: filters, selection, both filtered-empty cases, enablement, and deterministic state.
+3. RT-013 plus RV-002/MV-001 preparation: canonical details and presentation inputs without adding a second report model.
+4. RT-006 through RT-008: durable status-only success and invalid-transition absence.
+5. RT-009 through RT-012: stale targets, races, contextual failures, Retry, and privacy-safe mapping.
+6. RV-001/RV-003 and MV-001/MV-002: authenticated mounting, shared repository, logout, and manual workflow.
+7. MV-003, RV-004/RV-005, and VG-001 through VG-003: documentation, screenshot, regressions, release/smoke, and final audits.
 
-Each automated slice begins with one failing behavior test. Existing tests are
-not rewritten merely to claim S1-D2-03 coverage.
+Each automated slice begins with one failing behavior test. Existing tests are not rewritten merely to claim S1-D2-03 coverage.
 
 ## Ambiguities and blockers
 
-No approved requirement is untestable and no contradiction was found among the
-Mission Brief, PRD, TDD, current canonical domain, persistence contract, and
-authentication contract.
+No approved requirement is untestable and no contradiction was found among the Mission Brief, PRD, TDD, current canonical domain, persistence contract, and authentication contract.
 
-Rendered JavaFX behavior is intentionally manual because the approved scope
-forbids a new UI-test framework. This is a deliberate evidence allocation, not
-an untestable requirement: service behavior is automated and the remaining
-rendering/access observations are explicit in MV-001 through MV-003 and
-RV-001/RV-002.
+Rendered JavaFX behavior is intentionally manual because the approved scope forbids a new UI-test framework. This is a deliberate evidence allocation, not an untestable requirement: service behavior is automated and the remaining rendering/access observations are explicit in MV-001 through MV-003 and RV-001/RV-002.
 
 Current gates remain:
 
 - separate branch creation authorization; and
 - separate test and production implementation authorization.
 
-Commit, push, pull-request, release-artifact commit, and merge authorization
-also remain outside this plan.
+Commit, push, pull-request, release-artifact commit, and merge authorization also remain outside this plan.
 
 ## Approval record
 
-The repository owner approved this Requirements-to-Tests plan on 2026-09-21.
-This approval confirms the planned public test seams, automated evidence
-catalog, manual evidence allocation, regression gates, and traceability
-mappings above. It does not authorize branch creation, test implementation, or
-production implementation.
+The repository owner approved this Requirements-to-Tests plan on 2026-09-21. This approval confirms the planned public test seams, automated evidence catalog, manual evidence allocation, regression gates, and traceability mappings above. It does not authorize branch creation, test implementation, or production implementation.

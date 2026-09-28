@@ -11,10 +11,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -204,11 +204,14 @@ class JsonUserRepositoryTest {
     }
 
     @Test
-    void readsAndVerifiesTheExistingDemoStoreFromAnUnchangedTemporaryCopy()
+    void readsAndVerifiesTheBundledDemoStoreFromAnUnchangedTemporaryCopy()
             throws IOException, UserStoreException {
-        Path source = Path.of("data", "demo-users.json").toAbsolutePath();
-        byte[] original = Files.readAllBytes(source);
-        Files.copy(source, store, StandardCopyOption.REPLACE_EXISTING);
+        byte[] original;
+        try (var source = Objects.requireNonNull(
+                BundledUserRepository.class.getResourceAsStream("demo-users.json"))) {
+            original = source.readAllBytes();
+        }
+        Files.write(store, original);
         DemoAccount studentDemo = readDemoAccount("Student");
         DemoAccount officerDemo = readDemoAccount("Desk Officer");
 
@@ -225,7 +228,6 @@ class JsonUserRepositoryTest {
             assertTrue(hasher.verify(studentDemo.password(), student.credential()));
             assertTrue(hasher.verify(officerDemo.password(), officer.credential()));
             assertArrayEquals(original, Files.readAllBytes(store));
-            assertArrayEquals(original, Files.readAllBytes(source));
         } finally {
             Arrays.fill(studentDemo.password(), '\0');
             Arrays.fill(officerDemo.password(), '\0');
