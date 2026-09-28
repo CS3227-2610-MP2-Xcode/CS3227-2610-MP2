@@ -21,6 +21,11 @@ ownership claim for an officer-created possible match; a Desk Officer can
 review, approve, or reject that claim. Claims are retained separately in the
 local `data/claims.json` runtime file after the first successful submission.
 
+The Student and Desk Officer workspaces also include **Appointments**. Slots
+are 30 minutes long, use Singapore time, and are served by one collection
+desk. Appointment data is retained separately in the local, untracked
+`data/appointments.json` runtime file.
+
 ## Requirements
 
 Install Java 25 before running the project. Confirm the active version:
@@ -357,6 +362,60 @@ Use **Refresh** for a current load and **Retry** after an unavailable-load
 message. If a decision cannot be saved, the claim remains pending and the
 application reports no success. Logging out clears claim and report details
 from the screen; saved claim decisions remain available after a later login.
+
+### Student appointments
+
+Open **Appointments** after a Desk Officer has approved one of your Claims.
+Pending, rejected, and withdrawn Claims cannot be used for booking. Select an
+approved Claim, select an available 30-minute slot, and choose **Book selected
+slot**. A successful confirmation displays the Claim reference and Singapore
+date/time. If no approved Claim or future slot is available, the screen shows
+an empty-state explanation rather than an error.
+
+Only one appointment can use a slot. The booking operation checks the current
+Claim approval and slot availability again when it saves, so a stale screen
+cannot create a second booking. If another Student takes the slot first,
+refresh and choose another slot.
+
+Select an active appointment to reschedule it to another available slot or to
+cancel it. Rescheduling keeps the appointment history while moving the same
+booking to a new slot. Cancellation releases the slot; you may book again for
+the same approved Claim. The active appointment row shows its scheduled date
+and time in Singapore time, including after reopening or rescheduling. Changes
+are not accepted after the slot has started.
+
+The history list shows each booking attempt for your Claims, including earlier
+cancellations and no-shows after you book again. Each row shows its attempt
+number, status, scheduled Singapore date/time, and current case status.
+Storage locations and officer-only custody details are never shown to Students.
+
+### Desk Officer appointments and custody
+
+Open **Appointments** and enter a future start as `yyyy-MM-dd HH:mm` in
+Singapore time. Starts must be on the hour or half-hour. Select **Create
+30-minute slot**. Overlapping enabled slots are rejected because the service
+has one collection desk. An unbooked future slot can be disabled; a booked
+slot cannot be silently removed.
+
+Select a booked case to record its storage location and mark custody ready.
+At the appointment, choose **Confirm collection** to record the collection
+time and officer action. Then choose **Mark item returned**, followed by **Close
+case**. Invalid orderings are rejected and do not change stored data. If the
+Student does not attend, use **NO_SHOW** after the slot has ended; the slot is
+released and the Student may book another appointment.
+
+**NO_SHOW** is for a missed appointment, not a step in returning an item. It
+cannot be recorded before the 30-minute slot ends or after collection has been
+confirmed. If the screen says the custody order is invalid, record a storage
+location and mark the item ready before confirming collection. Confirm
+collection before marking the item returned, and mark it returned before
+closing the case.
+
+The officer audit history records booking, rescheduling, cancellation,
+no-show, custody, collection, return, and closure events. Officer identities
+are visible in this officer-only history, and each actor is labelled as a
+Student or Desk Officer according to the recorded role. Evidence, report
+descriptions, and storage locations are not copied into audit-event text.
 
 ## Troubleshooting
 

@@ -4,15 +4,17 @@
 
 This guide describes the implemented project baseline, local authentication,
 report persistence, Student report submission and history, Desk Officer report
-review, deterministic possible matching, and the Sprint 3 Claims and
-Verification feature for a primary-school lost-and-found application. The
-application shell opens authentication at startup and routes each authenticated
-role to a fresh workspace over shared application-lifetime repositories.
+review, deterministic possible matching, Claims and Verification, and
+appointments and collection for a primary-school lost-and-found application.
+The application shell opens authentication at startup and routes each
+authenticated role to a fresh workspace over shared application-lifetime
+repositories.
 
 Claims are implemented end to end: Students can submit, track, and withdraw
 ownership claims from durable possible-match links, while Desk Officers can
-review, approve, reject, and inspect retained claim history. Appointment,
-collection, handover, return, and other Sprint 4 workflows are not implemented.
+review, approve, reject, and inspect retained claim history. The appointment
+and collection workflow is implemented as a separate downstream domain that
+consumes only a narrow approved-Claim projection.
 
 ## Development prerequisites
 
@@ -469,13 +471,11 @@ identity, or persistence details.
 
 Claims UI state and unsaved evidence/decision text are cleared on confirmed
 logout; cancelled logout preserves them. Durable Claims are never deleted.
-An Approved Claim is the upstream ownership-verification result that a future
-Sprint 4 workflow may use when determining appointment eligibility; it does not
-itself create an appointment or make appointment behavior available.
-The implemented feature does not provide appointment eligibility, booking,
-collection, handover, return, report closure, notifications, background
-polling, or an appointment-specific Approved-Claim API. The proposed Sprint 4
-handoff is documented separately in
+Appointment eligibility uses the authenticated Student's approved-Claim
+projection. The appointment workflow supports booking, collection, custody
+handover, return, and case closure. Notifications, background polling, and
+automatic corruption repair remain out of scope. The original design handoff
+is retained in
 [Sprint 3 Claims to Sprint 4 Appointment Handover](features/S3-D2-01/Sprint4AppointmentHandover.md).
 
 ## Student report-submission components
@@ -704,6 +704,12 @@ gradlew.bat release
   projections, absent private values in rows and feedback, fresh per-login
   workspaces over shared repositories, Approved-Claim report-queue exclusion,
   and session-state clearing without durable deletion.
+- Appointment repository tests cover booking and cancellation with reload,
+  competing bookings for one slot, the custody and collection sequence,
+  no-show slot reuse, rescheduling and slot-disable conflicts, invalid/repeated
+  terminal actions, and corrupt-store failure without overwriting the bytes.
+- Approved-Claim service tests cover returning only owned approved Claims as
+  safe summaries and rejecting a Desk Officer identity.
 - Java compilation enables all lint warnings and treats warnings as errors.
 - Checkstyle runs against production and test sources.
 - Javadoc warnings fail the build.
@@ -720,6 +726,65 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
 
 `.github/workflows/ci.yml` runs for pushes and pull requests on Ubuntu, macOS, and Windows. Each job installs Java 25, validates the Gradle Wrapper, runs `clean check release`, smoke-tests the exact release JAR, and uploads it as a workflow artifact. The workflow can only be confirmed on GitHub after the first push; its equivalent build and smoke checks can be run locally beforehand.
 
+## Appointment and collection domain
+
+The appointment domain is downstream of Claims. It consumes
+`StudentApprovedClaimService`, which returns only the authenticated Student's
+approved Claim ID, visible reference, and approval time. Appointment code does
+not read `claims.json`, inspect ownership evidence, or infer approval from
+Report status or possible-match visibility.
+
+`JsonAppointmentRepository` stores one versioned aggregate document at
+`data/appointments.json`. The document contains half-hour `CollectionSlot`
+records and one `CollectionCase` per Claim. Each case retains appointment
+attempts, custody state, and append-only typed `AuditEvent` records. The
+repository rereads the authoritative file for every command, validates the
+complete state, and atomically replaces the document. Every state-changing
+command holds a persistent sibling lock at `data/appointments.json.lock` across
+the full read, validation, and write. A process-local lock coordinates separate
+repository instances in one JVM, and an operating-system file lock coordinates
+separate application processes. The sidecar remains in place because deleting
+it after releasing the lock could let concurrent processes lock different file
+identities. If the lock cannot be acquired safely, the command fails without
+reporting success. If lock release reports an I/O error after atomic
+replacement, the error is logged and the known committed result is retained;
+closing the channel is still attempted. Read-only queries continue to read the
+most recently committed atomic document.
+
+The lifecycle is:
+
+```text
+BOOKED -> CANCELLED
+       -> NO_SHOW
+       -> COLLECTION_CONFIRMED -> RETURNED -> CLOSED
+```
+
+Custody separately progresses from `AWAITING_STORAGE` to `STORED`,
+`READY_FOR_COLLECTION`, and `RETURNED`. A cancelled or no-show appointment
+releases the one collection desk slot and permits a later booking for the same
+approved Claim. Correcting a storage location while custody is ready preserves
+`READY_FOR_COLLECTION`, including after collection confirmation; a returned or
+closed case rejects further location changes and cannot be booked again.
+
+Storage failures are typed and fail closed. Corrupt bytes are never silently
+overwritten; after an operator restores valid bytes, the repository rereads
+the authoritative file and can recover without process restart. Audit events
+contain typed identifiers and actor information but never evidence, report
+descriptions, decision reasons, or storage-location text.
+
+The collection sequence is:
+
+```text
+Student selects Approved Claim and slot
+  -> repository rechecks Claim projection and slot occupancy
+  -> BOOKED appointment
+  -> Officer records storage location
+  -> Officer marks custody ready
+  -> Officer confirms collection and time
+  -> Officer marks item returned
+  -> Officer closes case
+```
+
 ## Planned areas
 
 - Student report submission and personal report history/status display —
@@ -730,9 +795,10 @@ The JAR also supports `--smoke-test`, which opens the application and exits auto
   withdrawal; Desk Officer review, approval, rejection, and history; durable
   atomic storage; role-narrow privacy projections; and active report-queue
   exclusion after approval.
-- Appointment booking, collection, handover, return, notifications, and report
-  closure remain future work. No Sprint 4 behavior should be inferred from an
-  Approved Claim beyond the separately documented handoff contract.
+- Appointment booking, collection, handover, return, and case closure are
+  implemented in the appointment domain. Notifications, multi-desk capacity,
+  and automatic corruption repair remain out of scope. No appointment action
+  changes a Report or Claim lifecycle.
 - Repository construction and startup wiring — implemented through the
   approved report, possible-match, and Claim paths with one
   application-lifetime repository instance per durable domain.

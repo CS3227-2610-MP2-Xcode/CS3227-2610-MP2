@@ -49,7 +49,7 @@ public final class StudentReportWorkspaceFactory {
             ReportRepository repository) {
         ReportRepository reportStore = Objects.requireNonNull(
                 repository, "repository");
-        return user -> createView(user, reportStore, null);
+        return user -> createView(user, reportStore, null, null);
     }
 
     /**
@@ -62,16 +62,30 @@ public final class StudentReportWorkspaceFactory {
     public static Function<AuthenticatedUser, Node> create(
             ReportRepository repository,
             Function<AuthenticatedUser, WorkspaceFeature> featureFactory) {
+        return create(repository, featureFactory, null);
+    }
+
+    /**
+     * Creates a Student-view factory with Claims and appointments features.
+     *
+     * @param repository application-lifetime report repository
+     * @param claimsFactory authenticated Claims feature factory
+     * @param appointmentsFactory authenticated appointment feature factory
+     * @return authenticated Student view factory
+     */
+    public static Function<AuthenticatedUser, Node> create(
+            ReportRepository repository,
+            Function<AuthenticatedUser, WorkspaceFeature> claimsFactory,
+            Function<AuthenticatedUser, WorkspaceFeature> appointmentsFactory) {
         ReportRepository reportStore = Objects.requireNonNull(
                 repository, "repository");
-        Function<AuthenticatedUser, WorkspaceFeature> features =
-                Objects.requireNonNull(featureFactory, "featureFactory");
-        return user -> createView(user, reportStore, features);
+        return user -> createView(user, reportStore, claimsFactory, appointmentsFactory);
     }
 
     private static Node createView(AuthenticatedUser user,
             ReportRepository repository,
-            Function<AuthenticatedUser, WorkspaceFeature> featureFactory) {
+            Function<AuthenticatedUser, WorkspaceFeature> claimsFactory,
+            Function<AuthenticatedUser, WorkspaceFeature> appointmentsFactory) {
         AuthenticatedUser authenticatedUser = requireStudent(user);
         StudentReportWorkspaceComponents components = compose(
                 authenticatedUser, repository);
@@ -81,14 +95,17 @@ public final class StudentReportWorkspaceFactory {
                 new StudentReportHistoryController(
                         authenticatedUser.userId(),
                         components.historyService());
-        if (featureFactory == null) {
+        if (claimsFactory == null && appointmentsFactory == null) {
             return new StudentReportHomePane(
                     authenticatedUser.username(), formController, historyController);
         }
-        WorkspaceFeature feature = Objects.requireNonNull(
-                featureFactory.apply(authenticatedUser), "featureFactory result");
+        WorkspaceFeature claims = claimsFactory == null ? null : Objects.requireNonNull(
+                claimsFactory.apply(authenticatedUser), "claimsFactory result");
+        WorkspaceFeature appointments = appointmentsFactory == null ? null
+                : Objects.requireNonNull(appointmentsFactory.apply(authenticatedUser),
+                        "appointmentsFactory result");
         return new StudentReportHomePane(authenticatedUser.username(), formController,
-                historyController, feature);
+                historyController, claims, appointments);
     }
 
     static StudentReportWorkspaceComponents compose(AuthenticatedUser user,

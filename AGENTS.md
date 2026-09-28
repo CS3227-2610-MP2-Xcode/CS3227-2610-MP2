@@ -147,3 +147,27 @@ For every completed task, report:
 - Known limitations
 - Cross-owner integration still required
 - Any requirement that remains unverified
+
+## Lessons from appointment implementation
+
+- A hand-written JSON writer must test a persisted document immediately after
+  every mutation; the first appointment codec omitted field separators and the
+  parser then failed only on the next command. Keep canonical writer tests and
+  round-trip tests beside every new store.
+- Injected UUID suppliers must be unique across a complete command sequence,
+  including audit events. Test fixtures that return one constant UUID create
+  false persistence failures; use a deterministic sequence or distinct IDs.
+- Metadata corrections must preserve downstream lifecycle state. Test a
+  correction after later actions, such as confirmed collection, before
+  allowing the update to reset a status.
+- When a feature stacks several lists and controls in a small desktop window,
+  provide scrolling and usable minimum list heights; visible buttons alone do
+  not make the lists operable.
+- Appointment rows must display the scheduled slot time, not just the booking
+  status or ID; verify that the time survives reopening and rescheduling.
+- History projections must iterate retained appointment attempts, not only the
+  latest status; test repeated booking after cancellation and no-show.
+- A JavaFX ComboBox needs both popup cells and a button cell when its value has
+  a redacted `toString()`; verify the selected reference remains readable.
+- Audit rows must derive the actor label from the event's stored role, not from
+  the role of the viewer; cover Student and Desk Officer events in tests.

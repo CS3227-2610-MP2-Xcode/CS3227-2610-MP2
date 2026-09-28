@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import io.github.cs32272610mp2xcode.finderskeepers.auth.model.AuthenticatedUser;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.application.ApprovedClaimReportService;
+import io.github.cs32272610mp2xcode.finderskeepers.claim.application.StudentApprovedClaimService;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.application.OfficerClaimsService;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.application.StudentClaimsService;
 import io.github.cs32272610mp2xcode.finderskeepers.claim.persistence.ClaimRepository;
@@ -57,6 +58,16 @@ public final class ClaimWorkspaceFactory {
                 claimRepository, reportRepository, matchRepository, clock, claimIds));
         return new WorkspaceFeature(pane, pane::enter, pane::hasUnsavedText,
                 pane::clearSessionState);
+    }
+
+    /**
+     * Creates the minimal approved-Claim read boundary for one Student.
+     *
+     * @param user authenticated Student
+     * @return privacy-safe approved-Claim service
+     */
+    public StudentApprovedClaimService createApprovedClaimService(AuthenticatedUser user) {
+        return new StudentApprovedClaimService(user, claimRepository);
     }
 
     /**

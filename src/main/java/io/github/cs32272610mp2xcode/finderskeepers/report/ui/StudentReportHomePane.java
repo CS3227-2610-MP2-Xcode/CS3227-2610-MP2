@@ -12,6 +12,8 @@ import javafx.scene.layout.BorderPane;
 public final class StudentReportHomePane extends BorderPane implements SessionView {
     private final WorkspaceFeature claimsFeature;
 
+    private final WorkspaceFeature appointmentsFeature;
+
     /**
      * Creates the Student report workspace.
      *
@@ -37,8 +39,25 @@ public final class StudentReportHomePane extends BorderPane implements SessionVi
             StudentReportFormController formController,
             StudentReportHistoryController historyController,
             WorkspaceFeature claims) {
+        this(username, formController, historyController, claims, null);
+    }
+
+    /**
+     * Creates the Student report workspace with Claims and appointments.
+     *
+     * @param username signed-in username displayed by both views
+     * @param formController authenticated report-submission controller
+     * @param historyController authenticated personal-history controller
+     * @param claims neutral authenticated Claims feature
+     * @param appointments neutral authenticated appointment feature
+     */
+    public StudentReportHomePane(String username,
+            StudentReportFormController formController,
+            StudentReportHistoryController historyController,
+            WorkspaceFeature claims, WorkspaceFeature appointments) {
         Objects.requireNonNull(username, "username");
         claimsFeature = claims;
+        appointmentsFeature = appointments;
         StudentReportForm reportForm = new StudentReportForm(
                 username,
                 Objects.requireNonNull(formController, "formController"));
@@ -51,8 +70,13 @@ public final class StudentReportHomePane extends BorderPane implements SessionVi
         TabPane navigation = new TabPane(submitTab, historyTab);
         Tab claimsTab = claimsFeature == null
                 ? null : fixedTab("Claims", claimsFeature.content());
+        Tab appointmentsTab = appointmentsFeature == null ? null
+                : fixedTab("Appointments", appointmentsFeature.content());
         if (claimsTab != null) {
             navigation.getTabs().add(claimsTab);
+        }
+        if (appointmentsTab != null) {
+            navigation.getTabs().add(appointmentsTab);
         }
         navigation.getSelectionModel().selectedItemProperty().addListener(
                 (observable, previous, selected) -> {
@@ -60,6 +84,8 @@ public final class StudentReportHomePane extends BorderPane implements SessionVi
                         reportHistory.refresh();
                     } else if (claimsTab != null && selected == claimsTab) {
                         claimsFeature.onEnter().run();
+                    } else if (appointmentsTab != null && selected == appointmentsTab) {
+                        appointmentsFeature.onEnter().run();
                     }
                 });
         setCenter(navigation);
@@ -74,6 +100,9 @@ public final class StudentReportHomePane extends BorderPane implements SessionVi
     public void clearSessionState() {
         if (claimsFeature != null) {
             claimsFeature.clearSessionState().run();
+        }
+        if (appointmentsFeature != null) {
+            appointmentsFeature.clearSessionState().run();
         }
     }
 
