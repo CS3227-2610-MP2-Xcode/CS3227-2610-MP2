@@ -74,7 +74,7 @@ Then run:
 java -jar release/FindersKeepers.jar
 ```
 
-Keep the JAR in its own writable folder because the application stores local data under a sibling `data` folder.
+Run the JAR from a writable working directory because the application reads and writes mutable local data under that directory's `data` folder. The two read-only demo accounts are bundled inside the JAR and remain available regardless of the launch directory.
 
 ### Log in
 
@@ -84,7 +84,7 @@ The login page starts in **Production mode**. You can:
 - choose **Create account** to register a Student or Desk Officer account; or
 - switch to **Demo mode** and choose a synthetic role without typing a password.
 
-The project-local demo store provides these public test accounts:
+The application bundles these public test accounts, so Demo mode works without an external account file:
 
 | Role | Username | Password |
 |---|---|---|
